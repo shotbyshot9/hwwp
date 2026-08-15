@@ -59,6 +59,13 @@ export type FocusCheerLevel = 'quiet' | 'normal' | 'festival';
 
 /** 집중 작업 모드 설정 */
 export interface FocusSettings {
+  /**
+   * 집중 모드에서 쓸 테마. 일반 편집 화면의 테마 설정과 완전히 별개다 —
+   * 집중 모드를 나가면 원래 화면 테마로 되돌아간다.
+   */
+  theme: 'light' | 'dark';
+  /** 집중 모드 진입 시 적용할 화면 배율(%). 나가면 원래 배율로 되돌린다. */
+  zoomPercent: number;
   /** 응원 강도 */
   cheerLevel: FocusCheerLevel;
   /** 폭죽 효과 사용 여부 */
@@ -150,10 +157,9 @@ function defaultSettings(): AppSettings {
       recentFontCount: 3,
     },
     theme: {
-      // whp 기본은 어둡게 — 글 쓰는 화면이 기본값이라는 제품 결정이다.
-      // 저장된 선택이 있으면 그쪽이 이긴다. 바꾸려면 보기 → 테마.
+      // 일반 편집 화면은 OS 설정을 따른다. 집중 모드 테마는 focus.theme 에 따로 있다.
       // 이 값을 바꾸면 FOUC 방지용 public/theme-init.js 의 기본값도 함께 맞춰야 한다.
-      mode: 'dark',
+      mode: 'system',
     },
     dialog: {
       picturePropsKeepRatio: true,
@@ -165,6 +171,9 @@ function defaultSettings(): AppSettings {
       clipView: true,
     },
     focus: {
+      // 집중 모드는 어둡게가 기본 — 글 쓰는 화면이다.
+      theme: 'dark',
+      zoomPercent: 200,
       cheerLevel: 'normal',
       confetti: true,
       sound: true,
@@ -260,6 +269,8 @@ class UserSettingsService {
         focus: {
           ...defaults.focus,
           ...focus,
+          theme: focus.theme === 'light' || focus.theme === 'dark' ? focus.theme : defaults.focus.theme,
+          zoomPercent: normalizeNumber(focus.zoomPercent, defaults.focus.zoomPercent, 50, 400),
           cheerLevel: normalizeCheerLevel(focus.cheerLevel, defaults.focus.cheerLevel),
           confetti: normalizeBoolean(focus.confetti, defaults.focus.confetti),
           sound: normalizeBoolean(focus.sound, defaults.focus.sound),

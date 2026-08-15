@@ -49,6 +49,8 @@ function getFocusMode(services: CommandServices): FocusMode {
         else ih.activateWithCaretPosition();
       },
       getDocumentStats: () => documentStats(services),
+      getZoom: () => services.getViewportManager()?.getZoom() ?? null,
+      setZoom: (zoom) => services.getViewportManager()?.setZoom(zoom),
     });
   }
   return focusMode;
@@ -79,6 +81,13 @@ export function syncFocusMenu(): void {
   document.querySelectorAll('[data-cmd="focus:goal"]').forEach((el) => {
     const goal = Number((el as HTMLElement).dataset.goal ?? '0');
     el.classList.toggle('active', goal === s.goalChars);
+  });
+  document.querySelectorAll('[data-cmd="focus:zoom"]').forEach((el) => {
+    const zoom = Number((el as HTMLElement).dataset.zoom ?? '0');
+    el.classList.toggle('active', zoom === s.zoomPercent);
+  });
+  document.querySelectorAll('[data-cmd="focus:theme"]').forEach((el) => {
+    el.classList.toggle('active', (el as HTMLElement).dataset.focusTheme === s.theme);
   });
   document.querySelectorAll('[data-cmd="focus:toggle"]').forEach((el) => {
     el.classList.toggle('active', focusMode?.isActive() === true);
@@ -133,6 +142,28 @@ export const focusCommands: CommandDef[] = [
   toggleSetting('focus:toggle-sound', '박수 효과음', 'sound'),
   toggleSetting('focus:toggle-praise', '음성 칭찬', 'praise'),
   toggleSetting('focus:toggle-typewriter', '타자기 스크롤', 'typewriter'),
+  {
+    id: 'focus:theme',
+    label: '집중 모드 테마',
+    execute(services, params) {
+      const theme = params?.focusTheme === 'light' ? 'light' : 'dark';
+      userSettings.updateFocusSettings({ theme });
+      syncFocusMenu();
+      getFocusMode(services).refresh();
+    },
+  },
+  {
+    id: 'focus:zoom',
+    label: '집중 모드 배율',
+    execute(services, params) {
+      const zoom = Number(params?.zoom ?? 200);
+      userSettings.updateFocusSettings({
+        zoomPercent: Number.isFinite(zoom) ? Math.min(400, Math.max(50, zoom)) : 200,
+      });
+      syncFocusMenu();
+      getFocusMode(services).refresh();
+    },
+  },
   {
     id: 'focus:goal',
     label: '세션 목표',

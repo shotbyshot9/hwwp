@@ -17,7 +17,8 @@
 
 import type { EventBus } from '@/core/event-bus';
 import { userSettings } from '@/core/user-settings';
-import { setThemeMode } from '@/core/theme';
+import { applyTheme, getThemeMode } from '@/core/theme';
+import type { ThemeMode } from '@/core/user-settings';
 import { CheerEngine } from './cheer-engine';
 
 /** 캐럿을 붙잡아 둘 화면 높이 비율 (0=최상단, 1=최하단) */
@@ -39,6 +40,10 @@ export interface FocusModeDeps {
   focusEditor: () => void;
   /** 문서 전체의 단어수·글자수 */
   getDocumentStats: () => { words: number; chars: number };
+  /** 현재 화면 배율 (1 = 100%). 뷰포트가 없으면 null */
+  getZoom: () => number | null;
+  /** 화면 배율 지정 (1 = 100%) */
+  setZoom: (zoom: number) => void;
 }
 
 const ICONS = {
@@ -75,6 +80,10 @@ export class FocusMode {
   private goalReached = false;
   private docStats = { words: 0, chars: 0 };
 
+  /** 진입 직전의 일반 화면 상태 — 나갈 때 그대로 되돌린다 */
+  private savedZoom: number | null = null;
+  private savedThemeMode: ThemeMode | null = null;
+
   private tickTimer: number | null = null;
   private typewriterTimer: number | null = null;
   private countTimer: number | null = null;
@@ -98,6 +107,16 @@ export class FocusMode {
     this.startedAt = Date.now();
     this.sessionChars = 0;
     this.goalReached = false;
+
+    // 일반 화면의 배율·테마를 기억해 두고 집중 모드 전용 값으로 갈아 끼운다.
+    // 두 화면의 설정은 서로 건드리지 않는다 — 나갈 때 그대로 되돌린다.
+    this.savedZoom = this.deps.getZoom();
+    this.savedThemeMode = getThemeMode();
+    const settings = userSettings.getFocusSettings();
+    this.deps.setZoom(settings.zoomPercent / 100);
+    // applyTheme 은 화면에만 적용하고 저장하지 않는다(setThemeMode 와 다르다).
+    // 덕분에 일반 화면의 테마 설정이 집중 모드 때문에 바뀌지 않는다.
+    applyTheme(settings.theme);
 
     document.body.classList.add('fm-active');
     this.buildOverlay();
@@ -158,6 +177,12 @@ export class FocusMode {
     this.soundBtn = null;
     this.themeBtn = null;
 
+    // 일반 화면의 배율·테마를 되돌린다.
+    if (this.savedThemeMode) applyTheme(this.savedThemeMode);
+    if (this.savedZoom !== null) this.deps.setZoom(this.savedZoom);
+    this.savedThemeMode = null;
+    this.savedZoom = null;
+
     this.syncMenuState();
     this.deps.eventBus.emit('document-view-changed');
     window.dispatchEvent(new Event('resize'));
@@ -167,6 +192,9 @@ export class FocusMode {
   /** 설정 변경 후 화면을 즉시 반영한다 */
   refresh(): void {
     if (!this.active) return;
+    const settings = userSettings.getFocusSettings();
+    applyTheme(settings.theme);
+    this.deps.setZoom(settings.zoomPercent / 100);
     this.syncToggleButtons();
     this.renderStats();
     this.startTypewriter();
@@ -264,9 +292,10 @@ export class FocusMode {
       this.syncToggleButtons();
     });
     this.themeBtn = this.makeIconButton(actions, () => {
-      const next = userSettings.getThemeSettings().mode === 'dark' ? 'light' : 'dark';
-      setThemeMode(next);
-      this.deps.eventBus.emit('theme-changed', { mode: next });
+      // 집중 모드 전용 테마만 바꾼다. 일반 편집 화면의 테마 설정은 건드리지 않는다.
+      const next = userSettings.getFocusSettings().theme === 'dark' ? 'light' : 'dark';
+      userSettings.updateFocusSettings({ theme: next });
+      applyTheme(next);
       this.deps.eventBus.emit('document-view-changed');
       this.syncToggleButtons();
     });
@@ -362,9 +391,9 @@ export class FocusMode {
       this.soundBtn.classList.toggle('fm-icon-btn-off', !s.sound);
     }
     if (this.themeBtn) {
-      const dark = document.documentElement.getAttribute('data-theme-effective') === 'dark';
+      const dark = s.theme === 'dark';
       this.themeBtn.innerHTML = dark ? ICONS.sun : ICONS.moon;
-      this.themeBtn.title = dark ? '밝게' : '어둡게';
+      this.themeBtn.title = dark ? '집중 모드 밝게' : '집중 모드 어둡게';
       this.themeBtn.setAttribute('aria-label', this.themeBtn.title);
     }
   }

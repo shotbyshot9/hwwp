@@ -7,14 +7,15 @@
 (() => {
   const root = document.documentElement;
   const isThemeMode = (value) => value === 'system' || value === 'light' || value === 'dark';
-  // whp 기본은 어둡게. core/user-settings.ts 의 defaultSettings().theme.mode 와 같은 값이어야 한다.
-  let mode = 'dark';
+  // 일반 편집 화면 기본값. core/user-settings.ts 의 defaultSettings().theme.mode 와 같아야 한다.
+  // 집중 모드 테마는 이것과 별개로 focus.theme 이 들고 있으며 진입할 때 적용된다.
+  let mode = 'system';
   try {
     const settings = JSON.parse(localStorage.getItem('rhwp-settings') || '{}');
     const storedMode = settings && settings.theme && settings.theme.mode;
     if (isThemeMode(storedMode)) mode = storedMode;
   } catch {
-    mode = 'dark';
+    mode = 'system';
   }
   const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   const effective = mode === 'dark' || (mode === 'system' && prefersDark) ? 'dark' : 'light';
