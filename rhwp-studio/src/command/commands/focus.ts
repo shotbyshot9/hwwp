@@ -10,8 +10,47 @@ import { FocusMode } from '../../focus/focus-mode';
  */
 let focusMode: FocusMode | null = null;
 
+/**
+ * 문서 전체의 단어수·글자수.
+ *
+ * 본문 문단만 센다 — 표 셀·머리말/꼬리말·각주는 제외한다. Writer's Homeground 의
+ * 바닥글 집계를 옮긴 것이라 "지금 쓰고 있는 글의 분량"이 기준이다.
+ */
+function documentStats(services: CommandServices): { words: number; chars: number } {
+  const wasm = services.wasm;
+  let chars = 0;
+  let words = 0;
+  const sections = wasm.getSectionCount();
+  for (let sec = 0; sec < sections; sec++) {
+    const paraCount = wasm.getParagraphCount(sec);
+    for (let para = 0; para < paraCount; para++) {
+      const len = wasm.getParagraphLength(sec, para);
+      if (len <= 0) continue;
+      const text = wasm.getTextRange(sec, para, 0, len);
+      chars += text.length;
+      const trimmed = text.trim();
+      if (trimmed) words += trimmed.split(/\s+/).length;
+    }
+  }
+  return { words, chars };
+}
+
 function getFocusMode(services: CommandServices): FocusMode {
-  if (!focusMode) focusMode = new FocusMode(services.eventBus);
+  if (!focusMode) {
+    focusMode = new FocusMode({
+      eventBus: services.eventBus,
+      focusEditor: () => {
+        const ih = services.getInputHandler();
+        if (!ih) return;
+        // 문서를 아직 한 번도 클릭하지 않았으면 캐럿이 놓이지 않아 입력이 무시된다
+        // (빈 문서의 "클릭하여 입력" 안내 상태). 집중 모드는 들어오자마자 쓰는
+        // 화면이므로 여기서 캐럿을 놓아 준다. 이미 편집 중이면 포커스만 되돌린다.
+        if (ih.isActive()) ih.focus();
+        else ih.activateWithCaretPosition();
+      },
+      getDocumentStats: () => documentStats(services),
+    });
+  }
   return focusMode;
 }
 

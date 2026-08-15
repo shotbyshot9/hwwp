@@ -1,8 +1,31 @@
 /* ================================================================
    집중 작업 모드 (focus mode) — 접두어 fm-
+
+   화면 형태와 색은 Writer's Homeground(writerhomeground.lovable.app)를 따른다.
+   따뜻한 무채색 바탕, 얇은 머리글/바닥글, 호박색 포인트 한 점.
    ================================================================ */
 
-/* ─── 선(禪) 화면: 본문만 남기고 크롬을 걷어낸다 ─────────────── */
+:root {
+  --fm-bg: #f8f6f2;
+  --fm-fg: #2e241f;
+  --fm-muted: #7e6f67;
+  --fm-border: rgba(224, 219, 209, 0.5);
+  --fm-hover: rgba(46, 36, 31, 0.06);
+  --fm-accent: #f59f0a;
+  --fm-paper-glow: rgba(46, 36, 31, 0.12);
+}
+
+:root[data-theme-effective='dark'] {
+  --fm-bg: #0c0a09;
+  --fm-fg: #f0ece6;
+  --fm-muted: #9d917b;
+  --fm-border: rgba(50, 44, 41, 0.5);
+  --fm-hover: rgba(240, 236, 230, 0.08);
+  --fm-accent: #f59f0a;
+  --fm-paper-glow: rgba(0, 0, 0, 0.6);
+}
+
+/* ─── 선(禪) 화면: 편집기 크롬을 걷어내고 whp 머리글/바닥글로 갈아 끼운다 ─── */
 
 body.fm-active #studio-header,
 body.fm-active #status-bar,
@@ -12,113 +35,187 @@ body.fm-active #v-ruler {
   display: none;
 }
 
-/* 눈금자 트랙(20px)을 없애고 스크롤 영역이 전체를 차지하게 한다 */
+/* 눈금자 트랙(20px)을 없애고, 머리글·바닥글이 덮을 만큼 위아래를 비운다 */
 body.fm-active #editor-area {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
+  padding: var(--fm-header-h, 67px) 0 var(--fm-footer-h, 47px);
+  background: var(--fm-bg);
 }
 
-/* 종이 주변을 어둡게 낮춰 본문이 떠 보이게 한다 */
 body.fm-active #scroll-container {
-  background: var(--fm-workspace);
-}
-
-body.fm-active #scroll-content canvas {
-  box-shadow: 0 6px 40px var(--fm-paper-glow);
-}
-
-/* 문서 끝에서도 캐럿이 고정 지점(위쪽 40%)에 머물 수 있도록 스크롤 여백을 준다.
-   이 여백이 없으면 마지막 문단에서 스크롤이 바닥에 걸려 캐럿이 화면 아래로 밀린다.
-   여백은 스크롤 컨테이너에 준다 — #scroll-content 는 가상 스크롤이 높이를 직접
-   지정하고 border-box 라 padding 이 흡수돼 스크롤 범위가 늘지 않는다.
-   padding-bottom 은 페이지 canvas 를 밀지 않으므로 좌표 계산에도 영향이 없다. */
-body.fm-active #scroll-container {
+  background: var(--fm-bg);
+  /* 문서 끝에서도 캐럿이 고정 지점(위쪽 40%)에 머물 수 있도록 스크롤 여백을 준다.
+     이 여백이 없으면 마지막 문단에서 스크롤이 바닥에 걸려 캐럿이 화면 아래로 밀린다.
+     여백은 스크롤 컨테이너에 준다 — #scroll-content 는 가상 스크롤이 높이를 직접
+     지정하고 border-box 라 padding 이 흡수돼 스크롤 범위가 늘지 않는다.
+     padding-bottom 은 페이지 canvas 를 밀지 않으므로 좌표 계산에도 영향이 없다. */
   padding-bottom: 60vh;
 }
 
-:root {
-  --fm-workspace: #d5d7db;
-  --fm-paper-glow: rgba(0, 0, 0, 0.22);
-  --fm-hud-bg: rgba(255, 255, 255, 0.9);
-  --fm-hud-border: rgba(0, 0, 0, 0.1);
-  --fm-hud-text: #333333;
-  --fm-hud-muted: #777777;
+body.fm-active #scroll-content canvas {
+  box-shadow: 0 8px 44px var(--fm-paper-glow);
 }
 
-:root[data-theme-effective='dark'] {
-  --fm-workspace: #17181c;
-  --fm-paper-glow: rgba(0, 0, 0, 0.65);
-  --fm-hud-bg: rgba(32, 34, 40, 0.9);
-  --fm-hud-border: rgba(255, 255, 255, 0.12);
-  --fm-hud-text: #e8e8e8;
-  --fm-hud-muted: #9a9a9a;
-}
-
-/* ─── HUD ────────────────────────────────────────────────── */
+/* ─── 오버레이 ─────────────────────────────────────────── */
 
 .fm-overlay {
   position: fixed;
   inset: 0;
   z-index: 8000;
-  /* 오버레이 자체는 클릭을 통과시키고, 실제 컨트롤만 다시 받는다 */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* 가운데는 클릭을 통과시키고 머리글·바닥글만 다시 받는다 */
   pointer-events: none;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--fm-fg);
 }
 
-.fm-hud {
-  position: absolute;
-  left: 50%;
-  bottom: 20px;
-  transform: translateX(-50%);
+/* ─── 머리글 ───────────────────────────────────────────── */
+
+.fm-header {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 8px 18px;
-  border: 1px solid var(--fm-hud-border);
-  border-radius: 999px;
-  background: var(--fm-hud-bg);
-  color: var(--fm-hud-text);
-  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.14);
-  backdrop-filter: blur(6px);
-  font-size: 12px;
-  line-height: 1.2;
-  /* 글을 쓰는 동안에는 눈에 걸리지 않게 흐려 둔다 */
-  opacity: 0.35;
-  transition: opacity 0.4s ease;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--fm-border);
+  background: var(--fm-bg);
   pointer-events: auto;
 }
 
-.fm-overlay.fm-hud-awake .fm-hud,
-.fm-hud:hover {
-  opacity: 1;
+.fm-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fm-brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(245, 159, 10, 0.1);
+  color: var(--fm-accent);
+}
+
+.fm-brand-mark svg {
+  width: 20px;
+  height: 20px;
+}
+
+.fm-brand-title {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+.fm-brand-sub {
+  font-size: 12px;
+  color: var(--fm-muted);
+  line-height: 1.4;
+}
+
+.fm-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fm-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fm-muted);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.fm-icon-btn:hover {
+  background: var(--fm-hover);
+  color: var(--fm-fg);
+}
+
+.fm-icon-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* 꺼진 토글은 한눈에 구분되게 더 낮춘다 */
+.fm-icon-btn-off {
+  opacity: 0.45;
+}
+
+.fm-icon-btn-exit {
+  margin-left: 4px;
+}
+
+/* ─── 바닥글 ───────────────────────────────────────────── */
+
+.fm-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--fm-border);
+  background: var(--fm-bg);
+  color: var(--fm-muted);
+  font-size: 14px;
+  pointer-events: auto;
+}
+
+.fm-stats {
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 
 .fm-stat {
   display: flex;
-  align-items: baseline;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
+}
+
+.fm-stat-icon {
+  display: flex;
+}
+
+.fm-stat-icon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .fm-stat-value {
-  font-size: 15px;
-  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-.fm-stat-label {
-  color: var(--fm-hud-muted);
-}
+/* ─── 세션 목표 ─────────────────────────────────────────── */
 
 .fm-goal {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+.fm-goal-text {
+  font-variant-numeric: tabular-nums;
 }
 
 .fm-goal-bar {
-  width: 90px;
+  width: 110px;
   height: 5px;
   border-radius: 999px;
-  background: var(--fm-hud-border);
+  background: var(--fm-border);
   overflow: hidden;
 }
 
@@ -126,37 +223,12 @@ body.fm-active #scroll-container {
   width: 0;
   height: 100%;
   border-radius: 999px;
-  background: var(--accent-light);
+  background: var(--fm-accent);
   transition: width 0.3s ease;
-}
-
-.fm-goal-text {
-  color: var(--fm-hud-muted);
 }
 
 .fm-overlay.fm-goal-reached .fm-goal-fill {
   background: #10b981;
-}
-
-.fm-exit {
-  position: absolute;
-  top: 16px;
-  right: 20px;
-  padding: 6px 12px;
-  border: 1px solid var(--fm-hud-border);
-  border-radius: 999px;
-  background: var(--fm-hud-bg);
-  color: var(--fm-hud-muted);
-  font-size: 12px;
-  cursor: pointer;
-  opacity: 0.25;
-  transition: opacity 0.3s ease, color 0.3s ease;
-  pointer-events: auto;
-}
-
-.fm-exit:hover {
-  opacity: 1;
-  color: var(--fm-hud-text);
 }
 
 /* ─── 폭죽 캔버스 ─────────────────────────────────────────── */
@@ -169,9 +241,8 @@ body.fm-active #scroll-container {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fm-hud,
-  .fm-goal-fill,
-  .fm-exit {
+  .fm-icon-btn,
+  .fm-goal-fill {
     transition: none;
   }
 }

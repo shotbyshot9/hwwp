@@ -1,19 +1,23 @@
 /**
  * 집중 작업 모드 (focus mode).
  *
- * 배명훈 소설 속 워드프로세서에서 출발한 Writer's Homeground 의 착상을 whp 로 옮긴 것이다.
+ * 배명훈 소설 속 워드프로세서에서 출발한 Writer's Homeground 를 whp 로 옮긴 것이다.
+ * 화면 구성도 그 웹서비스를 따른다 — 따뜻한 무채색 배경, 위쪽에 제목과 토글 세 개가
+ * 놓인 얇은 머리글, 아래쪽에 단어·글자·시간을 세는 바닥글, 그 사이는 글만 남는다.
+ *
  * 두 겹으로 되어 있다.
  *
- * 1. 선(禪) 화면 — 메뉴바·도구상자·서식바·눈금자·상태바를 걷어내고 본문만 남긴다.
- *    타자기 스크롤을 켜면 캐럿이 화면 위쪽 40% 지점에 머물러 시선이 흔들리지 않는다.
+ * 1. 선(禪) 화면 — 메뉴바·도구상자·서식바·눈금자·상태바를 걷어내고 whp 자체 머리글과
+ *    바닥글로 갈아 끼운다. 타자기 스크롤을 켜면 캐럿이 화면 위쪽 40% 에 머문다.
  * 2. 응원 레이어 — 문장부호를 찍을 때마다 박수와 폭죽이 터진다. `CheerEngine` 담당.
  *
- * 이 모듈은 편집 엔진을 건드리지 않는다. 확정 입력은 eventBus 의 `text-inserted`
- * 이벤트로만 받고, 화면 상태는 body 의 `fm-active` 클래스로만 바꾼다.
+ * 편집 엔진은 건드리지 않는다. 확정 입력은 eventBus 의 `text-inserted` 로만 받고,
+ * 화면 상태는 body 의 `fm-active` 클래스로만 바꾼다.
  */
 
 import type { EventBus } from '@/core/event-bus';
 import { userSettings } from '@/core/user-settings';
+import { setThemeMode } from '@/core/theme';
 import { CheerEngine } from './cheer-engine';
 
 /** 캐럿을 붙잡아 둘 화면 높이 비율 (0=최상단, 1=최하단) */
@@ -25,31 +29,59 @@ const TYPEWRITER_TOLERANCE_PX = 8;
 /** 타자기 스크롤 점검 주기(ms) */
 const TYPEWRITER_INTERVAL_MS = 80;
 
-/** HUD 가 저절로 흐려지기까지의 무입력 시간(ms) */
-const HUD_IDLE_MS = 2500;
+/** 문서 전체를 다시 세기까지 기다리는 시간(ms). 타이핑 중 전수 집계를 피한다. */
+const COUNT_DEBOUNCE_MS = 400;
+
+/** 집중 모드가 바깥에서 받아야 하는 것들 */
+export interface FocusModeDeps {
+  eventBus: EventBus;
+  /** 편집 입력(숨은 textarea)에 포커스를 되돌린다 */
+  focusEditor: () => void;
+  /** 문서 전체의 단어수·글자수 */
+  getDocumentStats: () => { words: number; chars: number };
+}
+
+const ICONS = {
+  quill: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20s2-8 8-12 8-4 8-4-1 5-3 9-6 6-9 6H4z"/><path d="M4 20l5-5"/></svg>',
+  sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>',
+  sparkleOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M3 3l18 18"/></svg>',
+  sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>',
+  volume: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 010 7M19 5a10 10 0 010 14"/></svg>',
+  volumeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  words: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5h16v2M9 19h6M12 5v14"/></svg>',
+  chars: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19l6-14 6 14M7 14h6"/><path d="M18 19h2"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+};
 
 export class FocusMode {
   private active = false;
   private cheer = new CheerEngine();
   private overlay: HTMLElement | null = null;
-  private elapsedEl: HTMLElement | null = null;
+
+  private wordsEl: HTMLElement | null = null;
   private charsEl: HTMLElement | null = null;
-  private streakEl: HTMLElement | null = null;
+  private elapsedEl: HTMLElement | null = null;
   private goalWrapEl: HTMLElement | null = null;
-  private goalBarEl: HTMLElement | null = null;
+  private goalFillEl: HTMLElement | null = null;
   private goalTextEl: HTMLElement | null = null;
+  private confettiBtn: HTMLButtonElement | null = null;
+  private soundBtn: HTMLButtonElement | null = null;
+  private themeBtn: HTMLButtonElement | null = null;
 
   private startedAt = 0;
   private sessionChars = 0;
   private goalReached = false;
+  private docStats = { words: 0, chars: 0 };
 
   private tickTimer: number | null = null;
   private typewriterTimer: number | null = null;
-  private hudIdleTimer: number | null = null;
+  private countTimer: number | null = null;
   private unsubscribe: (() => void) | null = null;
   private keydownBound = (e: KeyboardEvent) => this.onKeyDown(e);
 
-  constructor(private eventBus: EventBus) {}
+  constructor(private deps: FocusModeDeps) {}
 
   isActive(): boolean {
     return this.active;
@@ -74,7 +106,7 @@ export class FocusMode {
     // 진입 자체가 사용자 제스처이므로 여기서 오디오 잠금을 푼다.
     this.cheer.unlock();
 
-    this.unsubscribe = this.eventBus.on('text-inserted', (...args: unknown[]) => {
+    this.unsubscribe = this.deps.eventBus.on('text-inserted', (...args: unknown[]) => {
       const text = typeof args[0] === 'string' ? args[0] : '';
       this.onTextInserted(text);
     });
@@ -82,12 +114,16 @@ export class FocusMode {
     document.addEventListener('keydown', this.keydownBound, true);
     this.tickTimer = window.setInterval(() => this.renderStats(), 1000);
     this.startTypewriter();
+    this.recountDocument();
     this.renderStats();
-    this.wakeHud();
 
     // 레이아웃이 바뀌었으니 뷰포트·캐럿을 다시 잡게 한다.
-    this.eventBus.emit('document-view-changed');
+    this.deps.eventBus.emit('document-view-changed');
     window.dispatchEvent(new Event('resize'));
+
+    // 메뉴 클릭으로 들어오면 포커스가 메뉴로 넘어가 있다 — 편집 입력으로 되돌린다.
+    // 이게 없으면 집중 모드에서 키보드 입력이 문서에 닿지 않는다.
+    this.restoreEditorFocus();
   }
 
   exit(): void {
@@ -101,30 +137,37 @@ export class FocusMode {
 
     if (this.tickTimer !== null) window.clearInterval(this.tickTimer);
     this.tickTimer = null;
+    if (this.countTimer !== null) window.clearTimeout(this.countTimer);
+    this.countTimer = null;
     this.stopTypewriter();
-    if (this.hudIdleTimer !== null) window.clearTimeout(this.hudIdleTimer);
-    this.hudIdleTimer = null;
 
     this.cheer.dispose();
     this.cheer = new CheerEngine();
 
     this.overlay?.remove();
     this.overlay = null;
-    this.elapsedEl = null;
+    document.documentElement.style.removeProperty('--fm-header-h');
+    document.documentElement.style.removeProperty('--fm-footer-h');
+    this.wordsEl = null;
     this.charsEl = null;
-    this.streakEl = null;
+    this.elapsedEl = null;
     this.goalWrapEl = null;
-    this.goalBarEl = null;
+    this.goalFillEl = null;
     this.goalTextEl = null;
+    this.confettiBtn = null;
+    this.soundBtn = null;
+    this.themeBtn = null;
 
     this.syncMenuState();
-    this.eventBus.emit('document-view-changed');
+    this.deps.eventBus.emit('document-view-changed');
     window.dispatchEvent(new Event('resize'));
+    this.restoreEditorFocus();
   }
 
-  /** 설정 변경 후 HUD 를 즉시 반영한다 */
+  /** 설정 변경 후 화면을 즉시 반영한다 */
   refresh(): void {
     if (!this.active) return;
+    this.syncToggleButtons();
     this.renderStats();
     this.startTypewriter();
   }
@@ -135,8 +178,8 @@ export class FocusMode {
     if (!this.active || !text) return;
     this.sessionChars += text.length;
     this.cheer.noteInserted(text);
+    this.scheduleRecount();
     this.renderStats();
-    this.wakeHud();
     this.checkGoal();
   }
 
@@ -155,9 +198,19 @@ export class FocusMode {
       e.preventDefault();
       e.stopPropagation();
       this.exit();
-      return;
     }
-    this.wakeHud();
+  }
+
+  /**
+   * 편집 입력으로 포커스를 되돌린다.
+   * 머리글 버튼은 클릭 즉시 포커스를 가져가므로 누를 때마다 불러야 한다.
+   */
+  private restoreEditorFocus(): void {
+    this.deps.focusEditor();
+    // 크롬을 숨기고 다시 그리는 과정에서 포커스가 다시 빠질 수 있어 한 번 더 잡는다.
+    // rAF 를 쓰면 안 된다 — 탭이 화면에 그려지지 않을 때 콜백이 실행되지 않아
+    // 포커스 복원이 통째로 건너뛰어진다. 타이머는 그런 상황에서도 돈다.
+    window.setTimeout(() => this.deps.focusEditor(), 0);
   }
 
   // ─── 화면 ────────────────────────────────────────────
@@ -167,12 +220,81 @@ export class FocusMode {
     overlay.id = 'focus-mode';
     overlay.className = 'fm-overlay';
 
-    const hud = document.createElement('div');
-    hud.className = 'fm-hud';
+    const header = this.buildHeader();
+    const footer = this.buildFooter();
+    overlay.append(header, footer);
+    document.body.appendChild(overlay);
+    this.overlay = overlay;
+    this.syncToggleButtons();
 
-    const chars = this.makeStat(hud, '글자');
-    const elapsed = this.makeStat(hud, '시간');
-    const streak = this.makeStat(hud, '연속');
+    // 머리글·바닥글 높이는 글꼴 설정에 따라 달라지므로 실측해서 넘긴다.
+    // 편집 영역이 이만큼 위아래를 비워야 문서가 크롬 뒤로 숨지 않는다.
+    const root = document.documentElement;
+    root.style.setProperty('--fm-header-h', `${header.offsetHeight}px`);
+    root.style.setProperty('--fm-footer-h', `${footer.offsetHeight}px`);
+  }
+
+  private buildHeader(): HTMLElement {
+    const header = document.createElement('header');
+    header.className = 'fm-header';
+
+    const brand = document.createElement('div');
+    brand.className = 'fm-brand';
+
+    const mark = document.createElement('div');
+    mark.className = 'fm-brand-mark';
+    mark.innerHTML = ICONS.quill;
+
+    const text = document.createElement('div');
+    const title = document.createElement('div');
+    title.className = 'fm-brand-title';
+    title.textContent = "Writer's Homeground";
+    const sub = document.createElement('div');
+    sub.className = 'fm-brand-sub';
+    sub.textContent = 'Your writing cheering squad';
+    text.append(title, sub);
+    brand.append(mark, text);
+
+    const actions = document.createElement('div');
+    actions.className = 'fm-actions';
+
+    this.confettiBtn = this.makeIconButton(actions, () => {
+      const next = !userSettings.getFocusSettings().confetti;
+      userSettings.updateFocusSettings({ confetti: next });
+      this.syncToggleButtons();
+    });
+    this.themeBtn = this.makeIconButton(actions, () => {
+      const next = userSettings.getThemeSettings().mode === 'dark' ? 'light' : 'dark';
+      setThemeMode(next);
+      this.deps.eventBus.emit('theme-changed', { mode: next });
+      this.deps.eventBus.emit('document-view-changed');
+      this.syncToggleButtons();
+    });
+    this.soundBtn = this.makeIconButton(actions, () => {
+      const next = !userSettings.getFocusSettings().sound;
+      userSettings.updateFocusSettings({ sound: next });
+      this.syncToggleButtons();
+    });
+
+    const exit = this.makeIconButton(actions, () => this.exit());
+    exit.classList.add('fm-icon-btn-exit');
+    exit.innerHTML = ICONS.close;
+    exit.title = '집중 모드 나가기 (Esc)';
+    exit.setAttribute('aria-label', '집중 모드 나가기');
+
+    header.append(brand, actions);
+    return header;
+  }
+
+  private buildFooter(): HTMLElement {
+    const footer = document.createElement('footer');
+    footer.className = 'fm-footer';
+
+    const stats = document.createElement('div');
+    stats.className = 'fm-stats';
+    this.wordsEl = this.makeStat(stats, ICONS.words, '단어');
+    this.charsEl = this.makeStat(stats, ICONS.chars, '자');
+    this.elapsedEl = this.makeStat(stats, ICONS.clock, '');
 
     const goalWrap = document.createElement('div');
     goalWrap.className = 'fm-goal';
@@ -183,72 +305,108 @@ export class FocusMode {
     goalBar.appendChild(goalFill);
     const goalText = document.createElement('span');
     goalText.className = 'fm-goal-text';
-    goalWrap.append(goalBar, goalText);
-    hud.appendChild(goalWrap);
+    goalWrap.append(goalText, goalBar);
 
-    const exit = document.createElement('button');
-    exit.type = 'button';
-    exit.className = 'fm-exit';
-    exit.textContent = '집중 모드 나가기 (Esc)';
-    exit.addEventListener('click', () => this.exit());
-
-    overlay.append(hud, exit);
-    document.body.appendChild(overlay);
-
-    this.overlay = overlay;
-    this.charsEl = chars;
-    this.elapsedEl = elapsed;
-    this.streakEl = streak;
+    footer.append(stats, goalWrap);
     this.goalWrapEl = goalWrap;
-    this.goalBarEl = goalFill;
+    this.goalFillEl = goalFill;
     this.goalTextEl = goalText;
+    return footer;
   }
 
-  private makeStat(parent: HTMLElement, label: string): HTMLElement {
+  private makeIconButton(parent: HTMLElement, onClick: () => void): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'fm-icon-btn';
+    btn.addEventListener('click', () => {
+      onClick();
+      // 버튼이 가져간 포커스를 문서로 돌려준다 (누른 뒤 바로 이어 쓸 수 있게).
+      this.restoreEditorFocus();
+    });
+    parent.appendChild(btn);
+    return btn;
+  }
+
+  private makeStat(parent: HTMLElement, icon: string, unit: string): HTMLElement {
     const wrap = document.createElement('div');
     wrap.className = 'fm-stat';
+    const iconEl = document.createElement('span');
+    iconEl.className = 'fm-stat-icon';
+    iconEl.innerHTML = icon;
     const value = document.createElement('span');
     value.className = 'fm-stat-value';
     value.textContent = '0';
-    const caption = document.createElement('span');
-    caption.className = 'fm-stat-label';
-    caption.textContent = label;
-    wrap.append(value, caption);
+    wrap.append(iconEl, value);
+    if (unit) {
+      const unitEl = document.createElement('span');
+      unitEl.className = 'fm-stat-unit';
+      unitEl.textContent = unit;
+      wrap.appendChild(unitEl);
+    }
     parent.appendChild(wrap);
     return value;
   }
 
+  private syncToggleButtons(): void {
+    const s = userSettings.getFocusSettings();
+    if (this.confettiBtn) {
+      this.confettiBtn.innerHTML = s.confetti ? ICONS.sparkle : ICONS.sparkleOff;
+      this.confettiBtn.title = s.confetti ? '폭죽 효과 끄기' : '폭죽 효과 켜기';
+      this.confettiBtn.setAttribute('aria-label', this.confettiBtn.title);
+      this.confettiBtn.classList.toggle('fm-icon-btn-off', !s.confetti);
+    }
+    if (this.soundBtn) {
+      this.soundBtn.innerHTML = s.sound ? ICONS.volume : ICONS.volumeOff;
+      this.soundBtn.title = s.sound ? '박수 효과음 끄기' : '박수 효과음 켜기';
+      this.soundBtn.setAttribute('aria-label', this.soundBtn.title);
+      this.soundBtn.classList.toggle('fm-icon-btn-off', !s.sound);
+    }
+    if (this.themeBtn) {
+      const dark = document.documentElement.getAttribute('data-theme-effective') === 'dark';
+      this.themeBtn.innerHTML = dark ? ICONS.sun : ICONS.moon;
+      this.themeBtn.title = dark ? '밝게' : '어둡게';
+      this.themeBtn.setAttribute('aria-label', this.themeBtn.title);
+    }
+  }
+
+  /** 문서 전체 집계는 비싸므로 입력이 잠잠해진 뒤 한 번만 돌린다 */
+  private scheduleRecount(): void {
+    if (this.countTimer !== null) window.clearTimeout(this.countTimer);
+    this.countTimer = window.setTimeout(() => {
+      this.countTimer = null;
+      this.recountDocument();
+      this.renderStats();
+    }, COUNT_DEBOUNCE_MS);
+  }
+
+  private recountDocument(): void {
+    try {
+      this.docStats = this.deps.getDocumentStats();
+    } catch {
+      // 문서가 아직 준비되지 않았거나 집계에 실패하면 직전 값을 유지한다.
+    }
+  }
+
   private renderStats(): void {
     if (!this.active) return;
-    if (this.charsEl) this.charsEl.textContent = this.sessionChars.toLocaleString('ko-KR');
+    if (this.wordsEl) this.wordsEl.textContent = this.docStats.words.toLocaleString('ko-KR');
+    if (this.charsEl) this.charsEl.textContent = this.docStats.chars.toLocaleString('ko-KR');
     if (this.elapsedEl) {
       const seconds = Math.floor((Date.now() - this.startedAt) / 1000);
       const mm = String(Math.floor(seconds / 60)).padStart(2, '0');
       const ss = String(seconds % 60).padStart(2, '0');
       this.elapsedEl.textContent = `${mm}:${ss}`;
     }
-    if (this.streakEl) this.streakEl.textContent = String(this.cheer.getStreak());
 
     const goal = userSettings.getFocusSettings().goalChars;
     if (this.goalWrapEl) this.goalWrapEl.style.display = goal > 0 ? '' : 'none';
     if (goal > 0) {
       const ratio = Math.min(1, this.sessionChars / goal);
-      if (this.goalBarEl) this.goalBarEl.style.width = `${(ratio * 100).toFixed(1)}%`;
+      if (this.goalFillEl) this.goalFillEl.style.width = `${(ratio * 100).toFixed(1)}%`;
       if (this.goalTextEl) {
-        this.goalTextEl.textContent = `목표 ${goal.toLocaleString('ko-KR')}자 · ${Math.round(ratio * 100)}%`;
+        this.goalTextEl.textContent = `${this.sessionChars.toLocaleString('ko-KR')} / ${goal.toLocaleString('ko-KR')}자`;
       }
     }
-  }
-
-  /** 입력이 있으면 HUD 를 잠깐 또렷하게 보여주고, 조용해지면 다시 흐린다 */
-  private wakeHud(): void {
-    const overlay = this.overlay;
-    if (!overlay) return;
-    overlay.classList.add('fm-hud-awake');
-    if (this.hudIdleTimer !== null) window.clearTimeout(this.hudIdleTimer);
-    this.hudIdleTimer = window.setTimeout(() => {
-      overlay.classList.remove('fm-hud-awake');
-    }, HUD_IDLE_MS);
   }
 
   private syncMenuState(): void {
