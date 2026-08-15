@@ -4,8 +4,9 @@
  * 문장부호를 하나 찍을 때마다 박수와 폭죽으로 응원한다. 쉬지 않고 이어 쓸수록
  * 반응이 커지고(스트릭), 2초 이상 멈추면 처음부터 다시 쌓인다.
  *
- * 효과음은 mp3 자산 대신 WebAudio 로 합성한다 — 배포물에 음원 라이선스를
- * 끌어들이지 않고, 오프라인에서도 항상 같은 소리가 난다.
+ * 효과음은 Writer's Homeground 가 쓰던 환호·박수 음원 15개(`/sounds/sfx-01~15.mp3`)를
+ * 그대로 가져와 쓴다. 직전에 난 소리는 연속으로 고르지 않는다.
+ * 음원을 못 불러오면 WebAudio 합성 박수로 물러난다(오프라인·자산 누락 대비).
  */
 
 import { userSettings, type FocusCheerLevel, type FocusSettings } from '@/core/user-settings';
@@ -28,6 +29,11 @@ const PRAISE_COOLDOWN_MS = 5000;
 
 /** 폭죽 최소 간격(ms) — 빠른 타이핑에서 화면이 뭉개지지 않게 한다 */
 const BURST_THROTTLE_MS = 250;
+
+/** 환호·박수 음원 개수 (`/sounds/sfx-01.mp3` ~ `sfx-15.mp3`) */
+const SFX_COUNT = 15;
+
+const sfxUrl = (n: number) => `/sounds/sfx-${String(n).padStart(2, '0')}.mp3`;
 
 const PRAISE: Record<string, string[]> = {
   ko: ['대단해!', '멋져!', '잘했어!', '최고야!', '화이팅!', '굉장해!'],
@@ -60,8 +66,15 @@ function prefersReducedMotion(): boolean {
 export class CheerEngine {
   private confetti = new ConfettiLayer();
   private audio: AudioContext | null = null;
-  /** 박수 합성용 화이트노이즈 버퍼 (한 번 만들어 재사용) */
+  /** 박수 합성용 화이트노이즈 버퍼 (음원 폴백에서만 쓴다) */
   private noise: AudioBuffer | null = null;
+
+  /** 미리 받아 둔 환호 음원. 재생은 여기서 복제해 쓴다 */
+  private sfx: HTMLAudioElement[] = [];
+  /** 한 번이라도 재생 가능해진 음원이 있는가 */
+  private sfxReady = false;
+  /** 직전에 고른 음원 번호 — 같은 소리가 연달아 나지 않게 한다 */
+  private lastSfx = -1;
 
   private lastInputAt = 0;
   private lastBurstAt = 0;
@@ -79,6 +92,23 @@ export class CheerEngine {
     const ctx = this.ensureAudio();
     if (ctx && ctx.state === 'suspended') {
       void ctx.resume().catch(() => { /* 자동재생 정책 거부 — 다음 제스처에서 재시도 */ });
+    }
+    this.preloadSfx();
+  }
+
+  /** 환호 음원을 미리 받아 둔다. 첫 응원에서 끊기지 않게 진입 시 호출한다. */
+  private preloadSfx(): void {
+    if (this.sfx.length > 0) return;
+    for (let i = 1; i <= SFX_COUNT; i++) {
+      const el = new Audio();
+      el.preload = 'auto';
+      el.addEventListener('canplaythrough', () => { this.sfxReady = true; }, { once: true });
+      el.addEventListener('error', () => {
+        console.warn(`[focus] 응원 음원을 불러오지 못했습니다: ${sfxUrl(i)}`);
+      }, { once: true });
+      el.src = sfxUrl(i);
+      el.load();
+      this.sfx.push(el);
     }
   }
 
@@ -116,7 +146,7 @@ export class CheerEngine {
       this.confetti.fireCelebration();
     }
     if (settings.sound && gain.sound > 0) {
-      this.playApplause(0.9 * gain.sound, true);
+      this.playCheer(0.9 * gain.sound, true);
       this.playChime(0.9 * gain.sound);
     }
   }
@@ -127,6 +157,13 @@ export class CheerEngine {
     void this.audio?.close().catch(() => { /* 이미 닫힘 */ });
     this.audio = null;
     this.noise = null;
+    for (const el of this.sfx) {
+      el.pause();
+      el.removeAttribute('src');
+    }
+    this.sfx = [];
+    this.sfxReady = false;
+    this.lastSfx = -1;
     this.burstCount = 0;
     this.charsSinceBurst = 0;
   }
@@ -146,7 +183,7 @@ export class CheerEngine {
     }
 
     if (settings.sound && gain.sound > 0) {
-      this.playApplause(volume * gain.sound, longRun);
+      this.playCheer(volume * gain.sound, longRun);
       if (longRun) this.playChime(volume * gain.sound);
     }
 
@@ -197,7 +234,34 @@ export class CheerEngine {
   }
 
   /**
-   * 박수 합성. 대역통과한 노이즈를 짧은 감쇠 포락선으로 여러 번 겹쳐
+   * 환호 한 번. 받아 둔 음원 중 직전과 겹치지 않는 것을 골라 튼다.
+   * 음원을 못 쓰면 합성 박수로 물러난다.
+   */
+  private playCheer(volume: number, big: boolean): void {
+    if (!this.sfxReady) {
+      this.playApplause(volume, big);
+      return;
+    }
+    let index = Math.floor(Math.random() * SFX_COUNT);
+    if (index === this.lastSfx) index = (index + 1) % SFX_COUNT;
+    this.lastSfx = index;
+
+    const source = this.sfx[index];
+    if (!source?.src) {
+      this.playApplause(volume, big);
+      return;
+    }
+    // 원본 엘리먼트를 그대로 쓰면 빠르게 이어 칠 때 앞 소리가 끊긴다 — 복제해서 겹쳐 튼다.
+    const el = new Audio(source.src);
+    el.volume = Math.min(Math.max(volume, 0), 1);
+    void el.play().catch(() => {
+      // 자동재생 정책에 막히면 합성 박수로 대신한다.
+      this.playApplause(volume, big);
+    });
+  }
+
+  /**
+   * 합성 박수 (음원 폴백). 대역통과한 노이즈를 짧은 감쇠 포락선으로 여러 번 겹쳐
    * 손뼉이 흩어져 터지는 소리를 만든다.
    */
   private playApplause(volume: number, big: boolean): void {

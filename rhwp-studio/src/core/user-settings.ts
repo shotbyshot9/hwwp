@@ -150,7 +150,10 @@ function defaultSettings(): AppSettings {
       recentFontCount: 3,
     },
     theme: {
-      mode: 'system',
+      // whp 기본은 어둡게 — 글 쓰는 화면이 기본값이라는 제품 결정이다.
+      // 저장된 선택이 있으면 그쪽이 이긴다. 바꾸려면 보기 → 테마.
+      // 이 값을 바꾸면 FOUC 방지용 public/theme-init.js 의 기본값도 함께 맞춰야 한다.
+      mode: 'dark',
     },
     dialog: {
       picturePropsKeepRatio: true,

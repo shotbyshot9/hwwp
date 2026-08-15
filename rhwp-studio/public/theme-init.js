@@ -7,13 +7,14 @@
 (() => {
   const root = document.documentElement;
   const isThemeMode = (value) => value === 'system' || value === 'light' || value === 'dark';
-  let mode = 'system';
+  // whp 기본은 어둡게. core/user-settings.ts 의 defaultSettings().theme.mode 와 같은 값이어야 한다.
+  let mode = 'dark';
   try {
     const settings = JSON.parse(localStorage.getItem('rhwp-settings') || '{}');
     const storedMode = settings && settings.theme && settings.theme.mode;
     if (isThemeMode(storedMode)) mode = storedMode;
   } catch {
-    mode = 'system';
+    mode = 'dark';
   }
   const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   const effective = mode === 'dark' || (mode === 'system' && prefersDark) ? 'dark' : 'light';

@@ -57,6 +57,31 @@ body.fm-active #scroll-content canvas {
   box-shadow: 0 8px 44px var(--fm-paper-glow);
 }
 
+/* ─── 어두운 편집 용지 ─────────────────────────────────────
+
+   렌더러는 용지를 늘 흰색으로 그린다(WYSIWYG 이라 당연하다). 어두운 화면에
+   흰 종이만 남으면 눈이 부시므로, 그려진 결과를 통째로 반전해 "어두운 종이 +
+   밝은 글씨"로 뒤집는다.
+
+   invert(a) 는 c' = c(1-2a) + a 다. a=0.93 이면 흰색(1) → 0.07 = #121212,
+   검정(0) → 0.93 = #EDEDED 이 되어 원본 사이트의 #0C0A09 / #F0ECE6 에 가깝다.
+   순수 반전(a=1)이면 종이가 완전한 검정이 돼 너무 세다.
+   hue-rotate(180deg) 는 색 글씨·형광펜의 색상을 제자리로 되돌린다.
+
+   #scroll-content 통째로 거는 이유: 캐럿과 조합 오버레이는 인라인 스타일로
+   검정이 박혀 있어 따로 고치기 번거롭다. 같이 뒤집히면 알아서 밝아진다.
+
+   한계 — 문서에 넣은 사진·그림도 함께 반전된다. 이미지를 제외하려면 렌더러가
+   용지·글자 색을 인자로 받아야 한다. 별도 작업으로 남긴다. */
+html[data-theme-effective='dark'] body.fm-active #scroll-content {
+  filter: invert(0.93) hue-rotate(180deg);
+}
+
+/* 필터 안쪽이라 밝은 그림자가 어두운 그림자로 뒤집힌다 */
+html[data-theme-effective='dark'] body.fm-active #scroll-content canvas {
+  box-shadow: 0 8px 44px rgba(255, 255, 255, 0.45);
+}
+
 /* ─── 오버레이 ─────────────────────────────────────────── */
 
 .fm-overlay {
