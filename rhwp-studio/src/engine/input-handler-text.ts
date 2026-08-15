@@ -220,6 +220,17 @@ function tryDeleteBodyFootnoteAtCursor(
   }
 }
 
+/**
+ * 문서에 "확정" 삽입된 텍스트를 알린다.
+ *
+ * 집중 작업 모드 응원 훅이 이 이벤트만 듣는다. IME 조합 중간 상태는 여기로 오지
+ * 않는다 — 조합은 compositionend 에서 확정 텍스트로 한 번만 통지한다.
+ */
+function emitTextInserted(handler: any, text: string): void {
+  if (!text) return;
+  handler.eventBus?.emit('text-inserted', text);
+}
+
 export function handleBackspace(this: any, pos: DocumentPosition, inCell: boolean): void {
   if (this.isFormMode?.() && !this.canEditCurrentFormField?.()) return;
   // 머리말/꼬리말 편집 모드
@@ -420,6 +431,7 @@ export function onCompositionEnd(this: any): void {
   // 조합 중 WASM 직접 호출로 이미 문서에 삽입된 텍스트를
   // Command로 기록하여 Undo 가능하게 한다.
   // [Task #2337] 머리말/꼬리말·각주 모드도 이제 기록한다(본문 스냅샷 undo 의 무언 파괴 차단).
+  let committedText = '';
   if (anchor && finalLength > 0) {
     if (this.cursor.isInHeaderFooter()) {
       // HF 는 신뢰할 텍스트 read 가 없어 getTextAt(본문 리더)을 쓸 수 없으므로 조합 텍스트
@@ -429,6 +441,7 @@ export function onCompositionEnd(this: any): void {
       if (composed) {
         const target = { sectionIdx: this.cursor.hfSectionIdx, isHeader: this.cursor.headerFooterMode === 'header', applyTo: this.cursor.hfApplyTo };
         this.executeOperation({ kind: 'record', command: new InsertTextInHeaderFooterCommand(target, this.cursor.hfParaIdx, anchor.charOffset, composed) });
+        committedText = composed;
       }
     } else if (this.cursor.isInFootnote()) {
       const composed = this._lastCompositionText || '';
@@ -438,15 +451,18 @@ export function onCompositionEnd(this: any): void {
           footnoteIndex: this.cursor.fnFootnoteIndex, pageNum: this.cursor.fnPageNum,
         };
         this.executeOperation({ kind: 'record', command: new InsertTextInFootnoteCommand(target, this.cursor.fnInnerParaIdx, anchor.charOffset, composed) });
+        committedText = composed;
       }
     } else {
       const insertedText = this.getTextAt(anchor, finalLength);
       if (insertedText) {
         // execute() 없이 히스토리에만 기록 (텍스트는 이미 문서에 있음)
         this.executeOperation({ kind: 'record', command: new InsertTextCommand(anchor, insertedText) });
+        committedText = insertedText;
       }
     }
   }
+  emitTextInserted(this, committedText);
 
   // 조합 종료 후 대기 중인 탐색 키 처리 (IME 조합 중 방향키 등)
   if (this._pendingNavAfterIME) {
@@ -631,6 +647,7 @@ export function onInput(this: any, e?: InputEvent): void {
       this.executeOperation({ kind: 'record', command: new InsertTextInHeaderFooterCommand(target, paraIdx, charOffset, text) });
       this.cursor.setHfCursorPosition(paraIdx, charOffset + text.length);
       this.afterEdit();
+      emitTextInserted(this, text);
     } catch (err) {
       console.error('[HF-input] insertTextInHeaderFooter 실패:', err);
     }
@@ -650,6 +667,7 @@ export function onInput(this: any, e?: InputEvent): void {
       this.executeOperation({ kind: 'record', command: new InsertTextInFootnoteCommand(target, innerParaIdx, charOffset, text) });
       this.cursor.setFnCursorPosition(innerParaIdx, charOffset + text.length);
       this.afterEdit();
+      emitTextInserted(this, text);
     } catch (err) {
       console.error('[FN-input] insertTextInFootnote 실패:', err);
     }
@@ -674,6 +692,7 @@ export function onInput(this: any, e?: InputEvent): void {
   }
   // [#4162] 선택 없이 지정한 서식은 예약(pending)돼 있다 — 있으면 삽입 커맨드에 실어 보낸다.
   this.executeOperation({ kind: 'command', command: new InsertTextCommand(insertPos, text, undefined, this.getPendingCharShape?.()) });
+  emitTextInserted(this, text);
   if (refreshClickHereGuide) {
     this.refreshClickHereAfterFirstInput?.();
   }

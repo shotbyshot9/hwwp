@@ -20,6 +20,7 @@ import { insertCommands } from '@/command/commands/insert';
 import { tableCommands } from '@/command/commands/table';
 import { pageCommands } from '@/command/commands/page';
 import { toolCommands } from '@/command/commands/tool';
+import { focusCommands, syncFocusMenu } from '@/command/commands/focus';
 import { installPwaFileHandling, type FileHandlingWindowLike } from '@/command/pwa-file-handling';
 import {
   isSupportedDocumentFileName,
@@ -186,6 +187,7 @@ registry.registerAll(insertCommands);
 registry.registerAll(tableCommands);
 registry.registerAll(pageCommands);
 registry.registerAll(toolCommands);
+registry.registerAll(focusCommands);
 
 // 상태 바 요소
 const sbMessage = () => document.getElementById('sb-message')!;
@@ -450,8 +452,10 @@ async function initialize(): Promise<void> {
     new MenuBar(document.getElementById('menu-bar')!, eventBus, dispatcher, registry, {
       onMenuOpen: (menuName) => {
         if (menuName === 'file') void renderRecentSubmenu();
+        if (menuName === 'view') syncFocusMenu();
       },
     });
+    syncFocusMenu();
 
     // 툴바 내 data-cmd 버튼 클릭 → 커맨드 디스패치
     document.querySelectorAll('.tb-btn[data-cmd]').forEach(btn => {

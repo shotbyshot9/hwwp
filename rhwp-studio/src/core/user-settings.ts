@@ -54,6 +54,25 @@ export interface ViewSettings {
   clipView: boolean;
 }
 
+/** 집중 작업 모드 응원 강도. quiet=소리 없음, normal=기본, festival=축제 */
+export type FocusCheerLevel = 'quiet' | 'normal' | 'festival';
+
+/** 집중 작업 모드 설정 */
+export interface FocusSettings {
+  /** 응원 강도 */
+  cheerLevel: FocusCheerLevel;
+  /** 폭죽 효과 사용 여부 */
+  confetti: boolean;
+  /** 박수 효과음 사용 여부 */
+  sound: boolean;
+  /** 음성 칭찬 사용 여부 */
+  praise: boolean;
+  /** 타자기 스크롤(캐럿을 화면 고정 높이에 유지) 사용 여부 */
+  typewriter: boolean;
+  /** 세션 목표 글자수. 0이면 목표 없음 */
+  goalChars: number;
+}
+
 /** 복구용 자동저장 설정 */
 export interface AutosaveSettings {
   /** 복구용 자동저장 사용 여부 */
@@ -73,6 +92,7 @@ export interface AppSettings {
   theme: ThemeSettings;
   dialog: DialogSettings;
   view: ViewSettings;
+  focus: FocusSettings;
   autosave: AutosaveSettings;
 }
 
@@ -141,6 +161,14 @@ function defaultSettings(): AppSettings {
       showControlCodes: false,
       clipView: true,
     },
+    focus: {
+      cheerLevel: 'normal',
+      confetti: true,
+      sound: true,
+      praise: true,
+      typewriter: true,
+      goalChars: 0,
+    },
     autosave: {
       recoveryEnabled: true,
       recoveryIntervalMinutes: 10,
@@ -152,6 +180,10 @@ function defaultSettings(): AppSettings {
 
 function normalizeThemeMode(value: unknown): ThemeMode {
   return value === 'light' || value === 'dark' || value === 'system' ? value : 'system';
+}
+
+function normalizeCheerLevel(value: unknown, fallback: FocusCheerLevel): FocusCheerLevel {
+  return value === 'quiet' || value === 'normal' || value === 'festival' ? value : fallback;
 }
 
 function normalizeBoolean(value: unknown, fallback: boolean): boolean {
@@ -181,6 +213,7 @@ class UserSettingsService {
       const defaults = defaultSettings();
       const dialog: Partial<DialogSettings> = parsed.dialog ?? {};
       const view: Partial<ViewSettings> = parsed.view ?? {};
+      const focus: Partial<FocusSettings> = parsed.focus ?? {};
       const autosave: Partial<AutosaveSettings> = parsed.autosave ?? {};
       return {
         version: parsed.version ?? defaults.version,
@@ -220,6 +253,16 @@ class UserSettingsService {
             view.clipView,
             defaults.view.clipView,
           ),
+        },
+        focus: {
+          ...defaults.focus,
+          ...focus,
+          cheerLevel: normalizeCheerLevel(focus.cheerLevel, defaults.focus.cheerLevel),
+          confetti: normalizeBoolean(focus.confetti, defaults.focus.confetti),
+          sound: normalizeBoolean(focus.sound, defaults.focus.sound),
+          praise: normalizeBoolean(focus.praise, defaults.focus.praise),
+          typewriter: normalizeBoolean(focus.typewriter, defaults.focus.typewriter),
+          goalChars: normalizeNumber(focus.goalChars, defaults.focus.goalChars, 0, 100000),
         },
         autosave: {
           ...defaults.autosave,
@@ -329,6 +372,17 @@ class UserSettingsService {
   /** 짤림보기(잘림 보기) 켜짐 설정. true = 오버플로 내용 표시(잘림 미적용). */
   setClipView(value: boolean): void {
     this.data.view.clipView = value;
+    this.save();
+  }
+
+  /** 집중 작업 모드 설정 반환 */
+  getFocusSettings(): FocusSettings {
+    return this.data.focus;
+  }
+
+  /** 집중 작업 모드 설정 부분 갱신 */
+  updateFocusSettings(partial: Partial<FocusSettings>): void {
+    Object.assign(this.data.focus, partial);
     this.save();
   }
 

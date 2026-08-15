@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>whp 집중 모드 응원 레이어 — 개발용</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <style>
+    /* 개발용 하네스 전용 스타일 — 배포물에 포함되지 않는다 */
+    body { margin: 0; font-family: system-ui, sans-serif; background: var(--doc-workspace); color: var(--ui-text); }
+    .lab-wrap { max-width: 760px; margin: 0 auto; padding: 32px 24px 64px; }
+    .lab-title { font-size: 15px; font-weight: 600; margin: 0 0 4px; }
+    .lab-hint { font-size: 13px; color: var(--ui-text-muted); margin: 0 0 20px; }
+    .lab-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; font-size: 13px; margin-bottom: 16px; }
+    .lab-controls label { display: flex; align-items: center; gap: 5px; }
+    #lab-editor {
+      width: 100%; min-height: 55vh; padding: 28px; box-sizing: border-box;
+      border: 1px solid var(--ui-border); border-radius: 4px;
+      background: var(--doc-paper); color: var(--ui-text);
+      font-size: 18px; line-height: 1.9; resize: vertical;
+    }
+    #lab-editor:focus { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+    .lab-stats { display: flex; gap: 18px; font-size: 13px; color: var(--ui-text-muted); margin-top: 10px; }
+    .lab-stats b { color: var(--ui-text); font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <div class="lab-wrap">
+    <p class="lab-title">whp 집중 작업 모드 — 응원 레이어 확인용</p>
+    <p class="lab-hint">
+      아래에 글을 써 보세요. 문장부호(<code>. ! ? , ; :</code>)를 찍을 때마다 박수와 폭죽이 터집니다.
+      쉬지 않고 이어 쓸수록 커지고, 2초 이상 멈추면 처음부터 다시 쌓입니다.
+      문장부호 없이 50자를 넘기면 큰 축포가 터집니다.
+    </p>
+
+    <div class="lab-controls">
+      <label>응원 강도
+        <select id="lab-level">
+          <option value="quiet">조용히</option>
+          <option value="normal">기본</option>
+          <option value="festival">축제</option>
+        </select>
+      </label>
+      <label><input type="checkbox" data-setting="confetti" /> 폭죽</label>
+      <label><input type="checkbox" data-setting="sound" /> 박수 효과음</label>
+      <label><input type="checkbox" data-setting="praise" /> 음성 칭찬</label>
+      <button type="button" id="lab-celebrate">축포 테스트</button>
+    </div>
+
+    <textarea id="lab-editor" placeholder="여기에 써 보세요. 마침표를 찍으면 응원이 시작됩니다."></textarea>
+
+    <div class="lab-stats">
+      <span>연속 응원 <b id="lab-streak">0</b>회</span>
+      <span>입력 <b id="lab-chars">0</b>자</span>
+    </div>
+  </div>
+  <script type="module" src="/src/focus/focus-lab.ts"></script>
+</body>
+</html>

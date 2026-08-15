@@ -1,0 +1,168 @@
+/* ================================================================
+   집중 작업 모드 (focus mode) — 접두어 fm-
+   ================================================================ */
+
+/* ─── 선(禪) 화면: 본문만 남기고 크롬을 걷어낸다 ─────────────── */
+
+body.fm-active #studio-header,
+body.fm-active #status-bar,
+body.fm-active #ruler-corner,
+body.fm-active #h-ruler,
+body.fm-active #v-ruler {
+  display: none;
+}
+
+/* 눈금자 트랙(20px)을 없애고 스크롤 영역이 전체를 차지하게 한다 */
+body.fm-active #editor-area {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+/* 종이 주변을 어둡게 낮춰 본문이 떠 보이게 한다 */
+body.fm-active #scroll-container {
+  background: var(--fm-workspace);
+}
+
+body.fm-active #scroll-content canvas {
+  box-shadow: 0 6px 40px var(--fm-paper-glow);
+}
+
+:root {
+  --fm-workspace: #d5d7db;
+  --fm-paper-glow: rgba(0, 0, 0, 0.22);
+  --fm-hud-bg: rgba(255, 255, 255, 0.9);
+  --fm-hud-border: rgba(0, 0, 0, 0.1);
+  --fm-hud-text: #333333;
+  --fm-hud-muted: #777777;
+}
+
+:root[data-theme-effective='dark'] {
+  --fm-workspace: #17181c;
+  --fm-paper-glow: rgba(0, 0, 0, 0.65);
+  --fm-hud-bg: rgba(32, 34, 40, 0.9);
+  --fm-hud-border: rgba(255, 255, 255, 0.12);
+  --fm-hud-text: #e8e8e8;
+  --fm-hud-muted: #9a9a9a;
+}
+
+/* ─── HUD ────────────────────────────────────────────────── */
+
+.fm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 8000;
+  /* 오버레이 자체는 클릭을 통과시키고, 실제 컨트롤만 다시 받는다 */
+  pointer-events: none;
+}
+
+.fm-hud {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 18px;
+  border: 1px solid var(--fm-hud-border);
+  border-radius: 999px;
+  background: var(--fm-hud-bg);
+  color: var(--fm-hud-text);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(6px);
+  font-size: 12px;
+  line-height: 1.2;
+  /* 글을 쓰는 동안에는 눈에 걸리지 않게 흐려 둔다 */
+  opacity: 0.35;
+  transition: opacity 0.4s ease;
+  pointer-events: auto;
+}
+
+.fm-overlay.fm-hud-awake .fm-hud,
+.fm-hud:hover {
+  opacity: 1;
+}
+
+.fm-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.fm-stat-value {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.fm-stat-label {
+  color: var(--fm-hud-muted);
+}
+
+.fm-goal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fm-goal-bar {
+  width: 90px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--fm-hud-border);
+  overflow: hidden;
+}
+
+.fm-goal-fill {
+  width: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent-light);
+  transition: width 0.3s ease;
+}
+
+.fm-goal-text {
+  color: var(--fm-hud-muted);
+}
+
+.fm-overlay.fm-goal-reached .fm-goal-fill {
+  background: #10b981;
+}
+
+.fm-exit {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  padding: 6px 12px;
+  border: 1px solid var(--fm-hud-border);
+  border-radius: 999px;
+  background: var(--fm-hud-bg);
+  color: var(--fm-hud-muted);
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.25;
+  transition: opacity 0.3s ease, color 0.3s ease;
+  pointer-events: auto;
+}
+
+.fm-exit:hover {
+  opacity: 1;
+  color: var(--fm-hud-text);
+}
+
+/* ─── 폭죽 캔버스 ─────────────────────────────────────────── */
+
+.fm-confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fm-hud,
+  .fm-goal-fill,
+  .fm-exit {
+    transition: none;
+  }
+}

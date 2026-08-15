@@ -44,13 +44,13 @@ export class AboutDialog extends ModalDialog {
     // 제품 영문명
     const titleEn = document.createElement('div');
     titleEn.className = 'about-product-name';
-    titleEn.textContent = 'HWP/HWPX Compatible Module for Rust';
+    titleEn.textContent = "whp — Writer's Homeground Processor";
     body.appendChild(titleEn);
 
     // 제품 한글명
     const titleKo = document.createElement('div');
     titleKo.className = 'about-product-name-ko';
-    titleKo.textContent = 'HWP 오픈소스 편집';
+    titleKo.textContent = '작가를 위한 HWP 오픈소스 편집기';
     body.appendChild(titleKo);
 
     // 버전
@@ -102,7 +102,8 @@ export class AboutDialog extends ModalDialog {
     // 저작권
     const copyright = document.createElement('div');
     copyright.className = 'about-copyright';
-    copyright.textContent = '\u00A9 2026 rhwp: Edward Kim';
+    // whp \uB294 rhwp(MIT) \uD30C\uC0DD\uBB3C\uC774\uBBC0\uB85C \uC6D0\uC800\uC791\uAD8C \uACE0\uC9C0\uB97C \uD568\uAED8 \uB0A8\uAE34\uB2E4.
+    copyright.textContent = '\u00A9 2026 whp \u00B7 based on rhwp (MIT) \u00A9 2025-2026 Edward Kim';
     body.appendChild(copyright);
 
     return body;
