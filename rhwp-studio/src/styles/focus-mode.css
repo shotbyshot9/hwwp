@@ -27,6 +27,15 @@ body.fm-active #scroll-content canvas {
   box-shadow: 0 6px 40px var(--fm-paper-glow);
 }
 
+/* 문서 끝에서도 캐럿이 고정 지점(위쪽 40%)에 머물 수 있도록 스크롤 여백을 준다.
+   이 여백이 없으면 마지막 문단에서 스크롤이 바닥에 걸려 캐럿이 화면 아래로 밀린다.
+   여백은 스크롤 컨테이너에 준다 — #scroll-content 는 가상 스크롤이 높이를 직접
+   지정하고 border-box 라 padding 이 흡수돼 스크롤 범위가 늘지 않는다.
+   padding-bottom 은 페이지 canvas 를 밀지 않으므로 좌표 계산에도 영향이 없다. */
+body.fm-active #scroll-container {
+  padding-bottom: 60vh;
+}
+
 :root {
   --fm-workspace: #d5d7db;
   --fm-paper-glow: rgba(0, 0, 0, 0.22);
