@@ -225,15 +225,23 @@ const autosave = new AutosaveController({
   },
 });
 
-// 문서가 바뀌면 자동 저장 타이머를 건드린다. 드라이브 미연결이면 상태만 바뀐다.
-eventBus.on('document-dirty-changed', (change) => {
-  const dirty = (change as { dirty?: boolean } | undefined)?.dirty === true;
-  if (dirty) autosave.markChanged();
-});
+// 편집이 일어날 때마다 자동 저장 타이머를 건드린다.
+//
+// document-dirty-changed 를 쓰면 안 된다 — 그 이벤트는 false→true 전환에서만
+// 발행되므로, 첫 저장이 실패(예: 드라이브 미연결)한 뒤로는 아무리 더 써도
+// 다시 불리지 않아 저장이 영영 재시도되지 않는다.
+eventBus.on('document-mutated', () => autosave.markChanged());
 
-// 계정이 바뀌면 폴더 id 를 다시 찾아야 한다.
 driveAuth.onChange(() => {
-  if (!driveAuth.isConnected()) {
+  if (driveAuth.isConnected()) {
+    // 연결하자마자 WHP 폴더를 만들어 둔다 — 사용자가 드라이브에서 바로 확인할 수 있게.
+    void driveClient.ensureFolder().catch((error) => {
+      console.warn('[drive] WHP 폴더 준비 실패:', error);
+    });
+    // 연결 전에 쓴 글이 남아 있으면 지금 올린다.
+    autosave.retryIfPending();
+  } else {
+    // 계정이 바뀌면 폴더 id 를 다시 찾아야 한다.
     driveClient.reset();
     autosave.attach(null);
   }

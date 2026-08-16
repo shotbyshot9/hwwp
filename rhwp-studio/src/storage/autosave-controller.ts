@@ -117,6 +117,17 @@ export class AutosaveController {
     await this.save();
   }
 
+  /**
+   * 저장을 다시 시도한다.
+   *
+   * 저장소가 준비되지 않아 건너뛴 변경이 남아 있을 때 부른다 — 드라이브를 방금
+   * 연결했거나 네트워크가 돌아온 순간. 바뀐 게 없으면 아무 일도 하지 않는다.
+   */
+  retryIfPending(): void {
+    if (this.stopped || !this.dirty) return;
+    this.schedule();
+  }
+
   dispose(): void {
     this.stopped = true;
     this.cancelTimer();
