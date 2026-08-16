@@ -1,49 +1,66 @@
 /* ================================================================
    제목 줄 (#title-bar) — 접두어 tbar-
 
-   문서 이름·저장 상태·저장소 연결을 한 줄에 둔다.
+   구글 독스의 제목 줄을 기준으로 삼는다. 제목은 큼직한 글자로 두고, 마우스를
+   올리면 상자가 드러나 "고칠 수 있는 곳"임을 알린다.
    ================================================================ */
 
 #title-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 14px;
+  gap: 8px;
+  padding: 8px 16px;
   background: var(--ui-bg-light);
   border-bottom: 1px solid var(--ui-border-subtle);
   flex-shrink: 0;
 }
 
+/* 문서 아이콘 자리 — 제품 표식을 겸한다 */
 .tbar-brand {
-  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--accent-primary);
+  color: #ffffff;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: var(--accent-light);
   user-select: none;
 }
 
-/* 제목은 입력칸이지만 평소에는 글자처럼 보이게 한다 (구글 독스 방식) */
+/* ─── 제목 입력칸 ───────────────────────────────────────
+
+   평소에는 글자처럼 보이되, 호버하면 상자가 드러나 편집 가능함을 알린다.
+   폭은 글자 수에 맞춰 늘리지만 최소 폭을 크게 잡는다 — 짧은 제목일 때
+   입력칸인지 알아볼 수 없던 문제를 막는다. */
 .tbar-title {
-  min-width: 6ch;
-  padding: 4px 8px;
+  min-width: 200px;
+  padding: 5px 10px;
   border: 1px solid transparent;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text);
   font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.3;
   transition: background-color 0.12s ease, border-color 0.12s ease;
 }
 
-.tbar-title:hover {
-  border-color: var(--ui-border-subtle);
+.tbar-title:hover:not(:disabled) {
+  background: var(--ui-hover);
+  border-color: var(--ui-border);
 }
 
 .tbar-title:focus {
   outline: none;
   background: var(--ui-surface);
-  border-color: var(--focus-ring);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--ui-focus-soft);
 }
 
 /* 문서가 없으면 고칠 이름도 없다 */
@@ -52,14 +69,11 @@
   cursor: default;
 }
 
-.tbar-title:disabled:hover {
-  border-color: transparent;
-}
-
 .tbar-save-state {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
   color: var(--color-text-hint);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tbar-save-error {
@@ -68,27 +82,45 @@
 
 .tbar-spacer {
   flex: 1;
+  min-width: 12px;
 }
 
+/* ─── 구글 드라이브 연결 버튼 ─────────────────────────────
+
+   연결 전에는 채운 버튼으로 눈에 띄게 둔다 — 이 제품의 핵심 동선이라
+   처음 들어온 사용자가 가장 먼저 보아야 한다.
+   연결 뒤에는 테두리만 남긴 조용한 상태로 물러난다. */
 .tbar-drive {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  max-width: 240px;
-  padding: 5px 12px;
-  border: 1px solid var(--ui-border-light);
+  gap: 7px;
+  max-width: 260px;
+  padding: 7px 14px;
+  border: 1px solid var(--accent-primary);
   border-radius: 999px;
-  background: var(--ui-surface);
-  color: var(--color-text-secondary);
+  background: var(--accent-primary);
+  color: var(--ui-text-on-accent);
   font-family: inherit;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
+  font-weight: 600;
   cursor: pointer;
+  flex-shrink: 0;
   transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
 .tbar-drive:hover {
-  background: var(--ui-hover);
-  color: var(--color-text);
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+.tbar-drive-icon {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.tbar-drive-icon svg {
+  width: 15px;
+  height: 15px;
 }
 
 .tbar-drive-label {
@@ -97,19 +129,34 @@
   white-space: nowrap;
 }
 
-/* 연결된 상태는 점 하나로 표시한다 — 글자를 늘리지 않고 상태만 알린다 */
-.tbar-drive-on {
-  border-color: var(--accent-light);
+/* 연결된 상태 — 채움을 걷고 초록 점으로 알린다.
+
+   선택자를 `.tbar-drive.tbar-drive-on` 으로 겹쳐 쓴다. `.tbar-drive-on` 하나로는
+   `.tbar-drive:hover`(클래스+의사클래스)에 특이도로 밀려 연결 뒤에도 채운 버튼이
+   남는다. */
+.tbar-drive.tbar-drive-on {
+  background: var(--ui-surface);
+  border-color: var(--ui-border);
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.tbar-drive.tbar-drive-on:hover {
+  background: var(--ui-hover);
+  border-color: var(--ui-border-strong);
   color: var(--color-text);
 }
 
-.tbar-drive-on::before {
+.tbar-drive-on .tbar-drive-icon::after {
   content: '';
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #10b981;
-  flex-shrink: 0;
+}
+
+.tbar-drive-on .tbar-drive-icon svg {
+  display: none;
 }
 
 /* 집중 모드에서는 제목 줄도 함께 걷어낸다 */
@@ -117,12 +164,21 @@ body.fm-active #title-bar {
   display: none;
 }
 
-@media (max-width: 767px) {
-  .tbar-brand,
+@media (max-width: 900px) {
+  .tbar-title {
+    min-width: 120px;
+    font-size: 16px;
+  }
   .tbar-save-state {
     display: none;
   }
+}
+
+@media (max-width: 640px) {
+  .tbar-drive-label {
+    display: none;
+  }
   .tbar-drive {
-    max-width: 140px;
+    padding: 7px 10px;
   }
 }

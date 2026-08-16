@@ -107,7 +107,8 @@ export class TitleBar {
   private resizeTitle(): void {
     const text = this.titleEl.value || DEFAULT_DOC_TITLE;
     // 한글은 폭이 넓어 글자 수만으로는 모자란다 — 대략치로 잡고 상한을 둔다.
-    const width = Math.min(Math.max(text.length + 2, 6), 40);
+    // 최소 폭은 CSS(min-width)가 정한다 — 짧은 제목에서 입력칸으로 보이지 않던 문제.
+    const width = Math.min(text.length + 2, 40);
     this.titleEl.style.width = `${width}ch`;
   }
 
