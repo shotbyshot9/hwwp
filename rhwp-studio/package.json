@@ -2,6 +2,10 @@
   "name": "rhwp-studio",
   "version": "0.8.4",
   "license": "MIT",
+  "author": "Jiwon Ryu",
+  "contributors": [
+    "Edward Kim (rhwp — upstream document engine)"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",

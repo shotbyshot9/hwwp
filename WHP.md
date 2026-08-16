@@ -6,6 +6,8 @@
 **P**rocessor다. 문서 엔진(HWP/HWPX 파싱·렌더링·편집)은 rhwp 그대로 쓰고, 그 위에
 **작가를 위한 집중 작업 모드**를 얹는다.
 
+만든 사람: **Jiwon Ryu**
+
 ## 출신
 
 - 문서 엔진: [rhwp](https://github.com/edwardkim/rhwp) — MIT, © 2025-2026 Edward Kim
@@ -15,6 +17,15 @@
 
 rhwp 는 MIT 라이선스이므로 파생·개명·재배포가 자유롭다. 원저작권 고지는 `LICENSE`와
 제품 정보 대화상자에 그대로 남긴다.
+
+## 저작권
+
+- WHP (이 파생물의 변경분) — © 2026 Jiwon Ryu
+- rhwp (문서 엔진 원본) — © 2025-2026 Edward Kim, MIT
+
+두 고지 모두 `LICENSE` 와 제품 정보 대화상자에 함께 표시한다. MIT 는 원저작권 고지를
+사본에 남길 것을 요구하므로 rhwp 줄은 지울 수 없고, 그와 별개로 WHP 의 변경분에 대한
+저작권은 Jiwon Ryu 에게 있다.
 
 ## 집중 작업 모드
 

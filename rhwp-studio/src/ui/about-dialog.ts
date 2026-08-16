@@ -59,6 +59,12 @@ export class AboutDialog extends ModalDialog {
     version.textContent = `Version ${__APP_VERSION__}`;
     body.appendChild(version);
 
+    // 만든 사람
+    const author = document.createElement('div');
+    author.className = 'about-author';
+    author.textContent = '만든 사람: Jiwon Ryu';
+    body.appendChild(author);
+
     // 기술 스택
     const tech = document.createElement('div');
     tech.className = 'about-tech';
@@ -99,13 +105,20 @@ export class AboutDialog extends ModalDialog {
       'WASM 번들에 포함되는 핵심 크레이트만 표시합니다. 전체 목록은 THIRD_PARTY_LICENSES.md를 참조하세요.';
     body.appendChild(licenseNote);
 
-    // 저작권
+    // 저작권 — WHP 자체 고지와 원본(rhwp) 고지를 줄을 나눠 둔다.
+    // 한 줄에 섞으면 누구의 저작권인지 흐려진다.
     const copyright = document.createElement('div');
     copyright.className = 'about-copyright';
-    // WHP \uB294 rhwp(MIT) \uD30C\uC0DD\uBB3C\uC774\uB2E4. MIT \uB294 \uC800\uC791\uAD8C \uACE0\uC9C0\uC640 \uD5C8\uAC00 \uBB38\uAD6C\uB97C \uC0AC\uBCF8\uC5D0 \uD568\uAED8
-    // \uB0A8\uAE38 \uAC83\uC744 \uC694\uAD6C\uD558\uB294\uB370, \uC6F9\uC571 \uC0AC\uC6A9\uC790\uB294 LICENSE \uD30C\uC77C\uC744 \uBC1B\uC9C0 \uC54A\uC73C\uBBC0\uB85C \uC5EC\uAE30\uC5D0 \uB454\uB2E4.
-    copyright.textContent = '\u00A9 2026 WHP \u00B7 based on rhwp (MIT) \u00A9 2025-2026 Edward Kim';
+    copyright.textContent = '© 2026 WHP — Jiwon Ryu';
     body.appendChild(copyright);
+
+    // 원본 고지. WHP 는 rhwp(MIT)를 수정한 파생물이다. MIT 는 저작권 고지와 허가
+    // 문구를 사본에 함께 남길 것을 요구하는데, 웹앱 사용자는 LICENSE 파일을 받지
+    // 않으므로 여기에 둔다. "modified" 표기는 파생물임을 분명히 하기 위한 것이다.
+    const upstream = document.createElement('div');
+    upstream.className = 'about-copyright';
+    upstream.textContent = 'Based on rhwp (MIT) © 2025-2026 Edward Kim — modified';
+    body.appendChild(upstream);
 
     return body;
   }

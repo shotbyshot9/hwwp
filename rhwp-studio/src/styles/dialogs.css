@@ -456,6 +456,12 @@
   margin-bottom: 12px;
 }
 
+.about-author {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
 .about-tech {
   font-size: var(--font-size-sm);
   color: var(--color-text-hint);
@@ -508,6 +514,7 @@
 .about-copyright {
   font-size: var(--font-size-sm);
   color: var(--color-text-placeholder);
+  line-height: 1.5;
 }
 
 /* ================================================================

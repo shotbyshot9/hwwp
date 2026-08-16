@@ -1,6 +1,11 @@
 MIT License
 
-Copyright (c) 2025-2026 Edward Kim
+Copyright (c) 2026 Jiwon Ryu (WHP — Writer's Homeground Processor)
+Copyright (c) 2025-2026 Edward Kim (rhwp)
+
+WHP is a derivative work of rhwp (https://github.com/edwardkim/rhwp).
+Modifications by Jiwon Ryu are covered by the first copyright line above;
+the original rhwp notice is retained as required by the MIT License.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
