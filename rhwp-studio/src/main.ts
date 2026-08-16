@@ -23,6 +23,9 @@ import { toolCommands } from '@/command/commands/tool';
 import { focusCommands, syncFocusMenu } from '@/command/commands/focus';
 import { TitleBar } from '@/ui/title-bar';
 import { GisDriveAuth } from '@/storage/drive-auth.ts';
+import { DriveClient } from '@/storage/drive-client.ts';
+import { DriveBackend } from '@/storage/drive-backend.ts';
+import { AutosaveController } from '@/storage/autosave-controller.ts';
 import { installPwaFileHandling, type FileHandlingWindowLike } from '@/command/pwa-file-handling';
 import {
   isSupportedDocumentFileName,
@@ -203,10 +206,37 @@ const titleBar = new TitleBar({
   auth: driveAuth,
 });
 
-// 저장 상태를 제목 줄에 흘려 준다. 자동 저장기가 붙기 전까지는 변경 여부만 보인다.
+// 드라이브 저장소와 자동 저장기.
+const driveClient = new DriveClient(() => driveAuth.getValidToken());
+const driveBackend = new DriveBackend(driveClient, () => driveAuth.isConnected());
+const autosave = new AutosaveController({
+  getBackend: () => (driveAuth.isConnected() ? driveBackend : null),
+  // byte-only exportHwp 는 autosave 용으로 열린 표면이다 (save-document-format.ts 주석).
+  serialize: () => new Blob([wasm.exportHwp() as BlobPart], { type: 'application/x-hwp' }),
+  getFileName: () => (wasm.pageCount > 0 ? wasm.fileName : '새 문서.hwp'),
+  onRenamed: (name) => {
+    wasm.fileName = name;
+    titleBar.syncTitle();
+  },
+  onState: (state) => {
+    titleBar.setSaveState(state);
+    // 드라이브에 올라갔으면 앱의 변경 표시도 내린다 (창 닫기 경고가 남지 않도록).
+    if (state.kind === 'saved') documentState.markClean('drive-autosave');
+  },
+});
+
+// 문서가 바뀌면 자동 저장 타이머를 건드린다. 드라이브 미연결이면 상태만 바뀐다.
 eventBus.on('document-dirty-changed', (change) => {
   const dirty = (change as { dirty?: boolean } | undefined)?.dirty === true;
-  titleBar.setSaveState(dirty ? { kind: 'dirty' } : { kind: 'idle' });
+  if (dirty) autosave.markChanged();
+});
+
+// 계정이 바뀌면 폴더 id 를 다시 찾아야 한다.
+driveAuth.onChange(() => {
+  if (!driveAuth.isConnected()) {
+    driveClient.reset();
+    autosave.attach(null);
+  }
 });
 
 // 상태 바 요소
@@ -965,6 +995,10 @@ async function initializeDocument(
     // 제목 줄은 여기서 직접 갱신한다. 로드 완료를 알리는 전용 이벤트가 없고
     // document-changed 는 페이지 수가 잡히기 전에도 날아와 이름을 놓친다.
     titleBar.syncTitle();
+
+    // 새로 연 문서는 아직 드라이브의 어떤 파일도 아니다 — 첫 저장에서 새로 만든다.
+    // (드라이브에서 연 문서는 그쪽 경로가 ref 를 붙여 준다.)
+    autosave.attach(null);
   } catch (error) {
     console.error('[initDoc] 오류:', error);
     if (window.innerWidth < 768) alert(`초기화 오류: ${error}`);
