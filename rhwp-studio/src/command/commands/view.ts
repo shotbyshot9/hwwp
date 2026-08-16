@@ -11,17 +11,24 @@ import {
 } from '../../view/grid-settings';
 import { HWPUNIT_PER_MM } from '../../core/hwp-constants';
 import { calculateFitPageZoom, calculateFitWidthZoom } from '../../view/zoom-fit';
+import { toRenderZoom } from '../../core/display-calibration.ts';
+import { DisplayCalibrationDialog } from '../../ui/display-calibration-dialog';
 
 const PX_TO_MM = 25.4 / 96;
 
-/** 배율 고정값 커맨드 생성 헬퍼 */
+/**
+ * 배율 고정값 커맨드 생성 헬퍼.
+ *
+ * 사용자가 고른 배율은 "용지 실물 대비" 비율이다 — 100% 면 종이와 1:1.
+ * 화면 보정값을 곱해야 실제 렌더 배율이 된다. 보정 전이면 곱이 1 이라 종전과 같다.
+ */
 function zoomLevel(pct: number, shortcutLabel?: string): CommandDef {
   return {
     id: `view:zoom-${pct}`,
     label: `${pct}%`,
     shortcutLabel,
     execute(services) {
-      services.getViewportManager()?.setZoom(pct / 100);
+      services.getViewportManager()?.setZoom(toRenderZoom(pct / 100));
     },
   };
 }
@@ -192,6 +199,17 @@ export const viewCommands: CommandDef[] = [
       const pi = services.wasm.getPageInfo(0);
       // pi.width는 이미 px 단위 (96dpi 기준)
       vm.setZoom(calculateFitWidthZoom(container.clientWidth, pi.width));
+    },
+  },
+  {
+    id: 'view:calibrate-display',
+    label: '화면 보정…',
+    execute(services) {
+      new DisplayCalibrationDialog(() => {
+        // 보정이 바뀌면 지금 배율의 "실물 대비" 의미도 바뀐다 — 100% 로 다시 맞춘다.
+        services.getViewportManager()?.setZoom(toRenderZoom(1));
+        services.eventBus.emit('document-view-changed');
+      }).show();
     },
   },
   zoomLevel(50),

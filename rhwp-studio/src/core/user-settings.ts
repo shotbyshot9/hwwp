@@ -52,6 +52,14 @@ export interface ViewSettings {
   showControlCodes: boolean;
   /** 짤림보기(잘림 보기) 켜짐 여부. true = 편집용지 경계 밖 오버플로 내용을 보임(잘림 미적용). */
   clipView: boolean;
+  /**
+   * 화면 보정값 — 1mm 가 화면에서 몇 CSS px 인가.
+   *
+   * 배율 100% 를 용지 실물 크기와 맞추는 데 쓴다. 브라우저는 화면의 물리적
+   * 크기를 알 수 없어 사용자가 한 번 재 줘야 한다. 재기 전에는 null 이고,
+   * 그때는 CSS 기본값(96dpi)으로 동작한다.
+   */
+  pxPerMm: number | null;
 }
 
 /** 집중 작업 모드 응원 강도. quiet=소리 없음, normal=기본, festival=축제 */
@@ -169,6 +177,7 @@ function defaultSettings(): AppSettings {
       showParagraphMarks: false,
       showControlCodes: false,
       clipView: true,
+      pxPerMm: null,
     },
     focus: {
       // 집중 모드는 어둡게가 기본 — 글 쓰는 화면이다.
@@ -265,6 +274,10 @@ class UserSettingsService {
             view.clipView,
             defaults.view.clipView,
           ),
+          // 보정 전에는 null 이다 — 0 이나 이상한 값이 들어오면 보정 없음으로 되돌린다.
+          pxPerMm: typeof view.pxPerMm === 'number' && Number.isFinite(view.pxPerMm) && view.pxPerMm > 0
+            ? view.pxPerMm
+            : null,
         },
         focus: {
           ...defaults.focus,
@@ -386,6 +399,12 @@ class UserSettingsService {
   /** 짤림보기(잘림 보기) 켜짐 설정. true = 오버플로 내용 표시(잘림 미적용). */
   setClipView(value: boolean): void {
     this.data.view.clipView = value;
+    this.save();
+  }
+
+  /** 화면 보정값(1mm 당 CSS px). null 이면 보정 없음 */
+  setPxPerMm(value: number | null): void {
+    this.data.view.pxPerMm = value;
     this.save();
   }
 

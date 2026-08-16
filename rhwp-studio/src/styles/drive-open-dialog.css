@@ -74,6 +74,11 @@
   white-space: nowrap;
 }
 
+/* 목록에 없는 문서를 가져오는 길 — 왼쪽에 떼어 놓아 닫기와 헷갈리지 않게 한다 */
+.drv-browse {
+  margin-right: auto;
+}
+
 .drv-item-when {
   flex-shrink: 0;
   color: var(--color-text-hint);

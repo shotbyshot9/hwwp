@@ -1,0 +1,58 @@
+/* ================================================================
+   화면 보정 대화상자 — 접두어 dcal-
+   ================================================================ */
+
+.dcal-body {
+  padding: 16px 20px;
+}
+
+.dcal-hint {
+  margin-bottom: 16px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+  line-height: 1.7;
+}
+
+/* 막대를 놓는 바닥. 카드보다 길어질 수 있어 넘치면 가로로 흐르게 둔다 */
+.dcal-rail {
+  padding: 14px 0;
+  overflow-x: auto;
+}
+
+.dcal-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 54px;
+  border: 2px solid var(--accent-primary);
+  border-radius: var(--radius-lg);
+  background: var(--ui-accent-bg-light);
+  color: var(--accent-strong);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dcal-slider {
+  width: 100%;
+  margin: 4px 0 10px;
+  accent-color: var(--accent-primary);
+}
+
+.dcal-readout {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-base);
+  font-variant-numeric: tabular-nums;
+}
+
+.dcal-reset {
+  margin-top: 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ui-link);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  text-decoration: underline;
+  cursor: pointer;
+}

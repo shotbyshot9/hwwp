@@ -13,6 +13,8 @@ export interface DriveOpenDialogDeps {
   list: () => Promise<StoredDocRef[]>;
   /** 사용자가 문서를 골랐을 때 */
   onPick: (ref: StoredDocRef) => void;
+  /** 드라이브 전체에서 찾기 (Google Picker). 대화상자를 닫고 넘긴다 */
+  onBrowse: () => void;
 }
 
 function formatModified(at?: number): string {
@@ -44,12 +46,11 @@ export class DriveOpenDialog extends ModalDialog {
     hint.textContent = 'WHP 로 저장한 문서입니다.';
     body.appendChild(hint);
 
-    // drive.file 범위는 "앱이 만든 파일"에만 닿는다. 폴더 안에 있어도 밖에서 넣은
-    // 파일은 보이지 않는데, 사용자에게는 사라진 것처럼 보이므로 여기서 밝힌다.
+    // drive.file 범위는 "앱이 만든 파일"에만 닿는다. 밖에서 넣은 파일은 목록에
+    // 없는데 사용자에게는 사라진 것처럼 보이므로, 이유와 함께 찾아보기 길을 준다.
     const note = document.createElement('div');
     note.className = 'drv-note';
-    note.textContent = '다른 곳에서 만들어 드라이브에 넣은 문서는 여기 나오지 않습니다.'
-      + ' 「내 컴퓨터에서 열기」로 연 뒤 저장하면 목록에 들어옵니다.';
+    note.textContent = '다른 곳에서 만들어 드라이브에 넣은 문서는 여기 나오지 않습니다.';
     body.appendChild(note);
 
     this.listEl = document.createElement('div');
@@ -66,6 +67,16 @@ export class DriveOpenDialog extends ModalDialog {
     if (footer) {
       footer.replaceChildren();
 
+      // 드라이브 전체에서 찾기 — 목록에 없는 문서를 가져오는 유일한 길이라
+      // 대화상자 안에서 바로 이어지게 둔다.
+      const browse = document.createElement('button');
+      browse.className = 'dialog-btn drv-browse';
+      browse.textContent = '드라이브에서 찾아보기…';
+      browse.addEventListener('click', () => {
+        this.hide();
+        this.deps.onBrowse();
+      });
+
       const refresh = document.createElement('button');
       refresh.className = 'dialog-btn';
       refresh.textContent = '새로 고침';
@@ -76,7 +87,7 @@ export class DriveOpenDialog extends ModalDialog {
       close.textContent = '닫기';
       close.addEventListener('click', () => this.hide());
 
-      footer.append(refresh, close);
+      footer.append(browse, refresh, close);
     }
     void this.reload();
   }
@@ -90,7 +101,7 @@ export class DriveOpenDialog extends ModalDialog {
     try {
       const docs = await this.deps.list();
       if (docs.length === 0) {
-        this.renderMessage('WHP 로 저장한 문서가 아직 없습니다.\n새 문서를 쓰거나, 「내 컴퓨터에서 열기」로 연 문서를 저장하면 여기에 쌓입니다.');
+        this.renderMessage('WHP 로 저장한 문서가 아직 없습니다.\n드라이브의 다른 문서를 열려면 아래 「드라이브에서 찾아보기」를 누르세요.');
         return;
       }
       this.renderList(docs);

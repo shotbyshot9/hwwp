@@ -28,6 +28,7 @@ import { DriveBackend } from '@/storage/drive-backend.ts';
 import { AutosaveController } from '@/storage/autosave-controller.ts';
 import { DriveOpenDialog } from '@/ui/drive-open-dialog';
 import { showConfirm } from '@/ui/confirm-dialog';
+import { toRenderZoom, toUserZoom } from '@/core/display-calibration.ts';
 import { pickDriveFile } from '@/storage/drive-picker.ts';
 import type { StoredDocRef } from '@/storage/storage-backend.ts';
 import { installPwaFileHandling, type FileHandlingWindowLike } from '@/command/pwa-file-handling';
@@ -310,31 +311,33 @@ registry.register({
     new DriveOpenDialog({
       list: () => driveBackend.list(),
       onPick: (ref) => void openDocumentFromDrive(ref),
+      onBrowse: () => void browseDriveWithPicker(),
     }).show();
   },
 });
 
-registry.register({
-  id: 'file:pick-drive',
-  label: '구글 드라이브에서 찾기',
-  async execute() {
-    if (!await ensureDriveConnected()) return;
-    const token = await driveAuth.getValidToken();
-    if (!token) {
-      sbMessage().textContent = '구글 인증이 만료되었습니다. 다시 연결해 주세요.';
-      return;
-    }
-    const picked = await pickDriveFile(token);
-    if (!picked) return;   // 취소
+/**
+ * 드라이브 전체에서 문서를 골라 연다 (Google Picker).
+ *
+ * 목록(WHP 가 저장한 문서)에 없는 문서를 가져오는 유일한 길이다 — `drive.file`
+ * 범위는 앱이 만든 파일에만 닿고, 피커로 고른 파일만 예외로 열린다.
+ */
+async function browseDriveWithPicker(): Promise<void> {
+  const token = await driveAuth.getValidToken();
+  if (!token) {
+    sbMessage().textContent = '구글 인증이 만료되었습니다. 다시 연결해 주세요.';
+    return;
+  }
+  const picked = await pickDriveFile(token);
+  if (!picked) return;   // 취소
 
-    // 피커는 드라이브의 아무 파일이나 고를 수 있다 — 우리가 열 수 있는 것만 받는다.
-    if (!isSupportedDocumentFileName(picked.name)) {
-      showLoadError(new Error(`지원하지 않는 파일 형식입니다: ${picked.name}. HWP/HWPX/HML 파일만 지원합니다.`));
-      return;
-    }
-    await openDocumentFromDrive({ id: picked.id, name: picked.name });
-  },
-});
+  // 피커는 드라이브의 아무 파일이나 고를 수 있다 — 우리가 열 수 있는 것만 받는다.
+  if (!isSupportedDocumentFileName(picked.name)) {
+    showLoadError(new Error(`지원하지 않는 파일 형식입니다: ${picked.name}. HWP/HWPX/HML 파일만 지원합니다.`));
+    return;
+  }
+  await openDocumentFromDrive({ id: picked.id, name: picked.name });
+}
 
 driveAuth.onChange(() => {
   if (driveAuth.isConnected()) {
@@ -874,13 +877,13 @@ function setupZoomControls(): void {
 
   // 모바일: 줌 값 클릭 → 100% 토글
   document.getElementById('sb-zoom-val')!.addEventListener('click', () => {
-    const currentZoom = vm.getZoom();
+    const currentZoom = toUserZoom(vm.getZoom());
     if (Math.abs(currentZoom - 1.0) < 0.05) {
       // 현재 100% → 쪽 맞춤으로 전환
       document.getElementById('sb-zoom-fit')!.click();
     } else {
-      // 현재 쪽 맞춤/기타 → 100%로 전환
-      vm.setZoom(1.0);
+      // 현재 쪽 맞춤/기타 → 100%로 전환 (용지 실물 크기)
+      vm.setZoom(toRenderZoom(1.0));
     }
   });
 
@@ -920,7 +923,8 @@ function setupEventListeners(): void {
   });
 
   eventBus.on('zoom-level-display', (zoom) => {
-    sbZoomVal().textContent = `${Math.round((zoom as number) * 100)}%`;
+    // 렌더 배율에는 화면 보정이 곱해져 있다 — 사용자에게는 "용지 실물 대비" 로 되돌려 보인다.
+    sbZoomVal().textContent = `${Math.round(toUserZoom(zoom as number) * 100)}%`;
   });
 
   // 삽입/수정 모드 토글
