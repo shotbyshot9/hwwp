@@ -31,6 +31,34 @@ const TYPEWRITER_TOLERANCE_PX = 8;
 /** 타자기 스크롤 점검 주기(ms) */
 const TYPEWRITER_INTERVAL_MS = 80;
 
+/** 마지막 입력 뒤 이 시간 동안만 캐럿을 따라간다 */
+export const TYPEWRITER_FOLLOW_MS = 1500;
+
+/**
+ * 지금 캐럿을 따라가야 하는가.
+ *
+ * 타자기 스크롤은 "쓰는 동안 시선을 붙잡는" 장치지 "스크롤을 못 하게 막는" 장치가
+ * 아니다. 주기마다 무조건 되돌리면 앞 문단을 다시 읽으려고 스크롤한 순간 튕겨
+ * 돌아와 읽을 수가 없다.
+ *
+ * 두 가지 중 하나면 따라간다.
+ *  - 캐럿이 문서 안에서 옮겨갔다 (`caretDocY` 는 스크롤과 무관한 값이다)
+ *  - 방금 글을 썼다 (같은 줄에서 타이핑하면 caretDocY 가 안 변해 위치만으로는 모른다)
+ *
+ * "캐럿이 화면 밖이면 따라간다" 는 조건을 쓰면 안 된다 — 스크롤해서 멀어지는
+ * 순간 캐럿이 화면 밖이 되므로 언제나 걸려, 읽으려는 스크롤을 그대로 되돌린다.
+ */
+export function shouldFollowCaret(
+  caretDocY: number,
+  lastCaretDocY: number | null,
+  now: number,
+  followUntil: number,
+): boolean {
+  if (lastCaretDocY === null) return true;          // 첫 점검 — 한 번 자리를 잡는다
+  if (Math.abs(caretDocY - lastCaretDocY) > 1) return true;
+  return now < followUntil;
+}
+
 /** 문서 전체를 다시 세기까지 기다리는 시간(ms). 타이핑 중 전수 집계를 피한다. */
 const COUNT_DEBOUNCE_MS = 400;
 
@@ -89,6 +117,17 @@ export class FocusMode {
   /** 진입 직전의 일반 화면 상태 — 나갈 때 그대로 되돌린다 */
   private savedZoom: number | null = null;
   private savedThemeMode: ThemeMode | null = null;
+
+  /** 직전에 본 캐럿의 문서 내 높이 — 캐럿이 옮겨갔는지 판별한다 */
+  private lastCaretDocY: number | null = null;
+  /**
+   * 이 시각까지는 캐럿을 따라간다.
+   *
+   * 글을 쓰는 동안에만 시선을 붙잡고, 멈추고 읽는 동안에는 스크롤을 사용자에게
+   * 돌려준다. 같은 줄 안에서 타이핑하면 캐럿의 문서 내 높이가 안 바뀌므로,
+   * 위치 변화만으로는 "쓰는 중" 을 알 수 없어 시간 창을 함께 둔다.
+   */
+  private followCaretUntil = 0;
 
   private tickTimer: number | null = null;
   private typewriterTimer: number | null = null;
@@ -223,6 +262,8 @@ export class FocusMode {
 
   private onTextInserted(text: string): void {
     if (!this.active || !text) return;
+    // 쓰는 동안에는 캐럿을 따라간다. 멈추면 스크롤은 사용자 몫으로 돌아간다.
+    this.followCaretUntil = Date.now() + TYPEWRITER_FOLLOW_MS;
     this.sessionChars += text.length;
     this.cheer.noteInserted(text);
     this.scheduleRecount();
@@ -468,6 +509,8 @@ export class FocusMode {
 
   private startTypewriter(): void {
     this.stopTypewriter();
+    // 새로 시작할 때는 캐럿 위치를 모른다 — 첫 점검에서 한 번 자리를 잡는다.
+    this.lastCaretDocY = null;
     if (!userSettings.getFocusSettings().typewriter) return;
     this.typewriterTimer = window.setInterval(() => this.syncTypewriter(), TYPEWRITER_INTERVAL_MS);
   }
@@ -478,21 +521,38 @@ export class FocusMode {
   }
 
   /**
-   * 캐럿이 화면 고정 지점에서 벗어나면 그만큼 스크롤을 밀어 되돌린다.
-   * 캐럿은 `#scroll-content` 안에 절대배치된 `.caret` DOM 이므로
-   * 렌더러(canvas)를 건드리지 않고 화면 좌표만 비교하면 된다.
+   * 캐럿이 움직였을 때만 화면 고정 지점으로 되돌린다.
+   *
+   * 예전에는 주기마다 무조건 되돌렸는데, 그러면 앞 문단을 다시 읽으려고 스크롤한
+   * 순간 80ms 안에 캐럿 자리로 튕겨 돌아와 아예 읽을 수가 없었다. 타자기 스크롤은
+   * "쓰는 동안 시선을 붙잡는" 장치지 "스크롤을 못 하게 막는" 장치가 아니다.
+   *
+   * 캐럿이 문서 안에서 차지하는 위치(`#scroll-content` 기준)는 스크롤과 무관하므로,
+   * 그 값이 그대로면 사용자가 스크롤한 것이고 바뀌었으면 캐럿이 옮겨간 것이다.
+   * 다만 캐럿이 화면 밖으로 나간 채로 글을 이어 쓰면 자기가 쓰는 곳이 안 보이므로,
+   * 그때는 되돌린다.
    */
   private syncTypewriter(): void {
     const container = document.getElementById('scroll-container');
-    if (!container) return;
+    const content = container?.querySelector<HTMLElement>('#scroll-content');
+    if (!container || !content) return;
     const caret = container.querySelector<HTMLElement>('.caret, .caret-composition');
     if (!caret || caret.offsetParent === null) return;
 
     const caretRect = caret.getBoundingClientRect();
     if (caretRect.height === 0) return;
+
+    // 문서 안에서의 캐럿 높이 — 스크롤해도 변하지 않는다.
+    const caretDocY = caretRect.top - content.getBoundingClientRect().top;
     const containerRect = container.getBoundingClientRect();
-    const caretY = caretRect.top - containerRect.top;
-    const delta = caretY - container.clientHeight * TYPEWRITER_ANCHOR;
+    const caretViewY = caretRect.top - containerRect.top;
+
+    const follow = shouldFollowCaret(caretDocY, this.lastCaretDocY, Date.now(), this.followCaretUntil);
+    this.lastCaretDocY = caretDocY;
+    // 캐럿이 그대로고 방금 쓴 것도 아니면 사용자가 읽으려고 스크롤한 것이다 — 건드리지 않는다.
+    if (!follow) return;
+
+    const delta = caretViewY - container.clientHeight * TYPEWRITER_ANCHOR;
     if (Math.abs(delta) < TYPEWRITER_TOLERANCE_PX) return;
 
     const next = Math.max(0, Math.min(container.scrollTop + delta, container.scrollHeight - container.clientHeight));
