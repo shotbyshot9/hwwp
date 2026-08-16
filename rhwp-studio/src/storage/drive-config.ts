@@ -52,6 +52,18 @@ const ENV_API_KEY = import.meta.env?.VITE_GOOGLE_API_KEY as string | undefined;
 export const GOOGLE_API_KEY = (ENV_API_KEY?.trim() || '')
   || 'AIzaSyCc61dyYbLWgObLZ7o2m018qtiV_2ZVE_I';
 
+/**
+ * Cloud 프로젝트 번호.
+ *
+ * 피커가 "어느 앱의 선택인가"를 알아야 고른 파일에 `drive.file` 권한을 넘겨준다.
+ * 이게 빠지면 피커는 정상으로 보이지만 뒤이은 Drive 호출이 404 로 떨어진다 —
+ * Drive 는 권한 없는 파일의 존재를 숨기려고 403 대신 404 를 돌려주기 때문이다.
+ *
+ * 클라이언트 ID 앞머리가 곧 프로젝트 번호라 거기서 뽑는다. 둘을 따로 적어 두면
+ * 클라이언트를 바꿀 때 한쪽만 고쳐 어긋난다.
+ */
+export const GOOGLE_PROJECT_NUMBER = GOOGLE_CLIENT_ID.split('-')[0];
+
 /** Drive REST v3 기본 주소 */
 export const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 export const DRIVE_UPLOAD_API = 'https://www.googleapis.com/upload/drive/v3';

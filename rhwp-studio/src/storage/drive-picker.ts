@@ -9,7 +9,7 @@
  * 웹앱 전용이다 — 크롬 확장은 MV3 CSP 가 원격 스크립트를 막아 gapi 를 못 불러온다.
  */
 
-import { GAPI_SCRIPT_URL, GOOGLE_API_KEY } from './drive-config.ts';
+import { GAPI_SCRIPT_URL, GOOGLE_API_KEY, GOOGLE_PROJECT_NUMBER } from './drive-config.ts';
 
 /** 피커가 돌려주는 파일 한 건 */
 export interface PickedFile {
@@ -31,6 +31,7 @@ interface PickerResponse {
 interface PickerBuilderLike {
   setDeveloperKey(key: string): PickerBuilderLike;
   setOAuthToken(token: string): PickerBuilderLike;
+  setAppId(appId: string): PickerBuilderLike;
   addView(view: unknown): PickerBuilderLike;
   setCallback(cb: (data: PickerResponse) => void): PickerBuilderLike;
   setTitle(title: string): PickerBuilderLike;
@@ -122,6 +123,9 @@ export async function pickDriveFile(accessToken: string): Promise<PickedFile | n
     new api.PickerBuilder()
       .setDeveloperKey(GOOGLE_API_KEY)
       .setOAuthToken(accessToken)
+      // 앱 ID 가 있어야 고른 파일에 drive.file 권한이 넘어온다.
+      // 빠뜨리면 피커는 정상으로 보이는데 뒤이은 다운로드가 404 로 떨어진다.
+      .setAppId(GOOGLE_PROJECT_NUMBER)
       .setTitle('WHP 에서 열 문서를 고르세요')
       .addView(view)
       .setCallback((data) => {
