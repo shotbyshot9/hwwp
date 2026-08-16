@@ -41,8 +41,16 @@ export class DriveOpenDialog extends ModalDialog {
 
     const hint = document.createElement('div');
     hint.className = 'drv-hint';
-    hint.textContent = '드라이브의 WHP 폴더에 있는 문서입니다.';
+    hint.textContent = 'WHP 로 저장한 문서입니다.';
     body.appendChild(hint);
+
+    // drive.file 범위는 "앱이 만든 파일"에만 닿는다. 폴더 안에 있어도 밖에서 넣은
+    // 파일은 보이지 않는데, 사용자에게는 사라진 것처럼 보이므로 여기서 밝힌다.
+    const note = document.createElement('div');
+    note.className = 'drv-note';
+    note.textContent = '다른 곳에서 만들어 드라이브에 넣은 문서는 여기 나오지 않습니다.'
+      + ' 「내 컴퓨터에서 열기」로 연 뒤 저장하면 목록에 들어옵니다.';
+    body.appendChild(note);
 
     this.listEl = document.createElement('div');
     this.listEl.className = 'drv-list';
@@ -82,7 +90,7 @@ export class DriveOpenDialog extends ModalDialog {
     try {
       const docs = await this.deps.list();
       if (docs.length === 0) {
-        this.renderMessage('WHP 폴더에 문서가 없습니다. 새 문서를 만들어 쓰면 여기에 쌓입니다.');
+        this.renderMessage('WHP 로 저장한 문서가 아직 없습니다.\n새 문서를 쓰거나, 「내 컴퓨터에서 열기」로 연 문서를 저장하면 여기에 쌓입니다.');
         return;
       }
       this.renderList(docs);

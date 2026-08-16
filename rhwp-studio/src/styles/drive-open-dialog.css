@@ -3,13 +3,24 @@
    ================================================================ */
 
 .drv-hint {
-  margin-bottom: 10px;
+  margin-bottom: 4px;
   color: var(--color-text-muted);
   font-size: var(--font-size-base);
 }
 
+.drv-note {
+  margin-bottom: 10px;
+  padding: 7px 10px;
+  border: 1px solid var(--ui-note-border);
+  border-radius: var(--radius-md);
+  background: var(--ui-note-bg);
+  color: var(--ui-note-text);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
 .drv-list {
-  height: 300px;
+  height: 260px;
   overflow-y: auto;
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-md);
@@ -27,6 +38,8 @@
   font-size: var(--font-size-base);
   text-align: center;
   line-height: 1.6;
+  /* 안내 문구의 줄바꿈을 살린다 */
+  white-space: pre-line;
 }
 
 .drv-item {
