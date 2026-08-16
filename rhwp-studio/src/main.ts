@@ -27,6 +27,7 @@ import { DriveClient } from '@/storage/drive-client.ts';
 import { DriveBackend } from '@/storage/drive-backend.ts';
 import { AutosaveController } from '@/storage/autosave-controller.ts';
 import { DriveOpenDialog } from '@/ui/drive-open-dialog';
+import { showConfirm } from '@/ui/confirm-dialog';
 import { pickDriveFile } from '@/storage/drive-picker.ts';
 import type { StoredDocRef } from '@/storage/storage-backend.ts';
 import { installPwaFileHandling, type FileHandlingWindowLike } from '@/command/pwa-file-handling';
@@ -274,14 +275,38 @@ async function openDocumentFromDrive(ref: StoredDocRef): Promise<void> {
   }
 }
 
+/**
+ * 드라이브 연결을 확인하고, 안 되어 있으면 그 자리에서 연결을 권한다.
+ *
+ * 상태 표시줄 문구만으로는 못 보고 지나친다 — 화면 맨 아래 작은 글씨다.
+ * 사용자가 이미 "열기"를 누른 참이므로, 흐름을 끊지 않고 바로 연결로 잇는다.
+ *
+ * connect() 는 팝업을 띄우므로 사용자 제스처 안에서 불려야 한다. showConfirm 의
+ * 확인 버튼 클릭에서 이어지는 호출이라 브라우저가 제스처로 인정한다.
+ */
+async function ensureDriveConnected(): Promise<boolean> {
+  if (driveAuth.isConnected()) return true;
+
+  const agreed = await showConfirm(
+    '구글 드라이브 연결',
+    '드라이브의 문서를 열려면 먼저 구글 드라이브에 연결해야 합니다.\n\n'
+    + '연결하면 드라이브의 WHP 폴더에 문서가 자동 저장됩니다.\n'
+    + '지금 연결하시겠습니까?',
+  );
+  if (!agreed) return false;
+
+  const connected = await driveAuth.connect();
+  if (!connected) {
+    sbMessage().textContent = '구글 드라이브 연결에 실패했습니다. 제목 줄의 연결 버튼으로 다시 시도해 주세요.';
+  }
+  return connected;
+}
+
 registry.register({
   id: 'file:open-drive',
   label: '구글 드라이브에서 열기',
-  execute() {
-    if (!driveAuth.isConnected()) {
-      sbMessage().textContent = '먼저 제목 줄에서 구글 드라이브를 연결하세요.';
-      return;
-    }
+  async execute() {
+    if (!await ensureDriveConnected()) return;
     new DriveOpenDialog({
       list: () => driveBackend.list(),
       onPick: (ref) => void openDocumentFromDrive(ref),
@@ -293,10 +318,7 @@ registry.register({
   id: 'file:pick-drive',
   label: '구글 드라이브에서 찾기',
   async execute() {
-    if (!driveAuth.isConnected()) {
-      sbMessage().textContent = '먼저 제목 줄에서 구글 드라이브를 연결하세요.';
-      return;
-    }
+    if (!await ensureDriveConnected()) return;
     const token = await driveAuth.getValidToken();
     if (!token) {
       sbMessage().textContent = '구글 인증이 만료되었습니다. 다시 연결해 주세요.';
