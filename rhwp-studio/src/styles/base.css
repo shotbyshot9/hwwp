@@ -1,33 +1,36 @@
 /* ─── 디자인 토큰 ───────────────────────────────────── */
 :root {
   /* 앱 UI semantic token */
-  --ui-bg: #f0f0f0;
-  --ui-bg-light: #f5f5f5;
+  /* 중성색을 살짝 따뜻한 쪽으로 옮긴다 — 집중 모드의 종이 톤과 한 제품으로 읽히게. */
+  --ui-bg: #f4f2ef;
+  --ui-bg-light: #faf9f7;
   --ui-surface: #ffffff;
-  --ui-surface-raised: #fafafa;
-  --ui-surface-muted: #e8e8e8;
-  --ui-border: #c0c0c0;
-  --ui-border-light: #d0d0d0;
-  --ui-border-subtle: #d8d8d8;
-  --ui-border-strong: #b4b4b4;
-  --ui-text: #333333;
-  --ui-text-secondary: #555555;
-  --ui-text-muted: #666666;
-  --ui-text-hint: #888888;
-  --ui-text-disabled: #aaaaaa;
-  --ui-text-placeholder: #999999;
+  --ui-surface-raised: #ffffff;
+  --ui-surface-muted: #edeae5;
+  /* 테두리를 낮춘다. 진한 1px 선이 겹치는 것이 오래된 인상의 가장 큰 원인이었다. */
+  --ui-border: #ddd8d1;
+  --ui-border-light: #e6e2db;
+  --ui-border-subtle: #ece8e2;
+  --ui-border-strong: #cdc7be;
+  --ui-text: #2e2a26;
+  --ui-text-secondary: #57504a;
+  --ui-text-muted: #7a7169;
+  --ui-text-hint: #948b82;
+  --ui-text-disabled: #b3aba3;
+  --ui-text-placeholder: #a49b92;
   --ui-text-on-accent: #ffffff;
   --ui-on-accent-overlay: rgba(255, 255, 255, 0.3);
-  --ui-hover: #e0e0e0;
-  --ui-hover-strong: #dfe4ec;
-  --ui-active: #c8c8c8;
-  --ui-selected: #e8f0fe;
-  --ui-menu-open: #3e62bb;
-  --ui-menu-open-border: #4c73d5;
-  --ui-toolbar-bg-start: #fafafa;
-  --ui-toolbar-bg-end: #f0f0f0;
-  --ui-accent-bg: #e7eaf4;
-  --ui-accent-bg-light: #f0f3fa;
+  --ui-hover: #eae6e0;
+  --ui-hover-strong: #e2ded6;
+  --ui-active: #ddd8d1;
+  --ui-selected: #fdf0d9;
+  --ui-menu-open: #b45309;
+  --ui-menu-open-border: #c2620c;
+  /* 그라데이션 툴바는 2000년대 데스크톱 관용구다 — 평면으로 편다. */
+  --ui-toolbar-bg-start: #faf9f7;
+  --ui-toolbar-bg-end: #faf9f7;
+  --ui-accent-bg: #fbeed4;
+  --ui-accent-bg-light: #fdf6e7;
   --ui-note-bg: #f5f6fa;
   --ui-note-border: #d0d4e2;
   --ui-note-text: #444444;
@@ -41,12 +44,12 @@
   --ui-focus-soft: rgba(74, 144, 217, 0.2);
 
   /* 문서 영역 token: 앱 테마와 문서 렌더를 분리한다. */
-  --doc-workspace: #e0e0e0;
+  --doc-workspace: #e6e2dc;
   --doc-paper: #ffffff;
-  --doc-shadow: rgba(0, 0, 0, 0.2);
+  --doc-shadow: rgba(46, 42, 38, 0.18);
 
   /* 포커스/선택/핸들 */
-  --focus-ring: #4a90d9;
+  --focus-ring: #c2620c;
   --selection-fill: #b8d7ff;
   --caret-color: #111111;
   --resize-handle: #3f78d8;
@@ -57,20 +60,21 @@
 
   /* 눈금자 */
   /* 용지 밖(작업 영역) / 용지의 여백 / 본문 — 세 단계로 구분한다 */
-  --ruler-outside: #a8a8a8;
-  --ruler-bg: #d0d0d0;
+  --ruler-outside: #c9c4bc;
+  --ruler-bg: #e2ded7;
   --ruler-body: #ffffff;
-  --ruler-edge: #8a8a8a;
-  --ruler-tick: #555555;
-  --ruler-text: #333333;
-  --ruler-marker: #4080c0;
+  --ruler-edge: #b0a99f;
+  --ruler-tick: #6b635b;
+  --ruler-text: #4a433c;
+  --ruler-marker: #c2620c;
 
-  /* 브랜드/강조 */
-  --accent-primary: #6182d6;
-  --accent-strong: #335095;
-  --accent-light: #4a90d9;
-  --accent-hover: #a0b0d8;
-  --accent-subtle: #748bc9;
+  /* 브랜드/강조 — WHP 는 호박색을 쓴다 (집중 모드와 같은 색).
+     버튼 배경으로 쓰는 primary 는 흰 글자와의 대비를 위해 어두운 쪽을 고른다. */
+  --accent-primary: #b45309;
+  --accent-strong: #8a3f07;
+  --accent-light: #c2620c;
+  --accent-hover: #d98324;
+  --accent-subtle: #a06534;
 
   /* 기존 CSS 호환 alias */
   --color-primary: var(--accent-primary);
@@ -132,9 +136,9 @@
   --space-12: 24px;
 
   /* 모서리 */
-  --radius-sm: 2px;
-  --radius-md: 3px;
-  --radius-lg: 4px;
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 7px;
 
   /* 컨트롤 크기 */
   --control-height-sm: 22px;
@@ -149,33 +153,34 @@
 }
 
 :root[data-theme-effective="dark"] {
-  --ui-bg: #25292f;
-  --ui-bg-light: #2b3037;
-  --ui-surface: #2f343c;
-  --ui-surface-raised: #363c45;
-  --ui-surface-muted: #252a31;
-  --ui-border: #4d5561;
-  --ui-border-light: #596270;
-  --ui-border-subtle: #454d58;
-  --ui-border-strong: #687384;
-  --ui-text: #eef1f5;
-  --ui-text-secondary: #d5dbe3;
-  --ui-text-muted: #b6c0cc;
-  --ui-text-hint: #97a2b1;
-  --ui-text-disabled: #737d8b;
-  --ui-text-placeholder: #8a94a3;
+  /* 어두운 쪽도 따뜻한 중성색으로 맞춘다 (집중 모드 #0c0a09 계열) */
+  --ui-bg: #221f1d;
+  --ui-bg-light: #2a2724;
+  --ui-surface: #2e2a27;
+  --ui-surface-raised: #35312d;
+  --ui-surface-muted: #1e1b19;
+  --ui-border: #4a443e;
+  --ui-border-light: #574f48;
+  --ui-border-subtle: #3d3833;
+  --ui-border-strong: #6a615a;
+  --ui-text: #f0ece6;
+  --ui-text-secondary: #ddd6cd;
+  --ui-text-muted: #b5aca2;
+  --ui-text-hint: #9d9188;
+  --ui-text-disabled: #786f67;
+  --ui-text-placeholder: #8d837a;
   --ui-text-on-accent: #ffffff;
   --ui-on-accent-overlay: rgba(255, 255, 255, 0.24);
-  --ui-hover: #3b424d;
-  --ui-hover-strong: #424b58;
-  --ui-active: #4b5564;
-  --ui-selected: #244b75;
-  --ui-menu-open: #4f78d7;
-  --ui-menu-open-border: #6f96ec;
-  --ui-toolbar-bg-start: #343a43;
-  --ui-toolbar-bg-end: #2b3037;
-  --ui-accent-bg: #263b61;
-  --ui-accent-bg-light: #2d446f;
+  --ui-hover: #3a3531;
+  --ui-hover-strong: #433d38;
+  --ui-active: #4d463f;
+  --ui-selected: #4a3616;
+  --ui-menu-open: #b45309;
+  --ui-menu-open-border: #d98324;
+  --ui-toolbar-bg-start: #2a2724;
+  --ui-toolbar-bg-end: #2a2724;
+  --ui-accent-bg: #3d2c10;
+  --ui-accent-bg-light: #4a3616;
   --ui-note-bg: #2d3440;
   --ui-note-border: #465065;
   --ui-note-text: #d8dee7;
@@ -188,11 +193,11 @@
   --ui-danger-soft: rgba(255, 115, 115, 0.22);
   --ui-focus-soft: rgba(139, 184, 255, 0.24);
 
-  --doc-workspace: #1f2329;
+  --doc-workspace: #1a1816;
   --doc-paper: #ffffff;
   --doc-shadow: rgba(0, 0, 0, 0.5);
 
-  --focus-ring: #8bb8ff;
+  --focus-ring: #d98324;
   --selection-fill: #315f91;
   --caret-color: #111111;
   --resize-handle: #8bb8ff;
@@ -201,19 +206,20 @@
   --table-selection-fill: rgba(139, 184, 255, 0.28);
   --table-selection-stroke: #8bb8ff;
 
-  --ruler-outside: #1b1f24;
-  --ruler-bg: #2d333b;
+  --ruler-outside: #191715;
+  --ruler-bg: #2a2724;
   --ruler-body: var(--ui-surface-raised);
-  --ruler-edge: #59616b;
-  --ruler-tick: #c2cad6;
-  --ruler-text: #e3e7ed;
-  --ruler-marker: #8bb8ff;
+  --ruler-edge: #5a524a;
+  --ruler-tick: #c8bfb5;
+  --ruler-text: #e6e0d8;
+  --ruler-marker: #d98324;
 
-  --accent-primary: #7fa8ff;
-  --accent-strong: #a9c3ff;
-  --accent-light: #8bb8ff;
-  --accent-hover: #5f78a8;
-  --accent-subtle: #6f8ed6;
+  /* 어두운 배경에서는 밝은 호박색이 읽힌다 */
+  --accent-primary: #d98324;
+  --accent-strong: #f0a641;
+  --accent-light: #e5952f;
+  --accent-hover: #8a5a1e;
+  --accent-subtle: #b5813f;
 
   --shadow-dropdown: 2px 2px 12px rgba(0, 0, 0, 0.45);
   --shadow-dialog: 4px 4px 16px rgba(0, 0, 0, 0.55);

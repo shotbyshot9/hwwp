@@ -21,6 +21,8 @@ import { tableCommands } from '@/command/commands/table';
 import { pageCommands } from '@/command/commands/page';
 import { toolCommands } from '@/command/commands/tool';
 import { focusCommands, syncFocusMenu } from '@/command/commands/focus';
+import { TitleBar } from '@/ui/title-bar';
+import { GisDriveAuth } from '@/storage/drive-auth.ts';
 import { installPwaFileHandling, type FileHandlingWindowLike } from '@/command/pwa-file-handling';
 import {
   isSupportedDocumentFileName,
@@ -188,6 +190,24 @@ registry.registerAll(tableCommands);
 registry.registerAll(pageCommands);
 registry.registerAll(toolCommands);
 registry.registerAll(focusCommands);
+
+// 제목 줄 — 문서 이름·저장 상태·구글 드라이브 연결.
+// 문서가 없어도 보여야 하므로 문서 로드 시퀀스 밖에서 만든다.
+const driveAuth = new GisDriveAuth();
+const titleBar = new TitleBar({
+  eventBus,
+  // 문서가 없으면 엔진 기본값('document.hwp')이 새어 나오므로 빈 이름을 준다 —
+  // 제목 줄이 기본 제목('새 문서')으로 대신 보여 준다.
+  getFileName: () => (wasm.pageCount > 0 ? wasm.fileName : ''),
+  setFileName: (name) => { wasm.fileName = name; },
+  auth: driveAuth,
+});
+
+// 저장 상태를 제목 줄에 흘려 준다. 자동 저장기가 붙기 전까지는 변경 여부만 보인다.
+eventBus.on('document-dirty-changed', (change) => {
+  const dirty = (change as { dirty?: boolean } | undefined)?.dirty === true;
+  titleBar.setSaveState(dirty ? { kind: 'dirty' } : { kind: 'idle' });
+});
 
 // 상태 바 요소
 const sbMessage = () => document.getElementById('sb-message')!;
@@ -941,6 +961,10 @@ async function initializeDocument(
 
     // #2527: 자동 보정을 하지 않으므로 로드 직후 문서는 항상 clean.
     documentState.markClean('document-initialized');
+
+    // 제목 줄은 여기서 직접 갱신한다. 로드 완료를 알리는 전용 이벤트가 없고
+    // document-changed 는 페이지 수가 잡히기 전에도 날아와 이름을 놓친다.
+    titleBar.syncTitle();
   } catch (error) {
     console.error('[initDoc] 오류:', error);
     if (window.innerWidth < 768) alert(`초기화 오류: ${error}`);

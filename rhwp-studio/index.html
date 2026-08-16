@@ -17,6 +17,17 @@
   <div id="studio-root">
     <header id="studio-header">
       <h1 class="visually-hidden">WHP 문서 편집기</h1>
+    <!-- 제목 줄: 문서 이름 · 저장 상태 · 저장소 연결 -->
+    <div id="title-bar">
+      <div class="tbar-brand" aria-hidden="true">WHP</div>
+      <input id="tbar-title" class="tbar-title" type="text" value="새 문서"
+             aria-label="문서 이름" autocomplete="off" spellcheck="false" />
+      <span id="tbar-save-state" class="tbar-save-state" role="status" aria-live="polite"></span>
+      <span class="tbar-spacer"></span>
+      <button id="tbar-drive" class="tbar-drive" type="button">
+        <span class="tbar-drive-label">구글 드라이브 연결</span>
+      </button>
+    </div>
     <!-- 메뉴바 -->
     <nav id="menu-bar" aria-label="주 메뉴">
       <!-- ── 파일 ── -->
