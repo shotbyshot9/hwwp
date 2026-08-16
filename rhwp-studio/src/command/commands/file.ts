@@ -1,6 +1,5 @@
 import type { CommandDef, CommandServices } from '../types';
 import { PageSetupDialog } from '@/ui/page-setup-dialog';
-import { AboutDialog } from '@/ui/about-dialog';
 import { showSaveAs } from '@/ui/save-as-dialog';
 import { showHwpSavePasswordDialog } from '@/ui/hwp-password-dialog';
 import { showUnsavedChangesDialog } from '@/ui/unsaved-changes-dialog';
@@ -778,14 +777,6 @@ export const fileCommands: CommandDef[] = [
     canExecute: (ctx) => ctx.hasDocument,
     async execute(services) {
       await runPrintPreview(services);
-    },
-  },
-  {
-    id: 'file:about',
-    label: '제품 정보',
-    icon: 'icon-help',
-    execute() {
-      new AboutDialog().show();
     },
   },
 ];

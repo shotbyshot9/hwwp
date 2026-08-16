@@ -148,6 +148,16 @@
   /* 터치 타겟 (모바일) */
   --touch-target-min: 44px;
 
+  /**
+   * 앱 크롬(제목 줄·메뉴바·도구 상자·서식 바·상태 표시줄) 배율.
+   *
+   * 글자·아이콘·여백이 함께 커져야 하는데 스타일이 20여 개 파일에 px 로 흩어져
+   * 있어 토큰만 키우면 절반만 움직인다. 크롬 컨테이너에 zoom 을 걸어 통째로
+   * 확대한다 — 편집 영역(#editor-area)은 건드리지 않으므로 눈금자·캐럿 좌표
+   * 계산에는 영향이 없다.
+   */
+  --ui-scale: 1.28;
+
   /* 브레이크포인트 (참조용, 미디어 쿼리에서 직접 사용) */
   /* mobile: ~767px, tablet: 768~1023px, desktop: 1024px~ */
 }
@@ -253,6 +263,23 @@ body {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+}
+
+/* 크롬만 확대한다. 편집 영역은 문서 배율(보기 → 배율)이 따로 있으므로 제외한다. */
+#studio-header,
+#status-bar {
+  zoom: var(--ui-scale);
+}
+
+/* 대화상자는 body 에 붙어 크롬 바깥이라 따로 맞춰 준다 */
+.modal-overlay,
+.dialog-overlay {
+  zoom: var(--ui-scale);
+}
+
+/* 집중 모드는 자체 머리글·바닥글을 쓰고 크기도 따로 잡혀 있다 */
+body.fm-active .fm-overlay {
+  zoom: 1;
 }
 
 .visually-hidden {
