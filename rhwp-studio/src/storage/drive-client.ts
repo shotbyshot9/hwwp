@@ -41,6 +41,44 @@ export class DriveError extends Error {
   }
 }
 
+/**
+ * 드라이브 오류 응답을 사람이 읽을 한 줄로 바꾼다.
+ *
+ * 구글은 실패 이유를 긴 JSON 으로 돌려주는데, 그대로 제목 줄에 흘리면 읽을 수
+ * 없다. 자주 나오고 **사용자가 손쓸 수 있는** 것만 골라 안내 문구로 바꾼다.
+ */
+export function describeDriveError(status: number, body: string): string {
+  let message = '';
+  try {
+    message = (JSON.parse(body) as { error?: { message?: string } }).error?.message ?? '';
+  } catch {
+    message = body.slice(0, 200);
+  }
+
+  if (/has not been used in project|is disabled/i.test(message)) {
+    return 'Google Cloud 프로젝트에서 Drive API 가 켜져 있지 않습니다';
+  }
+  if (status === 401) {
+    return '인증이 만료되었습니다 — 다시 연결해 주세요';
+  }
+  if (status === 403 && /rate|quota|limit/i.test(message)) {
+    return '요청이 너무 잦습니다 — 잠시 뒤 다시 시도합니다';
+  }
+  if (status === 403 && /insufficient|permission|scope/i.test(message)) {
+    return '드라이브 권한이 부족합니다 — 연결을 해제하고 다시 연결해 주세요';
+  }
+  if (status === 404) {
+    return '드라이브에서 문서를 찾을 수 없습니다 — 다른 곳에서 지워졌을 수 있습니다';
+  }
+  if (status === 507 || /storage quota/i.test(message)) {
+    return '드라이브 저장 공간이 부족합니다';
+  }
+  if (status >= 500) {
+    return '드라이브가 일시적으로 응답하지 않습니다 — 다시 시도합니다';
+  }
+  return message ? `${message.slice(0, 120)}` : `요청 실패 (${status})`;
+}
+
 /** 문서 확장자에 맞는 MIME 타입. 드라이브가 파일을 분류하는 데 쓴다. */
 export function mimeTypeForName(name: string): string {
   const lower = name.toLowerCase();
@@ -110,10 +148,9 @@ export class DriveClient {
 
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
-      throw new DriveError(
-        `드라이브 요청 실패 (${response.status}) ${detail.slice(0, 200)}`,
-        response.status,
-      );
+      // 원문은 콘솔에만 남기고 화면에는 읽을 수 있는 한 줄만 올린다.
+      console.warn(`[drive] ${response.status} ${url}\n${detail}`);
+      throw new DriveError(describeDriveError(response.status, detail), response.status);
     }
     return response;
   }

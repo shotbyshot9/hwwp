@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildMultipartBody, mimeTypeForName, quoteQueryValue } from '../src/storage/drive-client.ts';
+import {
+  buildMultipartBody,
+  describeDriveError,
+  mimeTypeForName,
+  quoteQueryValue,
+} from '../src/storage/drive-client.ts';
 import { isTokenUsable, nextRefreshDelay } from '../src/storage/drive-auth.ts';
 
 const MARGIN = 5 * 60 * 1000;
@@ -57,6 +62,37 @@ test('멀티파트 본문이 드라이브 규약대로 조립된다', async () =
   assert.ok(text.includes('"parents":["folder-1"]'), '부모 폴더가 실린다');
   assert.ok(text.includes('Content-Type: application/x-hwp'), '내용 파트 헤더');
   assert.ok(text.endsWith('\r\n--BOUND--'), '닫는 경계로 끝나야 한다');
+});
+
+test('Drive API 미사용 오류를 손쓸 수 있는 안내로 바꾼다', () => {
+  // 실제로 받은 응답 (프로젝트에서 Drive API 를 켜지 않은 경우)
+  const body = JSON.stringify({
+    error: {
+      code: 403,
+      message: 'Google Drive API has not been used in project 18457187610 before or it is disabled.',
+    },
+  });
+  assert.equal(describeDriveError(403, body), 'Google Cloud 프로젝트에서 Drive API 가 켜져 있지 않습니다');
+});
+
+test('상태 코드별로 사람이 읽을 안내를 고른다', () => {
+  assert.match(describeDriveError(401, '{}'), /인증이 만료/);
+  assert.match(describeDriveError(404, '{}'), /찾을 수 없습니다/);
+  assert.match(describeDriveError(500, '{}'), /일시적으로 응답하지 않습니다/);
+  assert.match(
+    describeDriveError(403, JSON.stringify({ error: { message: 'Rate Limit Exceeded' } })),
+    /요청이 너무 잦습니다/,
+  );
+  assert.match(
+    describeDriveError(403, JSON.stringify({ error: { message: 'Insufficient Permission' } })),
+    /권한이 부족합니다/,
+  );
+});
+
+test('알 수 없는 오류는 원문 메시지를 짧게 보여 준다', () => {
+  assert.equal(describeDriveError(400, JSON.stringify({ error: { message: '이상한 오류' } })), '이상한 오류');
+  // JSON 이 아니면 상태 코드만이라도 알린다
+  assert.equal(describeDriveError(418, ''), '요청 실패 (418)');
 });
 
 test('내용 타입이 비어 있으면 octet-stream 으로 적는다', async () => {
