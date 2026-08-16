@@ -4,7 +4,7 @@
  * 인증 방식은 모르고 토큰만 받아 쓴다 — 웹앱(GIS)이든 확장(chrome.identity)이든
  * 이 파일은 그대로다.
  *
- * 범위가 `drive.file` 이라 **앱이 만든 파일과 폴더만** 보인다. WHP 폴더와 그 안의
+ * 범위가 `drive.file` 이라 **앱이 만든 파일과 폴더만** 보인다. hwwp 폴더와 그 안의
  * 문서는 전부 앱이 만든 것이므로 목록·읽기·쓰기가 모두 된다. 반대로 사용자가
  * 드라이브에 직접 올려 둔 hwp 는 보이지 않는다 — 그건 피커를 거쳐야 한다.
  */
@@ -119,11 +119,11 @@ export function buildMultipartBody(
 function randomBoundary(): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
-  return `whp${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')}`;
+  return `hwwp${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')}`;
 }
 
 export class DriveClient {
-  /** 확보한 WHP 폴더 id. 한 세션에 한 번만 찾는다 */
+  /** 확보한 hwwp 폴더 id. 한 세션에 한 번만 찾는다 */
   private folderId: string | null = null;
   private folderLookup: Promise<string> | null = null;
   private getToken: TokenProvider;
@@ -156,7 +156,7 @@ export class DriveClient {
   }
 
   /**
-   * WHP 폴더를 확보한다. 없으면 만든다.
+   * hwwp 폴더를 확보한다. 없으면 만든다.
    *
    * 같은 이름의 폴더가 여러 개 나오면 가장 먼저 만들어진 것을 쓴다 — 다른 탭이
    * 동시에 만들었을 때 문서가 두 폴더로 갈리는 것을 막는다.
@@ -195,7 +195,7 @@ export class DriveClient {
     return this.folderLookup;
   }
 
-  /** WHP 폴더 안의 문서 목록 (최근 수정 순) */
+  /** hwwp 폴더 안의 문서 목록 (최근 수정 순) */
   async listDocs(): Promise<DriveFile[]> {
     const folderId = await this.ensureFolder();
     const q = `${quoteQueryValue(folderId)} in parents and trashed=false`;
@@ -210,7 +210,7 @@ export class DriveClient {
     return new Uint8Array(await response.arrayBuffer());
   }
 
-  /** WHP 폴더에 새 문서를 만든다 */
+  /** hwwp 폴더에 새 문서를 만든다 */
   async createDoc(name: string, content: Blob): Promise<DriveFile> {
     const folderId = await this.ensureFolder();
     const { body, contentType } = buildMultipartBody(

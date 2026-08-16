@@ -59,7 +59,7 @@ export const defaultShortcuts: [ShortcutDef, string][] = [
   // 쪽
   [{ key: 'f7' }, 'file:page-setup'],
 
-  // 집중 작업 모드 (F=Focus). Alt+F 는 한컴 파일 메뉴, Ctrl+F 는 찾기와 겹쳐 Alt+Shift 로 둔다.
+  // 배명훈 모드 (F=Focus). Alt+F 는 한컴 파일 메뉴, Ctrl+F 는 찾기와 겹쳐 Alt+Shift 로 둔다.
   [{ key: 'f', code: 'KeyF', alt: true, shift: true }, 'focus:toggle'],
   [{ key: 'ㄹ', alt: true, shift: true }, 'focus:toggle'],
 

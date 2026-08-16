@@ -12,8 +12,32 @@
 
 import { userSettings } from './user-settings.ts';
 
-/** CSS 규격상의 1mm (96dpi 가정). 보정하지 않았을 때의 기본값 */
+/**
+ * CSS 규격상의 1mm (96dpi 가정).
+ *
+ * 문서 좌표가 이 기준으로 들어오므로 배율 환산의 분모다. 화면의 실제 밀도가
+ * 아니라 "문서 px 의 정의" 라는 점에 주의 — 여기를 바꾸면 배율 의미가 통째로 어긋난다.
+ */
 export const CSS_PX_PER_MM = 96 / 25.4;
+
+/**
+ * 보정하지 않았을 때 쓰는 추정 밀도 (112dpi).
+ *
+ * 요즘 흔한 화면의 **CSS 기준** 밀도를 어림한 값이다. 패널의 물리 dpi 가 아니라
+ * OS 배율까지 반영된 값이라는 게 중요하다 — 브라우저의 CSS 픽셀은 OS 배율만큼
+ * 이미 커져 있다.
+ *
+ *   15.6" 1080p, 배율 100%   → 141
+ *   14"   1080p, 배율 125%   → 113
+ *   27"   1440p, 배율 100%   → 109
+ *   13.3" 맥북,  dPR 2       → 113
+ *   24"   1080p, 배율 100%   →  92
+ *
+ * 대략 92~141 에 걸쳐 있고 가운데가 110 언저리라 112 로 잡았다. 어디까지나 추정이라
+ * 정확히 맞추려면 화면 보정을 해야 한다 — 96 을 그대로 쓰면 대부분의 화면에서
+ * 문서가 실물보다 작게 나오므로, 안 맞더라도 이쪽이 덜 틀린다.
+ */
+export const DEFAULT_PX_PER_MM = 112 / 25.4;
 
 /** 보정값이 벗어날 수 없는 범위 — 잘못 잰 값이 문서를 못 쓰게 만들지 않도록 */
 const MIN_PX_PER_MM = CSS_PX_PER_MM * 0.5;
@@ -27,10 +51,10 @@ export function clampPxPerMm(value: number): number {
   return Math.min(MAX_PX_PER_MM, Math.max(MIN_PX_PER_MM, value));
 }
 
-/** 지금 쓰는 1mm 당 CSS px. 보정 전이면 CSS 기본값 */
+/** 지금 쓰는 1mm 당 CSS px. 보정 전이면 추정 기본값 */
 export function getPxPerMm(): number {
   const stored = userSettings.getViewSettings().pxPerMm;
-  return stored ? clampPxPerMm(stored) : CSS_PX_PER_MM;
+  return stored ? clampPxPerMm(stored) : DEFAULT_PX_PER_MM;
 }
 
 /** 사용자가 잰 값을 저장한다. 0 이나 null 이면 보정을 지운다 */

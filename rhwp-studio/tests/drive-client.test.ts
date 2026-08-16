@@ -34,7 +34,7 @@ test('확장자에 맞는 MIME 타입을 고른다', () => {
   assert.equal(mimeTypeForName('보고서.hwp'), 'application/x-hwp');
   assert.equal(mimeTypeForName('보고서.HWPX'), 'application/hwp+zip');
   assert.equal(mimeTypeForName('보고서.hml'), 'application/xml');
-  // 확장자를 모르면 hwp 로 본다 — WHP 의 기본 저장 형식이다.
+  // 확장자를 모르면 hwp 로 본다 — hwwp 의 기본 저장 형식이다.
   assert.equal(mimeTypeForName('이름없음'), 'application/x-hwp');
 });
 

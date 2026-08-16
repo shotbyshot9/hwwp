@@ -223,7 +223,7 @@ function tryDeleteBodyFootnoteAtCursor(
 /**
  * 문서에 "확정" 삽입된 텍스트를 알린다.
  *
- * 집중 작업 모드 응원 훅이 이 이벤트만 듣는다. IME 조합 중간 상태는 여기로 오지
+ * 배명훈 모드 응원 훅이 이 이벤트만 듣는다. IME 조합 중간 상태는 여기로 오지
  * 않는다 — 조합은 compositionend 에서 확정 텍스트로 한 번만 통지한다.
  */
 function emitTextInserted(handler: any, text: string): void {

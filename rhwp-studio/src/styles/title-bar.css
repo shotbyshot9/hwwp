@@ -94,6 +94,43 @@
    연결 전에는 채운 버튼으로 눈에 띄게 둔다 — 이 제품의 핵심 동선이라
    처음 들어온 사용자가 가장 먼저 보아야 한다.
    연결 뒤에는 테두리만 남긴 조용한 상태로 물러난다. */
+/* ─── 배명훈 모드 버튼 ─────────────────────────────────────
+
+   이 제품의 핵심 기능이라 메뉴 깊숙이 두지 않고 제목 줄에 박아 둔다.
+   드라이브 연결(호박색 채움)과 나란히 서므로 이쪽은 테두리만 둬 서열을 나눈다. */
+.tbar-focus {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  margin-right: 8px;
+  border: 1px solid var(--accent-primary);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent-primary);
+  font-family: inherit;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: background-color 0.12s ease;
+}
+
+.tbar-focus:hover {
+  background: var(--ui-accent-bg-light);
+}
+
+.tbar-focus-icon {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.tbar-focus-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
 .tbar-drive {
   display: inline-flex;
   align-items: center;
@@ -163,7 +200,7 @@
   display: none;
 }
 
-/* 집중 모드에서는 제목 줄도 함께 걷어낸다 */
+/* 배명훈 모드에서는 제목 줄도 함께 걷어낸다 */
 body.fm-active #title-bar {
   display: none;
 }

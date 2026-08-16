@@ -42,7 +42,7 @@ test('재시도는 지수로 늘고 상한에서 멈춘다', () => {
 });
 
 test('이름 중복 회피가 저장소 목록과 맞물린다', () => {
-  // 드라이브 WHP 폴더에 이미 있는 이름들
+  // 드라이브 hwwp 폴더에 이미 있는 이름들
   const taken = ['새 문서.hwp', '새 문서(1).hwp', '보고서.hwp'];
   assert.equal(uniqueDocName('새 문서.hwp', taken), '새 문서(2).hwp');
   assert.equal(uniqueDocName('보고서.hwp', taken), '보고서(1).hwp');

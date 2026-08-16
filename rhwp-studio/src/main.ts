@@ -29,6 +29,7 @@ import { AutosaveController } from '@/storage/autosave-controller.ts';
 import { DriveOpenDialog } from '@/ui/drive-open-dialog';
 import { showConfirm } from '@/ui/confirm-dialog';
 import { toRenderZoom, toUserZoom } from '@/core/display-calibration.ts';
+import { WELCOME_DOC_NAME, fillWelcomeDocument } from '@/core/welcome-document.ts';
 import { pickDriveFile } from '@/storage/drive-picker.ts';
 import type { StoredDocRef } from '@/storage/storage-backend.ts';
 import { installPwaFileHandling, type FileHandlingWindowLike } from '@/command/pwa-file-handling';
@@ -291,7 +292,7 @@ async function ensureDriveConnected(): Promise<boolean> {
   const agreed = await showConfirm(
     '구글 드라이브 연결',
     '드라이브의 문서를 열려면 먼저 구글 드라이브에 연결해야 합니다.\n\n'
-    + '연결하면 드라이브의 WHP 폴더에 문서가 자동 저장됩니다.\n'
+    + '연결하면 드라이브의 hwwp 폴더에 문서가 자동 저장됩니다.\n'
     + '지금 연결하시겠습니까?',
   );
   if (!agreed) return false;
@@ -319,7 +320,7 @@ registry.register({
 /**
  * 드라이브 전체에서 문서를 골라 연다 (Google Picker).
  *
- * 목록(WHP 가 저장한 문서)에 없는 문서를 가져오는 유일한 길이다 — `drive.file`
+ * 목록(hwwp 가 저장한 문서)에 없는 문서를 가져오는 유일한 길이다 — `drive.file`
  * 범위는 앱이 만든 파일에만 닿고, 피커로 고른 파일만 예외로 열린다.
  */
 async function browseDriveWithPicker(): Promise<void> {
@@ -341,9 +342,9 @@ async function browseDriveWithPicker(): Promise<void> {
 
 driveAuth.onChange(() => {
   if (driveAuth.isConnected()) {
-    // 연결하자마자 WHP 폴더를 만들어 둔다 — 사용자가 드라이브에서 바로 확인할 수 있게.
+    // 연결하자마자 hwwp 폴더를 만들어 둔다 — 사용자가 드라이브에서 바로 확인할 수 있게.
     void driveClient.ensureFolder().catch((error) => {
-      console.warn('[drive] WHP 폴더 준비 실패:', error);
+      console.warn('[drive] hwwp 폴더 준비 실패:', error);
     });
     // 연결 전에 쓴 글이 남아 있으면 지금 올린다.
     autosave.retryIfPending();
@@ -623,7 +624,8 @@ async function initialize(): Promise<void> {
     syncFocusMenu();
 
     // 툴바 내 data-cmd 버튼 클릭 → 커맨드 디스패치
-    document.querySelectorAll('.tb-btn[data-cmd]').forEach(btn => {
+    // 도구 상자 버튼과 제목 줄의 배명훈 모드 버튼을 같은 경로로 보낸다.
+    document.querySelectorAll('.tb-btn[data-cmd], #tbar-focus[data-cmd]').forEach(btn => {
       btn.addEventListener('mousedown', (e) => {
         e.preventDefault();
         const cmd = (btn as HTMLElement).dataset.cmd;
@@ -676,6 +678,8 @@ async function initialize(): Promise<void> {
     setupGlobalShortcuts();
     void loadFromUrlParam();
     void offerAutosaveRecoveryIfIdle();
+    // URL 로 문서를 열거나 복구본이 있으면 그쪽이 이긴다 — 시작 문서는 그다음이다.
+    void prepareStartupDocument();
     installPwaFileHandling(window as FileHandlingWindowLike, {
       openDocumentBytes(payload) {
         eventBus.emit('open-document-bytes', payload);
@@ -1108,6 +1112,10 @@ async function initializeDocument(
     // #2527: 자동 보정을 하지 않으므로 로드 직후 문서는 항상 clean.
     documentState.markClean('document-initialized');
 
+    // 문서는 100%(용지 실물 크기)로 연다. ViewportManager 의 초기값은 렌더 배율
+    // 1.0 이라, 화면 보정이 걸린 상태에서는 그대로 두면 86% 처럼 어긋나 보인다.
+    canvasView?.getViewportManager().setZoom(toRenderZoom(1));
+
     // 제목 줄은 여기서 직접 갱신한다. 로드 완료를 알리는 전용 이벤트가 없고
     // document-changed 는 페이지 수가 잡히기 전에도 날아와 이름을 놓친다.
     titleBar.syncTitle();
@@ -1115,6 +1123,8 @@ async function initializeDocument(
     // 새로 연 문서는 아직 드라이브의 어떤 파일도 아니다 — 첫 저장에서 새로 만든다.
     // (드라이브에서 연 문서는 그쪽 경로가 ref 를 붙여 준다.)
     autosave.attach(null);
+
+    enterFocusModeOnStartup();
   } catch (error) {
     console.error('[initDoc] 오류:', error);
     if (window.innerWidth < 768) alert(`초기화 오류: ${error}`);
@@ -1442,6 +1452,82 @@ async function createNewDocument(): Promise<void> {
     console.error('[main] 새 문서 생성 실패:', error);
   }
 }
+
+/**
+ * 첫 실행이면 빈 문서 대신 사용법 문서를 띄운다.
+ *
+ * 처음 들어온 사용자에게 빈 화면은 아무것도 알려 주지 않는다. 읽고 닫으면
+ * 끝나는 안내 대신 실제 문서로 주면, 그 위에서 바로 타이핑해 보며 응원까지
+ * 겪게 된다.
+ *
+ * 표시 여부는 설정이 아니라 한 번 쓰고 마는 표식이라 별도 키에 둔다.
+ */
+const WELCOME_SHOWN_KEY = 'whp-welcome-shown';
+
+/**
+ * 앱을 켠 뒤 첫 문서가 준비되면 배명훈 모드로 들어간다.
+ *
+ * 이 제품의 핵심이 배명훈 모드라 기본 상태로 삼는다. 문서를 열 때마다가 아니라
+ * 세션에 한 번만 — 작업 도중 문서를 바꿨는데 갑자기 모드가 켜지면 방해가 된다.
+ * 끄고 싶으면 보기 → 배명훈 모드 설정 에서 "시작할 때 켜기" 를 끈다.
+ */
+let focusModeStartupDone = false;
+
+function enterFocusModeOnStartup(): void {
+  if (focusModeStartupDone) return;
+  focusModeStartupDone = true;
+  if (!userSettings.getFocusSettings().startInFocusMode) return;
+  // 문서 렌더가 자리를 잡은 뒤 들어가야 캐럿·배율 계산이 어긋나지 않는다.
+  window.setTimeout(() => dispatcher.dispatch('focus:toggle'), 0);
+}
+
+/**
+ * 켤 때 문서를 준비한다.
+ *
+ * 배명훈 모드는 문서가 있어야 들어갈 수 있으므로, 빈 화면으로 시작하면 핵심
+ * 기능이 닫혀 있는 셈이다. 첫 실행이면 사용법 문서를, 그다음부터는 빈 문서를 연다.
+ *
+ * URL·PWA 파일 연결·복구본으로 이미 문서가 열리는 중이면 비켜선다. 그 경로들이
+ * 비동기라 "시작이 끝났다" 를 알리는 신호가 없어, 잠깐 기다린 뒤 아직도 문서가
+ * 없을 때만 나선다.
+ */
+async function prepareStartupDocument(): Promise<void> {
+  await new Promise((resolve) => window.setTimeout(resolve, 600));
+  if (wasm.pageCount > 0) return;
+  // 복구 대화상자 등이 떠 있으면 사용자의 선택을 기다린다.
+  if (document.querySelector('.modal-overlay')) return;
+
+  let firstRun = false;
+  try {
+    firstRun = !localStorage.getItem(WELCOME_SHOWN_KEY);
+    if (firstRun) localStorage.setItem(WELCOME_SHOWN_KEY, '1');
+  } catch {
+    firstRun = false;   // 저장소를 못 쓰면 매번 사용법을 띄우지 않는다
+  }
+
+  if (!firstRun) {
+    await createNewDocument();
+    return;
+  }
+
+  const msg = sbMessage();
+  try {
+    const docInfo = wasm.createNewDocument();
+    fillWelcomeDocument(wasm);
+    wasm.fileName = WELCOME_DOC_NAME;
+    prepareCanvasRendererDocument();
+    await autosaveManager.beginDocument(
+      { fileName: wasm.fileName, sourceFormat: wasm.getSourceFormat() },
+      { discardPreviousDraft: true },
+    );
+    await initializeDocument(docInfo, `${WELCOME_DOC_NAME} — ${docInfo.pageCount}페이지`);
+  } catch (error) {
+    // 사용법 문서는 편의 기능이다 — 실패해도 앱은 그냥 빈 화면으로 시작한다.
+    console.warn('[main] 사용법 문서 생성 실패:', error);
+    msg.textContent = '';
+  }
+}
+
 
 async function canReplaceCurrentDocument(skipUnsavedGuard?: boolean): Promise<boolean> {
   return skipUnsavedGuard === true || await confirmSaveBeforeReplacingDocument(commandServices);

@@ -48,7 +48,7 @@ export class AboutDialog extends ModalDialog {
     // 제품 영문명
     const titleEn = document.createElement('div');
     titleEn.className = 'about-product-name';
-    titleEn.textContent = "WHP — Writer's Homeground Processor";
+    titleEn.textContent = "hwwp — Writer's Homeground Processor";
     body.appendChild(titleEn);
 
     // 제품 한글명
@@ -110,14 +110,14 @@ export class AboutDialog extends ModalDialog {
       'WASM 번들에 포함되는 핵심 크레이트만 표시합니다. 전체 목록은 THIRD_PARTY_LICENSES.md를 참조하세요.';
     body.appendChild(licenseNote);
 
-    // 저작권 — WHP 자체 고지와 원본(rhwp) 고지를 줄을 나눠 둔다.
+    // 저작권 — hwwp 자체 고지와 원본(rhwp) 고지를 줄을 나눠 둔다.
     // 한 줄에 섞으면 누구의 저작권인지 흐려진다.
     const copyright = document.createElement('div');
     copyright.className = 'about-copyright';
-    copyright.textContent = '© 2026 WHP — Jiwon Ryu';
+    copyright.textContent = '© 2026 hwwp — Jiwon Ryu';
     body.appendChild(copyright);
 
-    // 원본 고지. WHP 는 rhwp(MIT)를 수정한 파생물이다. MIT 는 저작권 고지와 허가
+    // 원본 고지. hwwp 는 rhwp(MIT)를 수정한 파생물이다. MIT 는 저작권 고지와 허가
     // 문구를 사본에 함께 남길 것을 요구하는데, 웹앱 사용자는 LICENSE 파일을 받지
     // 않으므로 여기에 둔다. "modified" 표기는 파생물임을 분명히 하기 위한 것이다.
     const upstream = document.createElement('div');

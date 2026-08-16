@@ -3,7 +3,7 @@ import { userSettings, type FocusCheerLevel } from '../../core/user-settings';
 import { FocusMode } from '../../focus/focus-mode';
 
 /**
- * 집중 작업 모드 커맨드.
+ * 배명훈 모드 커맨드.
  *
  * 컨트롤러는 eventBus 가 필요하므로 첫 실행 때 만들어 붙잡아 둔다
  * (커맨드 정의는 서비스 주입 전에 모듈 로드 시점에 평가되기 때문).
@@ -43,7 +43,7 @@ function getFocusMode(services: CommandServices): FocusMode {
         const ih = services.getInputHandler();
         if (!ih) return;
         // 문서를 아직 한 번도 클릭하지 않았으면 캐럿이 놓이지 않아 입력이 무시된다
-        // (빈 문서의 "클릭하여 입력" 안내 상태). 집중 모드는 들어오자마자 쓰는
+        // (빈 문서의 "클릭하여 입력" 안내 상태). 배명훈 모드는 들어오자마자 쓰는
         // 화면이므로 여기서 캐럿을 놓아 준다. 이미 편집 중이면 포커스만 되돌린다.
         if (ih.isActive()) ih.focus();
         else ih.activateWithCaretPosition();
@@ -69,6 +69,7 @@ export function syncFocusMenu(): void {
     ['focus:toggle-sound', s.sound],
     ['focus:toggle-praise', s.praise],
     ['focus:toggle-typewriter', s.typewriter],
+    ['focus:toggle-startup', s.startInFocusMode],
     ['focus:cheer-quiet', s.cheerLevel === 'quiet'],
     ['focus:cheer-normal', s.cheerLevel === 'normal'],
     ['focus:cheer-festival', s.cheerLevel === 'festival'],
@@ -98,7 +99,7 @@ export function syncFocusMenu(): void {
 function toggleSetting(
   id: string,
   label: string,
-  key: 'confetti' | 'sound' | 'praise' | 'typewriter',
+  key: 'confetti' | 'sound' | 'praise' | 'typewriter' | 'startInFocusMode',
 ): CommandDef {
   return {
     id,
@@ -127,7 +128,7 @@ function cheerLevelCommand(level: FocusCheerLevel, label: string): CommandDef {
 export const focusCommands: CommandDef[] = [
   {
     id: 'focus:toggle',
-    label: '집중 작업 모드',
+    label: '배명훈 모드',
     shortcutLabel: 'Alt+Shift+F',
     canExecute: (ctx) => ctx.hasDocument,
     execute(services) {
@@ -142,9 +143,10 @@ export const focusCommands: CommandDef[] = [
   toggleSetting('focus:toggle-sound', '박수 효과음', 'sound'),
   toggleSetting('focus:toggle-praise', '음성 칭찬', 'praise'),
   toggleSetting('focus:toggle-typewriter', '타자기 스크롤', 'typewriter'),
+  toggleSetting('focus:toggle-startup', '켤 때 배명훈 모드로 시작', 'startInFocusMode'),
   {
     id: 'focus:theme',
-    label: '집중 모드 테마',
+    label: '배명훈 모드 테마',
     execute(services, params) {
       const theme = params?.focusTheme === 'light' ? 'light' : 'dark';
       userSettings.updateFocusSettings({ theme });
@@ -154,7 +156,7 @@ export const focusCommands: CommandDef[] = [
   },
   {
     id: 'focus:zoom',
-    label: '집중 모드 배율',
+    label: '배명훈 모드 배율',
     execute(services, params) {
       const zoom = Number(params?.zoom ?? 200);
       userSettings.updateFocusSettings({

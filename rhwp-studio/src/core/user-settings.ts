@@ -62,17 +62,17 @@ export interface ViewSettings {
   pxPerMm: number | null;
 }
 
-/** 집중 작업 모드 응원 강도. quiet=소리 없음, normal=기본, festival=축제 */
+/** 배명훈 모드 응원 강도. quiet=소리 없음, normal=기본, festival=축제 */
 export type FocusCheerLevel = 'quiet' | 'normal' | 'festival';
 
-/** 집중 작업 모드 설정 */
+/** 배명훈 모드 설정 */
 export interface FocusSettings {
   /**
-   * 집중 모드에서 쓸 테마. 일반 편집 화면의 테마 설정과 완전히 별개다 —
-   * 집중 모드를 나가면 원래 화면 테마로 되돌아간다.
+   * 배명훈 모드에서 쓸 테마. 일반 편집 화면의 테마 설정과 완전히 별개다 —
+   * 배명훈 모드를 나가면 원래 화면 테마로 되돌아간다.
    */
   theme: 'light' | 'dark';
-  /** 집중 모드 진입 시 적용할 화면 배율(%). 나가면 원래 배율로 되돌린다. */
+  /** 배명훈 모드 진입 시 적용할 화면 배율(%). 나가면 원래 배율로 되돌린다. */
   zoomPercent: number;
   /** 응원 강도 */
   cheerLevel: FocusCheerLevel;
@@ -86,6 +86,13 @@ export interface FocusSettings {
   typewriter: boolean;
   /** 세션 목표 글자수. 0이면 목표 없음 */
   goalChars: number;
+  /**
+   * 앱을 켤 때 바로 배명훈 모드로 들어갈지.
+   *
+   * 이 제품의 핵심이 배명훈 모드라 기본값은 켜짐이다. 일반 편집으로 시작하고
+   * 싶으면 끄면 되고, 켜져 있어도 Esc 한 번이면 빠져나온다.
+   */
+  startInFocusMode: boolean;
 }
 
 /** 복구용 자동저장 설정 */
@@ -165,7 +172,7 @@ function defaultSettings(): AppSettings {
       recentFontCount: 3,
     },
     theme: {
-      // 일반 편집 화면은 OS 설정을 따른다. 집중 모드 테마는 focus.theme 에 따로 있다.
+      // 일반 편집 화면은 OS 설정을 따른다. 배명훈 모드 테마는 focus.theme 에 따로 있다.
       // 이 값을 바꾸면 FOUC 방지용 public/theme-init.js 의 기본값도 함께 맞춰야 한다.
       mode: 'system',
     },
@@ -180,7 +187,7 @@ function defaultSettings(): AppSettings {
       pxPerMm: null,
     },
     focus: {
-      // 집중 모드는 어둡게가 기본 — 글 쓰는 화면이다.
+      // 배명훈 모드는 어둡게가 기본 — 글 쓰는 화면이다.
       theme: 'dark',
       zoomPercent: 200,
       cheerLevel: 'normal',
@@ -189,6 +196,7 @@ function defaultSettings(): AppSettings {
       praise: true,
       typewriter: true,
       goalChars: 0,
+      startInFocusMode: true,
     },
     autosave: {
       recoveryEnabled: true,
@@ -290,6 +298,7 @@ class UserSettingsService {
           praise: normalizeBoolean(focus.praise, defaults.focus.praise),
           typewriter: normalizeBoolean(focus.typewriter, defaults.focus.typewriter),
           goalChars: normalizeNumber(focus.goalChars, defaults.focus.goalChars, 0, 100000),
+          startInFocusMode: normalizeBoolean(focus.startInFocusMode, defaults.focus.startInFocusMode),
         },
         autosave: {
           ...defaults.autosave,
@@ -408,12 +417,12 @@ class UserSettingsService {
     this.save();
   }
 
-  /** 집중 작업 모드 설정 반환 */
+  /** 배명훈 모드 설정 반환 */
   getFocusSettings(): FocusSettings {
     return this.data.focus;
   }
 
-  /** 집중 작업 모드 설정 부분 갱신 */
+  /** 배명훈 모드 설정 부분 갱신 */
   updateFocusSettings(partial: Partial<FocusSettings>): void {
     Object.assign(this.data.focus, partial);
     this.save();

@@ -1,5 +1,5 @@
 /* ================================================================
-   집중 작업 모드 (focus mode) — 접두어 fm-
+   배명훈 모드 (focus mode) — 접두어 fm-
 
    화면 형태와 색은 Writer's Homeground(writerhomeground.lovable.app)를 따른다.
    따뜻한 무채색 바탕, 얇은 머리글/바닥글, 호박색 포인트 한 점.
@@ -25,7 +25,7 @@
   --fm-paper-glow: rgba(0, 0, 0, 0.6);
 }
 
-/* ─── 선(禪) 화면: 편집기 크롬을 걷어내고 WHP 머리글/바닥글로 갈아 끼운다 ─── */
+/* ─── 선(禪) 화면: 편집기 크롬을 걷어내고 hwwp 머리글/바닥글로 갈아 끼운다 ─── */
 
 body.fm-active #studio-header,
 body.fm-active #status-bar,

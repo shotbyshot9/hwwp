@@ -1,7 +1,7 @@
 /**
  * 구글 드라이브에서 문서 열기 대화상자.
  *
- * WHP 폴더 안의 문서만 보여 준다 — `drive.file` 범위라 앱이 만든 파일에만 닿고,
+ * hwwp 폴더 안의 문서만 보여 준다 — `drive.file` 범위라 앱이 만든 파일에만 닿고,
  * 그게 곧 이 제품이 관리하는 문서의 전부다.
  */
 
@@ -9,7 +9,7 @@ import { ModalDialog } from './dialog';
 import type { StoredDocRef } from '@/storage/storage-backend.ts';
 
 export interface DriveOpenDialogDeps {
-  /** WHP 폴더의 문서 목록 */
+  /** hwwp 폴더의 문서 목록 */
   list: () => Promise<StoredDocRef[]>;
   /** 사용자가 문서를 골랐을 때 */
   onPick: (ref: StoredDocRef) => void;

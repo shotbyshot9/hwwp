@@ -13,6 +13,7 @@ import { ModalDialog } from './dialog';
 import {
   CREDIT_CARD_WIDTH_MM,
   CSS_PX_PER_MM,
+  DEFAULT_PX_PER_MM,
   clampPxPerMm,
   estimatedDpi,
   getPxPerMm,
@@ -39,7 +40,8 @@ export class DisplayCalibrationDialog extends ModalDialog {
     const hint = document.createElement('div');
     hint.className = 'dcal-hint';
     hint.textContent = '신용카드(또는 체크카드·주민등록증)를 화면에 대고, 아래 막대의 '
-      + '길이를 카드의 긴 변과 똑같이 맞추세요. 맞추고 나면 배율 100% 가 실제 종이 크기와 같아집니다.';
+      + '길이를 카드의 긴 변과 똑같이 맞추세요. 맞추고 나면 배율 100% 가 실제 종이 크기와 같아집니다. '
+      + '한 번만 하면 이 브라우저에 기억됩니다.';
     body.appendChild(hint);
 
     // 재는 대상 — 가로 막대. 카드 긴 변에 맞춘다.
@@ -73,9 +75,9 @@ export class DisplayCalibrationDialog extends ModalDialog {
     const reset = document.createElement('button');
     reset.type = 'button';
     reset.className = 'dcal-reset';
-    reset.textContent = '보정 지우기 (기본값으로)';
+    reset.textContent = '보정 지우기 (기본 추정값으로)';
     reset.addEventListener('click', () => {
-      this.pxPerMm = CSS_PX_PER_MM;
+      this.pxPerMm = DEFAULT_PX_PER_MM;
       this.slider.value = String(Math.round(this.pxPerMm * 100));
       this.render();
     });
@@ -106,13 +108,15 @@ export class DisplayCalibrationDialog extends ModalDialog {
     }
 
     const ratio = this.pxPerMm / CSS_PX_PER_MM;
+    const isDefault = Math.abs(this.pxPerMm - DEFAULT_PX_PER_MM) < 0.01;
     this.readout.textContent =
-      `화면 밀도 약 ${estimatedDpi(this.pxPerMm)}dpi · 기본값 대비 ${Math.round(ratio * 100)}%`;
+      `화면 밀도 약 ${estimatedDpi(this.pxPerMm)}dpi · 문서 기준(96dpi) 대비 ${Math.round(ratio * 100)}%`
+      + (isDefault ? ' · 보정 안 함(추정값)' : '');
   }
 
   protected onConfirm(): void {
-    // 기본값과 같으면 보정을 지운다 — 저장해 둘 이유가 없다.
-    const isDefault = Math.abs(this.pxPerMm - CSS_PX_PER_MM) < 0.01;
+    // 추정 기본값과 같으면 보정을 지운다 — 저장해 둘 이유가 없다.
+    const isDefault = Math.abs(this.pxPerMm - DEFAULT_PX_PER_MM) < 0.01;
     setPxPerMm(isDefault ? null : this.pxPerMm);
     this.onApply();
   }

@@ -1,5 +1,5 @@
 /**
- * 집중 작업 모드 응원 레이어 개발용 확인 페이지 (`/focus-lab.html`).
+ * 배명훈 모드 응원 레이어 개발용 확인 페이지 (`/focus-lab.html`).
  *
  * WASM 문서 엔진 없이 `CheerEngine`·`ConfettiLayer` 만 떼어 눈과 귀로 확인하려고 만든
  * 개발 전용 하네스다. 실제 편집기에서는 확정 입력이 eventBus 의 `text-inserted` 로

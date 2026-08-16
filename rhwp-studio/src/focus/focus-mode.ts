@@ -1,13 +1,13 @@
 /**
- * 집중 작업 모드 (focus mode).
+ * 배명훈 모드 (focus mode).
  *
- * 배명훈 소설 속 워드프로세서에서 출발한 Writer's Homeground 를 WHP 로 옮긴 것이다.
+ * 배명훈 소설 속 워드프로세서에서 출발한 Writer's Homeground 를 hwwp 로 옮긴 것이다.
  * 화면 구성도 그 웹서비스를 따른다 — 따뜻한 무채색 배경, 위쪽에 제목과 토글 세 개가
  * 놓인 얇은 머리글, 아래쪽에 단어·글자·시간을 세는 바닥글, 그 사이는 글만 남는다.
  *
  * 두 겹으로 되어 있다.
  *
- * 1. 선(禪) 화면 — 메뉴바·도구상자·서식바·눈금자·상태바를 걷어내고 WHP 자체 머리글과
+ * 1. 선(禪) 화면 — 메뉴바·도구상자·서식바·눈금자·상태바를 걷어내고 hwwp 자체 머리글과
  *    바닥글로 갈아 끼운다. 타자기 스크롤을 켜면 캐럿이 화면 위쪽 40% 에 머문다.
  * 2. 응원 레이어 — 문장부호를 찍을 때마다 박수와 폭죽이 터진다. `CheerEngine` 담당.
  *
@@ -18,6 +18,7 @@
 import type { EventBus } from '@/core/event-bus';
 import { userSettings } from '@/core/user-settings';
 import { applyTheme, getThemeMode } from '@/core/theme';
+import { toRenderZoom } from '@/core/display-calibration.ts';
 import type { ThemeMode } from '@/core/user-settings';
 import { CheerEngine } from './cheer-engine';
 
@@ -33,7 +34,7 @@ const TYPEWRITER_INTERVAL_MS = 80;
 /** 문서 전체를 다시 세기까지 기다리는 시간(ms). 타이핑 중 전수 집계를 피한다. */
 const COUNT_DEBOUNCE_MS = 400;
 
-/** 집중 모드가 바깥에서 받아야 하는 것들 */
+/** 배명훈 모드가 바깥에서 받아야 하는 것들 */
 export interface FocusModeDeps {
   eventBus: EventBus;
   /** 편집 입력(숨은 textarea)에 포커스를 되돌린다 */
@@ -108,14 +109,16 @@ export class FocusMode {
     this.sessionChars = 0;
     this.goalReached = false;
 
-    // 일반 화면의 배율·테마를 기억해 두고 집중 모드 전용 값으로 갈아 끼운다.
+    // 일반 화면의 배율·테마를 기억해 두고 배명훈 모드 전용 값으로 갈아 끼운다.
     // 두 화면의 설정은 서로 건드리지 않는다 — 나갈 때 그대로 되돌린다.
     this.savedZoom = this.deps.getZoom();
     this.savedThemeMode = getThemeMode();
     const settings = userSettings.getFocusSettings();
-    this.deps.setZoom(settings.zoomPercent / 100);
+    // 설정의 배율은 "용지 실물 대비" 다 — 화면 보정을 거쳐야 렌더 배율이 된다.
+    // 곧장 넘기면 상태 표시줄이 200% 대신 171% 처럼 어긋난 값을 보여 준다.
+    this.deps.setZoom(toRenderZoom(settings.zoomPercent / 100));
     // applyTheme 은 화면에만 적용하고 저장하지 않는다(setThemeMode 와 다르다).
-    // 덕분에 일반 화면의 테마 설정이 집중 모드 때문에 바뀌지 않는다.
+    // 덕분에 일반 화면의 테마 설정이 배명훈 모드 때문에 바뀌지 않는다.
     applyTheme(settings.theme);
 
     document.body.classList.add('fm-active');
@@ -141,7 +144,7 @@ export class FocusMode {
     window.dispatchEvent(new Event('resize'));
 
     // 메뉴 클릭으로 들어오면 포커스가 메뉴로 넘어가 있다 — 편집 입력으로 되돌린다.
-    // 이게 없으면 집중 모드에서 키보드 입력이 문서에 닿지 않는다.
+    // 이게 없으면 배명훈 모드에서 키보드 입력이 문서에 닿지 않는다.
     this.restoreEditorFocus();
   }
 
@@ -194,7 +197,9 @@ export class FocusMode {
     if (!this.active) return;
     const settings = userSettings.getFocusSettings();
     applyTheme(settings.theme);
-    this.deps.setZoom(settings.zoomPercent / 100);
+    // 설정의 배율은 "용지 실물 대비" 다 — 화면 보정을 거쳐야 렌더 배율이 된다.
+    // 곧장 넘기면 상태 표시줄이 200% 대신 171% 처럼 어긋난 값을 보여 준다.
+    this.deps.setZoom(toRenderZoom(settings.zoomPercent / 100));
     this.syncToggleButtons();
     this.renderStats();
     this.startTypewriter();
@@ -276,10 +281,11 @@ export class FocusMode {
     const text = document.createElement('div');
     const title = document.createElement('div');
     title.className = 'fm-brand-title';
-    title.textContent = "Writer's Homeground";
+    title.textContent = '배명훈 모드';
     const sub = document.createElement('div');
     sub.className = 'fm-brand-sub';
-    sub.textContent = 'Your writing cheering squad';
+    // 이름의 유래를 화면에 남겨 둔다 — 이 모드가 어디서 왔는지가 곧 제품의 뿌리다.
+    sub.textContent = '〈홈, 어웨이〉의 환호하는 에디터에서';
     text.append(title, sub);
     brand.append(mark, text);
 
@@ -292,7 +298,7 @@ export class FocusMode {
       this.syncToggleButtons();
     });
     this.themeBtn = this.makeIconButton(actions, () => {
-      // 집중 모드 전용 테마만 바꾼다. 일반 편집 화면의 테마 설정은 건드리지 않는다.
+      // 배명훈 모드 전용 테마만 바꾼다. 일반 편집 화면의 테마 설정은 건드리지 않는다.
       const next = userSettings.getFocusSettings().theme === 'dark' ? 'light' : 'dark';
       userSettings.updateFocusSettings({ theme: next });
       applyTheme(next);
@@ -308,8 +314,8 @@ export class FocusMode {
     const exit = this.makeIconButton(actions, () => this.exit());
     exit.classList.add('fm-icon-btn-exit');
     exit.innerHTML = ICONS.close;
-    exit.title = '집중 모드 나가기 (Esc)';
-    exit.setAttribute('aria-label', '집중 모드 나가기');
+    exit.title = '배명훈 모드 나가기 (Esc)';
+    exit.setAttribute('aria-label', '배명훈 모드 나가기');
 
     header.append(brand, actions);
     return header;
@@ -393,7 +399,7 @@ export class FocusMode {
     if (this.themeBtn) {
       const dark = s.theme === 'dark';
       this.themeBtn.innerHTML = dark ? ICONS.sun : ICONS.moon;
-      this.themeBtn.title = dark ? '집중 모드 밝게' : '집중 모드 어둡게';
+      this.themeBtn.title = dark ? '배명훈 모드 밝게' : '배명훈 모드 어둡게';
       this.themeBtn.setAttribute('aria-label', this.themeBtn.title);
     }
   }
