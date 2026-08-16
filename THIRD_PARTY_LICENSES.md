@@ -1,6 +1,9 @@
 # Third-Party Licenses
 
-rhwp 프로젝트가 사용하는 서드파티 라이브러리 및 리소스의 라이선스 목록이다.
+hwwp(및 그 원본인 rhwp)가 사용하는 서드파티 라이브러리 및 리소스의 라이선스 목록이다.
+
+hwwp 자체는 rhwp(MIT, © 2025-2026 Edward Kim)의 파생물이며 MIT 로 배포한다. 원본
+고지는 저장소 루트 `LICENSE` 와 앱의 `도구 → 제품 정보` 양쪽에 남아 있다.
 
 기준 파일:
 
@@ -165,6 +168,44 @@ source를 가진 외부 Rust 크레이트는 243개다. 나머지 4개는 현재
 | Cafe24 써라운드 | 카페24 무료 배포 | fonts.cafe24.com | 장식체 |
 | Cafe24 슈퍼매직 | 카페24 무료 배포 | fonts.cafe24.com | 장식체 |
 | 행복고딕 (Happiness Sans, 4종) | 무료 배포 | 행복나눔재단 | Sans-serif fallback |
+
+### 런타임 CDN 폰트 — 상업적 배포 시 주의
+
+`rhwp-studio/src/core/font-loader.ts` 는 함초롬바탕/함초롬돋움을 눈누(jsdelivr) CDN 에서
+불러온다. **함초롬체는 한컴 폰트이고 비상업적 사용만 허용된다.** Git 에 포함되지 않으므로
+재배포는 아니지만, 수익화하는 배포에서는 꺼야 한다.
+
+```bash
+RHWP_DISABLE_EXTERNAL_WEBFONTS=1 npm run build
+```
+
+이 스위치를 켜면 CDN 을 타지 않고 위 표의 OFL 폰트 폴백만 쓴다.
+
+---
+
+## 음원 (hwwp 추가)
+
+배명훈 모드에서 문장을 끝낼 때마다 나는 환호·박수 음원이다. Writer's Homeground
+(hwwp 이전에 같은 저자가 만든 서비스)에서 쓰던 것을 그대로 가져왔다.
+
+| 리소스 | 라이선스 | 비고 |
+|--------|---------|------|
+| `rhwp-studio/public/sounds/sfx-01~15.mp3` (15개, 2.2MB) | 저작자 표시 없이 사용 가능 | 환호·박수 효과음. 저작자 표시 의무가 없음을 저자가 확인 |
+
+음원을 불러오지 못하면 `focus/cheer-engine.ts` 가 WebAudio 로 합성한 박수로 물러나므로,
+음원 없이 배포해도 기능은 동작한다.
+
+---
+
+## 외부 서비스 (hwwp 추가)
+
+| 서비스 | 용도 | 비고 |
+|--------|------|------|
+| Google Identity Services (`accounts.google.com/gsi/client`) | 구글 드라이브 OAuth 토큰 발급 | 런타임 로드. Google API 서비스 약관 적용 |
+| Google Picker API (`apis.google.com`) | 드라이브에서 문서 고르기 | 런타임 로드 |
+| Google Drive API v3 | 문서 읽기·쓰기 | `drive.file` 범위만 사용 — 앱이 만들었거나 사용자가 고른 파일에만 닿는다 |
+
+문서는 사용자 본인의 구글 드라이브에만 저장되며 hwwp 배포자의 서버를 거치지 않는다.
 
 ---
 

@@ -511,6 +511,24 @@
   color: var(--color-text-hint);
 }
 
+.about-license-note {
+  margin-top: 8px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-hint);
+  line-height: 1.6;
+}
+
+/* 라이선스 전문 링크 — 웹앱 사용자가 고지에 닿을 유일한 통로다 */
+.about-license-link {
+  color: var(--color-accent, #b45309);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.about-license-link:hover {
+  text-decoration-thickness: 2px;
+}
+
 .about-copyright {
   font-size: var(--font-size-sm);
   color: var(--color-text-placeholder);

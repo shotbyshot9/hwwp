@@ -1,0 +1,26 @@
+# Cloudflare Pages / Netlify 응답 헤더.
+#
+# 이 파일은 그대로 dist 로 복사되고, 호스트가 읽어서 헤더를 붙인다. 다른 정적
+# 호스트를 쓰면 같은 내용을 그쪽 방식으로 옮겨야 한다.
+
+# 해시가 파일 이름에 박힌 산출물은 내용이 바뀌면 이름이 바뀐다 — 영구 캐시해도
+# 안전하고, 그래야 15MB 짜리 wasm 두 개를 재방문마다 다시 받지 않는다.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# 폰트는 이름에 해시가 없지만 내용이 사실상 고정이다. 하루 캐시 + 오래된 사본
+# 재사용 허용으로 타협한다.
+/fonts/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/sounds/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/*
+  # 클릭재킹 방지 — 편집기가 남의 페이지 안에 투명하게 얹히면 사용자가 자기도
+  # 모르게 문서를 지우거나 드라이브 권한을 내줄 수 있다.
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  # 쓰지 않는 강력한 권한은 아예 잠근다.
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()

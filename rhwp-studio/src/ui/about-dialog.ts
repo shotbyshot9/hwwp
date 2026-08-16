@@ -36,6 +36,18 @@ const THIRD_PARTY_LICENSES = [
   { name: 'console_error_panic_hook', license: 'MIT / Apache-2.0' },
 ];
 
+/** 배포본에 함께 실린 라이선스 전문으로 가는 링크 */
+function makeLicenseLink(file: string, label: string): HTMLAnchorElement {
+  const a = document.createElement('a');
+  a.className = 'about-license-link';
+  a.href = `/${file}`;
+  a.target = '_blank';
+  // 새 탭으로 여는 외부 링크는 opener 를 넘기지 않는다.
+  a.rel = 'noopener noreferrer';
+  a.textContent = label;
+  return a;
+}
+
 export class AboutDialog extends ModalDialog {
   constructor() {
     super('제품 정보', 460);
@@ -103,11 +115,18 @@ export class AboutDialog extends ModalDialog {
     }
     body.appendChild(licenseTable);
 
-    // 전체 라이선스 목록 안내
+    // 전체 라이선스 목록 안내. 배포본에는 전문이 함께 실리므로(vite 의
+    // prune-and-license 플러그인) 파일 이름만 알려 주지 말고 바로 열어 준다 —
+    // 웹앱 사용자는 저장소를 받지 않아 그 파일에 닿을 다른 길이 없다.
     const licenseNote = document.createElement('div');
     licenseNote.className = 'about-license-note';
-    licenseNote.textContent =
-      'WASM 번들에 포함되는 핵심 크레이트만 표시합니다. 전체 목록은 THIRD_PARTY_LICENSES.md를 참조하세요.';
+    licenseNote.append(
+      'WASM 번들에 포함되는 핵심 크레이트만 표시합니다. 전문은 ',
+      makeLicenseLink('LICENSE.txt', 'MIT 라이선스'),
+      '와 ',
+      makeLicenseLink('THIRD_PARTY_LICENSES.txt', '서드파티 라이선스 전체 목록'),
+      '에 있습니다.',
+    );
     body.appendChild(licenseNote);
 
     // 저작권 — hwwp 자체 고지와 원본(rhwp) 고지를 줄을 나눠 둔다.
