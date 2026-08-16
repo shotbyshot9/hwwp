@@ -31,6 +31,7 @@ import { showConfirm } from '@/ui/confirm-dialog';
 import { toRenderZoom, toUserZoom } from '@/core/display-calibration.ts';
 import { WELCOME_DOC_NAME, fillWelcomeDocument } from '@/core/welcome-document.ts';
 import { pickDriveFile } from '@/storage/drive-picker.ts';
+import { setDriveFileProvider } from '@/storage/drive-file-provider.ts';
 import type { StoredDocRef } from '@/storage/storage-backend.ts';
 import { installPwaFileHandling, type FileHandlingWindowLike } from '@/command/pwa-file-handling';
 import {
@@ -339,6 +340,55 @@ async function browseDriveWithPicker(): Promise<void> {
   }
   await openDocumentFromDrive({ id: picked.id, name: picked.name });
 }
+
+/**
+ * 드라이브에서 문서를 하나 골라 내용을 돌려준다 (문서 비교 등에서 쓴다).
+ *
+ * 문서를 여는 것과 달리 편집기에 싣지 않고 바이트만 넘긴다.
+ */
+setDriveFileProvider(async () => {
+  if (!await ensureDriveConnected()) return null;
+
+  const ref = await new Promise<StoredDocRef | null>((resolve) => {
+    let settled = false;
+    const finish = (value: StoredDocRef | null) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+    const dialog = new DriveOpenDialog({
+      list: () => driveBackend.list(),
+      onPick: (picked) => finish(picked),
+      onBrowse: () => {
+        void (async () => {
+          const token = await driveAuth.getValidToken();
+          const picked = token ? await pickDriveFile(token) : null;
+          finish(picked ? { id: picked.id, name: picked.name } : null);
+        })();
+      },
+    });
+    // 고르지 않고 닫으면 취소다.
+    dialog.afterClose = () => window.setTimeout(() => finish(null), 0);
+    dialog.show();
+  });
+
+  if (!ref) return null;
+  if (!isSupportedDocumentFileName(ref.name)) {
+    showLoadError(new Error(`지원하지 않는 파일 형식입니다: ${ref.name}. HWP/HWPX/HML 파일만 지원합니다.`));
+    return null;
+  }
+  const { bytes, name } = await driveBackend.read(ref);
+  return { bytes, fileName: name };
+});
+
+registry.register({
+  id: 'tool:welcome-doc',
+  label: '사용법 문서 열기',
+  async execute() {
+    if (!await canReplaceCurrentDocument()) return;
+    await openWelcomeDocument();
+  },
+});
 
 driveAuth.onChange(() => {
   if (driveAuth.isConnected()) {
@@ -1509,7 +1559,17 @@ async function prepareStartupDocument(): Promise<void> {
     await createNewDocument();
     return;
   }
+  await openWelcomeDocument();
+}
 
+/**
+ * 사용법 문서를 연다.
+ *
+ * 첫 실행에 자동으로 열리지만, 나중에 다시 보고 싶을 수 있으므로
+ * `도구 → 사용법 문서 열기` 로도 부른다. 한 번 쓰고 마는 표식에 갇혀 다시 못 보면
+ * 안 된다.
+ */
+async function openWelcomeDocument(): Promise<void> {
   const msg = sbMessage();
   try {
     const docInfo = wasm.createNewDocument();

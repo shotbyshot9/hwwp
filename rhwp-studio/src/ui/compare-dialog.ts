@@ -4,6 +4,7 @@ import { compareDocuments } from '@/compare/diff-engine';
 import type { CompareSessionStore } from '@/compare/session';
 import type { CompareOptions, DiffItem, DiffKind } from '@/compare/types';
 import { CompareResultWindow } from './compare-result-window';
+import { getDriveFileProvider } from '@/storage/drive-file-provider.ts';
 
 const DEFAULT_KINDS: DiffKind[] = ['text', 'table', 'shape', 'image', 'chart'];
 const DEFAULT_COMPARE_OPTS: CompareOptions = {
@@ -91,7 +92,8 @@ export class CompareDialog {
     const hint = document.createElement('p');
     hint.className = 'history-hint';
     hint.textContent =
-      '두 문서를 업로드해 차이를 계산합니다. 결과를 클릭하면 좌/우 상세창에서 변경된 부분이 하이라이트되며 변경 구간 중심으로 표시됩니다.';
+      '두 문서를 골라 차이를 계산합니다. 내 컴퓨터의 파일과 구글 드라이브의 문서를 섞어 비교할 수 있습니다. '
+      + '결과를 클릭하면 좌/우 상세창에서 변경된 부분이 하이라이트되며 변경 구간 중심으로 표시됩니다.';
     body.appendChild(hint);
 
     const leftRow = document.createElement('div');
@@ -101,12 +103,12 @@ export class CompareDialog {
     leftLabel.textContent = '왼쪽 문서';
     const leftBtn = document.createElement('button');
     leftBtn.className = 'dialog-btn';
-    leftBtn.textContent = '파일 선택';
+    leftBtn.textContent = '내 컴퓨터';
     this.leftFileNameEl = document.createElement('span');
     this.leftFileNameEl.className = 'compare-file';
     this.leftFileNameEl.textContent = '(선택 안 됨)';
     leftBtn.addEventListener('click', () => void this.pickFile('left'));
-    leftRow.append(leftLabel, leftBtn, this.leftFileNameEl);
+    leftRow.append(leftLabel, leftBtn, this.makeDriveButton('left'), this.leftFileNameEl);
     body.appendChild(leftRow);
 
     const rightRow = document.createElement('div');
@@ -116,12 +118,12 @@ export class CompareDialog {
     rightLabel.textContent = '오른쪽 문서';
     const rightBtn = document.createElement('button');
     rightBtn.className = 'dialog-btn';
-    rightBtn.textContent = '파일 선택';
+    rightBtn.textContent = '내 컴퓨터';
     this.rightFileNameEl = document.createElement('span');
     this.rightFileNameEl.className = 'compare-file';
     this.rightFileNameEl.textContent = '(선택 안 됨)';
     rightBtn.addEventListener('click', () => void this.pickFile('right'));
-    rightRow.append(rightLabel, rightBtn, this.rightFileNameEl);
+    rightRow.append(rightLabel, rightBtn, this.makeDriveButton('right'), this.rightFileNameEl);
     body.appendChild(rightRow);
 
     const optWrap = document.createElement('div');
@@ -191,6 +193,45 @@ export class CompareDialog {
     }
   }
 
+  /**
+   * 드라이브에서 고르는 버튼.
+   * 드라이브 통로가 등록되지 않은 빌드에서는 빈 자리로 둔다.
+   */
+  private makeDriveButton(side: 'left' | 'right'): HTMLElement {
+    const btn = document.createElement('button');
+    btn.className = 'dialog-btn';
+    btn.textContent = '구글 드라이브';
+    if (!getDriveFileProvider()) {
+      btn.style.display = 'none';
+      return btn;
+    }
+    btn.addEventListener('click', () => void this.pickFromDrive(side));
+    return btn;
+  }
+
+  private async pickFromDrive(side: 'left' | 'right'): Promise<void> {
+    const provider = getDriveFileProvider();
+    if (!provider) return;
+    try {
+      const picked = await provider();
+      if (!picked) return;   // 취소
+      this.setFile(side, { bytes: picked.bytes, fileName: picked.fileName });
+    } catch (error) {
+      this.resultMetaEl.textContent =
+        `드라이브에서 불러오지 못했습니다 — ${error instanceof Error ? error.message : String(error)}`;
+    }
+  }
+
+  private setFile(side: 'left' | 'right', file: CompareFile): void {
+    if (side === 'left') {
+      this.leftFile = file;
+      this.leftFileNameEl.textContent = file.fileName;
+    } else {
+      this.rightFile = file;
+      this.rightFileNameEl.textContent = file.fileName;
+    }
+  }
+
   private async pickFile(side: 'left' | 'right'): Promise<void> {
     const input = document.createElement('input');
     input.type = 'file';
@@ -209,14 +250,7 @@ export class CompareDialog {
       return;
     }
     const bytes = new Uint8Array(await selected.arrayBuffer());
-    const picked: CompareFile = { bytes, fileName: selected.name };
-    if (side === 'left') {
-      this.leftFile = picked;
-      this.leftFileNameEl.textContent = selected.name;
-    } else {
-      this.rightFile = picked;
-      this.rightFileNameEl.textContent = selected.name;
-    }
+    this.setFile(side, { bytes, fileName: selected.name });
   }
 
   private async onRunCompare(): Promise<void> {
