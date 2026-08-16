@@ -45,6 +45,11 @@ export interface FocusModeDeps {
   getZoom: () => number | null;
   /** 화면 배율 지정 (1 = 100%) */
   setZoom: (zoom: number) => void;
+  /**
+   * 용지가 창 폭에 꼭 맞는 렌더 배율. 문서가 없으면 null.
+   * 설정 배율이 이보다 크면 가로 스크롤이 생기므로 여기서 멈춘다.
+   */
+  getFitWidthZoom: () => number | null;
 }
 
 const ICONS = {
@@ -114,9 +119,7 @@ export class FocusMode {
     this.savedZoom = this.deps.getZoom();
     this.savedThemeMode = getThemeMode();
     const settings = userSettings.getFocusSettings();
-    // 설정의 배율은 "용지 실물 대비" 다 — 화면 보정을 거쳐야 렌더 배율이 된다.
-    // 곧장 넘기면 상태 표시줄이 200% 대신 171% 처럼 어긋난 값을 보여 준다.
-    this.deps.setZoom(toRenderZoom(settings.zoomPercent / 100));
+    this.applyZoom(settings.zoomPercent);
     // applyTheme 은 화면에만 적용하고 저장하지 않는다(setThemeMode 와 다르다).
     // 덕분에 일반 화면의 테마 설정이 배명훈 모드 때문에 바뀌지 않는다.
     applyTheme(settings.theme);
@@ -197,12 +200,23 @@ export class FocusMode {
     if (!this.active) return;
     const settings = userSettings.getFocusSettings();
     applyTheme(settings.theme);
-    // 설정의 배율은 "용지 실물 대비" 다 — 화면 보정을 거쳐야 렌더 배율이 된다.
-    // 곧장 넘기면 상태 표시줄이 200% 대신 171% 처럼 어긋난 값을 보여 준다.
-    this.deps.setZoom(toRenderZoom(settings.zoomPercent / 100));
+    this.applyZoom(settings.zoomPercent);
     this.syncToggleButtons();
     this.renderStats();
     this.startTypewriter();
+  }
+
+  /**
+   * 설정 배율을 적용하되 창을 넘지 않게 한다.
+   *
+   * 200% 는 A4 를 1800px 넘게 그리는데 노트북 창은 대개 그보다 좁다. 그대로 두면
+   * 글을 읽으려고 가로로 스크롤해야 한다 — 글쓰기 화면에서 가장 방해되는 동작이다.
+   * 창에 안 들어가면 폭 맞춤에서 멈춘다.
+   */
+  private applyZoom(zoomPercent: number): void {
+    const wanted = toRenderZoom(zoomPercent / 100);
+    const fitWidth = this.deps.getFitWidthZoom();
+    this.deps.setZoom(fitWidth === null ? wanted : Math.min(wanted, fitWidth));
   }
 
   // ─── 입력 ────────────────────────────────────────────

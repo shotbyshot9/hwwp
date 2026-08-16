@@ -153,7 +153,7 @@ export class TitleBar {
     } else {
       this.driveLabel.textContent = '구글 드라이브 연결';
       this.driveBtn.classList.remove('tbar-drive-on');
-      this.driveBtn.title = 'WHP 폴더에 자동 저장합니다';
+      this.driveBtn.title = 'hwwp 폴더에 자동 저장합니다';
     }
   }
 

@@ -43,7 +43,7 @@ export class DriveOpenDialog extends ModalDialog {
 
     const hint = document.createElement('div');
     hint.className = 'drv-hint';
-    hint.textContent = 'WHP 로 저장한 문서입니다.';
+    hint.textContent = 'hwwp 로 저장한 문서입니다.';
     body.appendChild(hint);
 
     // drive.file 범위는 "앱이 만든 파일"에만 닿는다. 밖에서 넣은 파일은 목록에
@@ -101,7 +101,7 @@ export class DriveOpenDialog extends ModalDialog {
     try {
       const docs = await this.deps.list();
       if (docs.length === 0) {
-        this.renderMessage('WHP 로 저장한 문서가 아직 없습니다.\n드라이브의 다른 문서를 열려면 아래 「드라이브에서 찾아보기」를 누르세요.');
+        this.renderMessage('hwwp 로 저장한 문서가 아직 없습니다.\n드라이브의 다른 문서를 열려면 아래 「드라이브에서 찾아보기」를 누르세요.');
         return;
       }
       this.renderList(docs);

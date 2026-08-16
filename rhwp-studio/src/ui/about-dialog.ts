@@ -48,13 +48,13 @@ export class AboutDialog extends ModalDialog {
     // 제품 영문명
     const titleEn = document.createElement('div');
     titleEn.className = 'about-product-name';
-    titleEn.textContent = "hwwp — Writer's Homeground Processor";
+    titleEn.textContent = 'hwwp — Homeground of Writer Word Processor';
     body.appendChild(titleEn);
 
     // 제품 한글명
     const titleKo = document.createElement('div');
     titleKo.className = 'about-product-name-ko';
-    titleKo.textContent = '작가를 위한 HWP 오픈소스 편집기';
+    titleKo.textContent = '원고를 완성하고 싶은 작가를 위한 HWP 편집기';
     body.appendChild(titleKo);
 
     // 버전

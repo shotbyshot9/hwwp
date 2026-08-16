@@ -11,7 +11,12 @@
 
 // 확장자를 명시한다 — Node 의 ESM 해석기가 확장자 없는 상대 경로를 찾지 못해
 // 이 모듈을 단위 테스트에서 불러올 수 없다 (save-target.ts 와 같은 관례).
-import { DRIVE_API, DRIVE_FOLDER_NAME, DRIVE_UPLOAD_API } from './drive-config.ts';
+import {
+  DRIVE_API,
+  DRIVE_FOLDER_NAME,
+  DRIVE_UPLOAD_API,
+  LEGACY_DRIVE_FOLDER_NAMES,
+} from './drive-config.ts';
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 
@@ -166,18 +171,21 @@ export class DriveClient {
     if (this.folderLookup) return this.folderLookup;
 
     this.folderLookup = (async () => {
-      const q = [
-        `mimeType=${quoteQueryValue(FOLDER_MIME)}`,
-        `name=${quoteQueryValue(DRIVE_FOLDER_NAME)}`,
-        'trashed=false',
-      ].join(' and ');
-      const url = `${DRIVE_API}/files?q=${encodeURIComponent(q)}&fields=files(id,name,createdTime)&orderBy=createdTime`;
-      const found = await this.authorized(url).then((r) => r.json()) as { files?: DriveFile[] };
+      const current = await this.findFolderNamed(DRIVE_FOLDER_NAME);
+      if (current) {
+        this.folderId = current;
+        return current;
+      }
 
-      const existing = found.files?.[0];
-      if (existing) {
-        this.folderId = existing.id;
-        return existing.id;
+      // 개명 전 폴더가 남아 있으면 새로 만들지 않고 이름만 바꿔 이어 쓴다.
+      // 새로 만들면 그동안 저장한 문서가 옛 폴더에 남아 목록에서 사라진다.
+      for (const legacy of LEGACY_DRIVE_FOLDER_NAMES) {
+        const found = await this.findFolderNamed(legacy);
+        if (!found) continue;
+        await this.renameDoc(found, DRIVE_FOLDER_NAME);
+        console.info(`[drive] 작업 폴더 이름을 ${legacy} → ${DRIVE_FOLDER_NAME} 로 바꿨습니다`);
+        this.folderId = found;
+        return found;
       }
 
       const created = await this.authorized(`${DRIVE_API}/files?fields=id`, {
@@ -193,6 +201,22 @@ export class DriveClient {
     });
 
     return this.folderLookup;
+  }
+
+  /**
+   * 이름이 같은 폴더의 id 를 찾는다. 없으면 null.
+   * 여럿이면 가장 먼저 만들어진 것을 쓴다 — 다른 탭이 동시에 만들었을 때
+   * 문서가 두 폴더로 갈리는 것을 막는다.
+   */
+  private async findFolderNamed(name: string): Promise<string | null> {
+    const q = [
+      `mimeType=${quoteQueryValue(FOLDER_MIME)}`,
+      `name=${quoteQueryValue(name)}`,
+      'trashed=false',
+    ].join(' and ');
+    const url = `${DRIVE_API}/files?q=${encodeURIComponent(q)}&fields=files(id,name,createdTime)&orderBy=createdTime`;
+    const found = await this.authorized(url).then((r) => r.json()) as { files?: DriveFile[] };
+    return found.files?.[0]?.id ?? null;
   }
 
   /** hwwp 폴더 안의 문서 목록 (최근 수정 순) */

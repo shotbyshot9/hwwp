@@ -23,7 +23,7 @@ const SECTIONS: HelpSection[] = [
   {
     title: '저장 버튼이 없습니다',
     paragraphs: [
-      'WHP 는 구글 드라이브에 자동으로 저장합니다. 글 쓰기를 멈추면 2초 뒤, '
+      'hwwp 는 구글 드라이브에 자동으로 저장합니다. 글 쓰기를 멈추면 2초 뒤, '
       + '쉬지 않고 쓰는 중에도 30초마다 저장합니다.',
       '제목 줄 오른쪽 「구글 드라이브 연결」을 한 번 누르면, 드라이브에 hwwp 폴더가 '
       + '생기고 그 안에 문서가 쌓입니다. 저장 상태는 문서 이름 옆에 글자로 보입니다.',
@@ -44,7 +44,7 @@ const SECTIONS: HelpSection[] = [
     paragraphs: [
       '「파일 → 구글 드라이브에서 열기…」를 누르면 hwwp 로 저장한 문서가 최근 순으로 나옵니다.',
       '다른 곳에서 만들어 드라이브에 넣은 문서는 이 목록에 나오지 않습니다. '
-      + 'WHP 가 드라이브 전체를 들여다보지 않고 자기가 만든 파일만 다루기 때문입니다. '
+      + 'hwwp 가 드라이브 전체를 들여다보지 않고 자기가 만든 파일만 다루기 때문입니다. '
       + '그런 문서는 대화상자 아래 「드라이브에서 찾아보기…」로 찾아서 열 수 있습니다.',
       '찾아보기로 연 문서는 원래 있던 자리에서 그대로 갱신됩니다. hwwp 폴더에 사본이 '
       + '생기지 않습니다.',
@@ -89,7 +89,7 @@ const SECTIONS: HelpSection[] = [
 
 export class HelpDialog extends ModalDialog {
   constructor() {
-    super('WHP 사용법', 560);
+    super('hwwp 사용법', 560);
   }
 
   protected createBody(): HTMLElement {

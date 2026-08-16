@@ -1514,6 +1514,9 @@ async function prepareStartupDocument(): Promise<void> {
   try {
     const docInfo = wasm.createNewDocument();
     fillWelcomeDocument(wasm);
+    // 글을 채우고 나면 캐럿이 문서 끝에 남는다. 그대로 열면 타자기 스크롤이
+    // 캐럿을 따라가 첫 화면이 문서 맨 아래가 된다 — 처음 여는 문서는 처음부터 보여야 한다.
+    wasm.setCaretPosition(0, 0, 0);
     wasm.fileName = WELCOME_DOC_NAME;
     prepareCanvasRendererDocument();
     await autosaveManager.beginDocument(

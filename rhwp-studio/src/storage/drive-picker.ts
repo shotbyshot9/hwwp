@@ -126,7 +126,7 @@ export async function pickDriveFile(accessToken: string): Promise<PickedFile | n
       // 앱 ID 가 있어야 고른 파일에 drive.file 권한이 넘어온다.
       // 빠뜨리면 피커는 정상으로 보이는데 뒤이은 다운로드가 404 로 떨어진다.
       .setAppId(GOOGLE_PROJECT_NUMBER)
-      .setTitle('WHP 에서 열 문서를 고르세요')
+      .setTitle('hwwp 에서 열 문서를 고르세요')
       .addView(view)
       .setCallback((data) => {
         if (data.action === api.Action.PICKED) {

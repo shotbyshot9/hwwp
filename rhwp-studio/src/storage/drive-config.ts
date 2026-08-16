@@ -13,7 +13,7 @@
 const ENV_CLIENT_ID = import.meta.env?.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
 /**
- * 기본 OAuth 클라이언트 ID (프로젝트 `whprocessor`, 웹 애플리케이션 유형).
+ * 기본 OAuth 클라이언트 ID (Cloud 프로젝트 `whprocessor`, 웹 애플리케이션 유형).
  *
  * 크롬 확장으로 낼 때는 확장 ID 기반 클라이언트가 따로 필요하다 —
  * 확장은 MV3 CSP 가 원격 스크립트를 막아 GIS 를 못 불러오므로 인증 어댑터도 달라진다.
@@ -25,13 +25,21 @@ export const GOOGLE_CLIENT_ID = (ENV_CLIENT_ID?.trim() || '')
  * 요청 범위.
  *
  * `drive.file` 은 "이 앱이 만든 파일 + 사용자가 피커로 고른 파일"에만 닿는다.
- * WHP 폴더와 그 안의 문서는 앱이 만든 것이라 전부 다룰 수 있다.
+ * hwwp 폴더와 그 안의 문서는 앱이 만든 것이라 전부 다룰 수 있다.
  * 전체 `drive` 범위는 제한된 범위로 분류돼 공개 배포에 보안 심사가 붙으므로 쓰지 않는다.
  */
 export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
 /** 드라이브 안에 만들 작업 폴더 이름 */
-export const DRIVE_FOLDER_NAME = 'WHP';
+export const DRIVE_FOLDER_NAME = 'hwwp';
+
+/**
+ * 개명 전에 쓰던 폴더 이름.
+ *
+ * 이 이름의 폴더가 이미 있으면 새로 만들지 않고 이름만 바꿔 이어 쓴다. 새 폴더를
+ * 만들면 그동안 저장한 문서가 옛 폴더에 남아 목록에서 사라진다.
+ */
+export const LEGACY_DRIVE_FOLDER_NAMES = ['WHP'];
 
 /** 구글 아이덴티티 서비스 스크립트 (웹앱 전용 — 확장에서는 CSP 가 막는다) */
 export const GIS_SCRIPT_URL = 'https://accounts.google.com/gsi/client';

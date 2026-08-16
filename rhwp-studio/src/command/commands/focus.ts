@@ -1,6 +1,7 @@
 import type { CommandDef, CommandServices } from '../types';
 import { userSettings, type FocusCheerLevel } from '../../core/user-settings';
 import { FocusMode } from '../../focus/focus-mode';
+import { calculateFitWidthZoom } from '../../view/zoom-fit';
 
 /**
  * 배명훈 모드 커맨드.
@@ -51,6 +52,12 @@ function getFocusMode(services: CommandServices): FocusMode {
       getDocumentStats: () => documentStats(services),
       getZoom: () => services.getViewportManager()?.getZoom() ?? null,
       setZoom: (zoom) => services.getViewportManager()?.setZoom(zoom),
+      getFitWidthZoom: () => {
+        if (services.wasm.pageCount === 0) return null;
+        const container = document.getElementById('scroll-container');
+        if (!container) return null;
+        return calculateFitWidthZoom(container.clientWidth, services.wasm.getPageInfo(0).width);
+      },
     });
   }
   return focusMode;
