@@ -165,9 +165,9 @@ export const focusCommands: CommandDef[] = [
     id: 'focus:zoom',
     label: '배명훈 모드 배율',
     execute(services, params) {
-      const zoom = Number(params?.zoom ?? 200);
+      const zoom = Number(params?.zoom ?? 130);
       userSettings.updateFocusSettings({
-        zoomPercent: Number.isFinite(zoom) ? Math.min(400, Math.max(50, zoom)) : 200,
+        zoomPercent: Number.isFinite(zoom) ? Math.min(400, Math.max(50, zoom)) : 130,
       });
       syncFocusMenu();
       getFocusMode(services).refresh();

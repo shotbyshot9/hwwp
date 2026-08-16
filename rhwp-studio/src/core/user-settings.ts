@@ -72,7 +72,12 @@ export interface FocusSettings {
    * 배명훈 모드를 나가면 원래 화면 테마로 되돌아간다.
    */
   theme: 'light' | 'dark';
-  /** 배명훈 모드 진입 시 적용할 화면 배율(%). 나가면 원래 배율로 되돌린다. */
+  /**
+   * 배명훈 모드 진입 시 적용할 화면 배율(%). 나가면 원래 배율로 되돌린다.
+   *
+   * 창보다 넓어지면 폭 맞춤에서 멈추므로, 여기 값은 "이보다 크게는 안 한다" 는
+   * 상한에 가깝다.
+   */
   zoomPercent: number;
   /** 응원 강도 */
   cheerLevel: FocusCheerLevel;
@@ -189,7 +194,8 @@ function defaultSettings(): AppSettings {
     focus: {
       // 배명훈 모드는 어둡게가 기본 — 글 쓰는 화면이다.
       theme: 'dark',
-      zoomPercent: 200,
+      // 글이 편하게 읽히는 정도. 200% 는 A4 가 창을 넘어 가로 스크롤을 부른다.
+      zoomPercent: 130,
       cheerLevel: 'normal',
       confetti: true,
       sound: true,
