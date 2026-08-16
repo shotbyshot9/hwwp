@@ -85,8 +85,26 @@ export class DisplayCalibrationDialog extends ModalDialog {
     return body;
   }
 
+  override show(): void {
+    super.show();
+    // createBody 시점에는 아직 DOM 에 붙기 전이라 실측이 0 이고 zoom 보정이 건너뛰어진다.
+    // 화면에 올라온 뒤 한 번 더 그려야 첫 화면부터 실제 크기가 맞는다.
+    this.render();
+  }
+
   private render(): void {
-    this.bar.style.width = `${CREDIT_CARD_WIDTH_MM * this.pxPerMm}px`;
+    const targetPx = CREDIT_CARD_WIDTH_MM * this.pxPerMm;
+    this.bar.style.width = `${targetPx}px`;
+
+    // 앱 크롬은 --ui-scale 만큼 zoom 이 걸려 있고 대화상자도 그 안에 있다. 그러면
+    // 막대가 지정한 CSS 폭보다 크게 그려져, 사용자가 카드에 맞춘 값이 그 배율만큼
+    // 어긋난다(실측 1.28 배). 재는 도구는 화면에 그려진 크기가 곧 값이어야 하므로,
+    // 조상에 무엇이 걸려 있든 실측해서 되돌린다.
+    const shown = this.bar.getBoundingClientRect().width;
+    if (shown > 0 && Math.abs(shown - targetPx) > 0.5) {
+      this.bar.style.width = `${targetPx * (targetPx / shown)}px`;
+    }
+
     const ratio = this.pxPerMm / CSS_PX_PER_MM;
     this.readout.textContent =
       `화면 밀도 약 ${estimatedDpi(this.pxPerMm)}dpi · 기본값 대비 ${Math.round(ratio * 100)}%`;
