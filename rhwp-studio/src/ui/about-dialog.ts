@@ -1,8 +1,12 @@
 /**
  * 제품 정보 / 라이센스 다이얼로그
  *
- * HWP 공개 스펙(hwp_spec_5.0) 저작권 조항에 따른 필수 고지 문구를 포함한다.
- * 사용된 외부 크레이트의 오픈소스 라이선스 목록도 표시한다.
+ * 제품의 출발점(배명훈 〈홈, 어웨이〉)과 원본 rhwp 고지, 외부 크레이트의 오픈소스
+ * 라이선스 목록을 표시한다.
+ *
+ * 주의 — 원래 이 자리에 있던 "한글과컴퓨터의 한글 문서 파일(.hwp) 공개 문서를
+ * 참고하여 개발하였습니다" 문구는 HWP 공개 스펙의 고지 조항 때문에 있던 것이다.
+ * 제품 소유자의 결정으로 뺐다. 배포 형태에 따라 그 조항을 다시 살펴야 할 수 있다.
  */
 import { ModalDialog } from './dialog';
 
@@ -71,11 +75,12 @@ export class AboutDialog extends ModalDialog {
     tech.textContent = 'Rust + WebAssembly + TypeScript';
     body.appendChild(tech);
 
-    // HWP 스펙 고지 문구 (필수)
+    // 제품의 출발점
     const notice = document.createElement('div');
     notice.className = 'about-notice';
     notice.textContent =
-      '본 제품은 한글과컴퓨터의 한글 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다.';
+      "배명훈 작가의 단편소설 〈홈, 어웨이〉에 등장하는 '문장을 쓰면 환호하고 박수쳐 주는 "
+      + '텍스트 에디터\'에서 영감을 받아, rhwp를 기반으로 개발했습니다.';
     body.appendChild(notice);
 
     // 오픈소스 라이선스

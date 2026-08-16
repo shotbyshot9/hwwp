@@ -1,0 +1,69 @@
+/* ================================================================
+   구글 드라이브에서 열기 대화상자 — 접두어 drv-
+   ================================================================ */
+
+.drv-hint {
+  margin-bottom: 10px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-base);
+}
+
+.drv-list {
+  height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: 4px;
+}
+
+.drv-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 24px;
+  color: var(--color-text-hint);
+  font-size: var(--font-size-base);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.drv-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-md);
+  text-align: left;
+  cursor: pointer;
+}
+
+.drv-item:hover {
+  background: var(--color-hover-bg);
+}
+
+.drv-item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.drv-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drv-item-when {
+  flex-shrink: 0;
+  color: var(--color-text-hint);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}

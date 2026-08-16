@@ -23,5 +23,6 @@
 @import './styles/shape-picker.css';
 @import './styles/command-palette.css';
 @import './styles/compare-dialog.css';
+@import './styles/drive-open-dialog.css';
 @import './styles/focus-mode.css';
 @import './styles/responsive.css';

@@ -26,6 +26,8 @@ import { GisDriveAuth } from '@/storage/drive-auth.ts';
 import { DriveClient } from '@/storage/drive-client.ts';
 import { DriveBackend } from '@/storage/drive-backend.ts';
 import { AutosaveController } from '@/storage/autosave-controller.ts';
+import { DriveOpenDialog } from '@/ui/drive-open-dialog';
+import type { StoredDocRef } from '@/storage/storage-backend.ts';
 import { installPwaFileHandling, type FileHandlingWindowLike } from '@/command/pwa-file-handling';
 import {
   isSupportedDocumentFileName,
@@ -231,6 +233,60 @@ const autosave = new AutosaveController({
 // 발행되므로, 첫 저장이 실패(예: 드라이브 미연결)한 뒤로는 아무리 더 써도
 // 다시 불리지 않아 저장이 영영 재시도되지 않는다.
 eventBus.on('document-mutated', () => autosave.markChanged());
+
+/**
+ * 드라이브 문서를 연다.
+ *
+ * 바이트를 직접 로더에 넘기지 않고 기존 `open-document-bytes` 경로에 태운다 —
+ * 저장하지 않은 변경 확인, 암호 문서 처리, 오류 표시가 모두 그 경로에 있다.
+ * 로드가 끝난 뒤에야 저장 대상을 이 파일로 붙인다. initializeDocument 가 중간에
+ * `autosave.attach(null)` 로 되돌리므로 순서를 지켜야 한다.
+ */
+let driveOpenSeq = 0;
+async function openDocumentFromDrive(ref: StoredDocRef): Promise<void> {
+  const msg = sbMessage();
+  try {
+    msg.textContent = `드라이브에서 여는 중… — ${ref.name}`;
+    const { bytes, name } = await driveBackend.read(ref);
+
+    const requestId = `drive-open-${++driveOpenSeq}`;
+    const loaded = new Promise<boolean>((resolve) => {
+      const off = eventBus.on('open-document-bytes:done', (payload) => {
+        const done = payload as { requestId?: string; ok?: boolean };
+        if (done.requestId !== requestId) return;
+        off();
+        resolve(done.ok === true);
+      });
+    });
+
+    eventBus.emit('open-document-bytes', {
+      bytes,
+      fileName: name,
+      fileHandle: null,
+      requestId,
+    });
+
+    if (await loaded) autosave.attach(ref);
+  } catch (error) {
+    console.error('[drive] 문서 열기 실패:', error);
+    msg.textContent = `드라이브에서 열지 못했습니다 — ${error instanceof Error ? error.message : String(error)}`;
+  }
+}
+
+registry.register({
+  id: 'file:open-drive',
+  label: '구글 드라이브에서 열기',
+  execute() {
+    if (!driveAuth.isConnected()) {
+      sbMessage().textContent = '먼저 제목 줄에서 구글 드라이브를 연결하세요.';
+      return;
+    }
+    new DriveOpenDialog({
+      list: () => driveBackend.list(),
+      onPick: (ref) => void openDocumentFromDrive(ref),
+    }).show();
+  },
+});
 
 driveAuth.onChange(() => {
   if (driveAuth.isConnected()) {
