@@ -103,3 +103,8 @@ samples/issue836/
 __pycache__/
 *.pyc
 tmp/
+
+# OAuth 클라이언트 비밀 파일 — 절대 커밋하지 않는다.
+# 브라우저 전용 흐름에서는 client_secret 자체가 필요 없다.
+client_secret_*.json
+*.client_secret.json
