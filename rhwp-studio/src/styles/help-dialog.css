@@ -1,0 +1,54 @@
+/* ================================================================
+   사용법 대화상자 — 접두어 help-
+   ================================================================ */
+
+.help-body {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 4px 20px 16px;
+}
+
+.help-heading {
+  margin: 20px 0 8px;
+  color: var(--accent-strong);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.help-heading:first-child {
+  margin-top: 8px;
+}
+
+.help-para {
+  margin: 0 0 8px;
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+  line-height: 1.75;
+}
+
+.help-keys {
+  width: 100%;
+  margin-top: 4px;
+  border-collapse: collapse;
+  font-size: var(--font-size-md);
+}
+
+.help-keys td {
+  padding: 5px 0;
+  border-bottom: 1px solid var(--ui-border-subtle);
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.help-keys tr:last-child td {
+  border-bottom: none;
+}
+
+/* 단축키는 좁게 고정해 설명이 가지런히 붙게 한다 */
+.help-key {
+  width: 140px;
+  padding-right: 12px !important;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  white-space: nowrap;
+}

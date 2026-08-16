@@ -1,6 +1,7 @@
 import type { CommandDef } from '../types';
 import { OptionsDialog } from '../../ui/options-dialog';
 import { AboutDialog } from '../../ui/about-dialog';
+import { HelpDialog } from '../../ui/help-dialog';
 
 export const toolCommands: CommandDef[] = [
   {
@@ -9,6 +10,14 @@ export const toolCommands: CommandDef[] = [
     execute(services) {
       const dlg = new OptionsDialog(services.eventBus);
       dlg.show();
+    },
+  },
+  {
+    id: 'tool:help',
+    label: '사용법',
+    icon: 'icon-help',
+    execute() {
+      new HelpDialog().show();
     },
   },
   {
