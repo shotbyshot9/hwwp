@@ -27,6 +27,7 @@ import { DriveClient } from '@/storage/drive-client.ts';
 import { DriveBackend } from '@/storage/drive-backend.ts';
 import { AutosaveController } from '@/storage/autosave-controller.ts';
 import { DriveOpenDialog } from '@/ui/drive-open-dialog';
+import { pickDriveFile } from '@/storage/drive-picker.ts';
 import type { StoredDocRef } from '@/storage/storage-backend.ts';
 import { installPwaFileHandling, type FileHandlingWindowLike } from '@/command/pwa-file-handling';
 import {
@@ -285,6 +286,31 @@ registry.register({
       list: () => driveBackend.list(),
       onPick: (ref) => void openDocumentFromDrive(ref),
     }).show();
+  },
+});
+
+registry.register({
+  id: 'file:pick-drive',
+  label: '구글 드라이브에서 찾기',
+  async execute() {
+    if (!driveAuth.isConnected()) {
+      sbMessage().textContent = '먼저 제목 줄에서 구글 드라이브를 연결하세요.';
+      return;
+    }
+    const token = await driveAuth.getValidToken();
+    if (!token) {
+      sbMessage().textContent = '구글 인증이 만료되었습니다. 다시 연결해 주세요.';
+      return;
+    }
+    const picked = await pickDriveFile(token);
+    if (!picked) return;   // 취소
+
+    // 피커는 드라이브의 아무 파일이나 고를 수 있다 — 우리가 열 수 있는 것만 받는다.
+    if (!isSupportedDocumentFileName(picked.name)) {
+      showLoadError(new Error(`지원하지 않는 파일 형식입니다: ${picked.name}. HWP/HWPX/HML 파일만 지원합니다.`));
+      return;
+    }
+    await openDocumentFromDrive({ id: picked.id, name: picked.name });
   },
 });
 

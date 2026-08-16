@@ -36,6 +36,22 @@ export const DRIVE_FOLDER_NAME = 'WHP';
 /** 구글 아이덴티티 서비스 스크립트 (웹앱 전용 — 확장에서는 CSP 가 막는다) */
 export const GIS_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
 
+/** Google Picker 를 띄우는 데 쓰는 gapi 로더 */
+export const GAPI_SCRIPT_URL = 'https://apis.google.com/js/api.js';
+
+/**
+ * Picker 전용 API 키.
+ *
+ * 클라이언트 ID 와 마찬가지로 브라우저에 노출되는 공개 값이다. 실질 방어선은
+ * 콘솔의 키 제한(HTTP 리퍼러 + Google Picker API 한정)이다.
+ * 드라이브 읽기·쓰기는 이 키가 아니라 OAuth 토큰으로 한다 — 키는 피커 창을
+ * 띄우는 데만 쓰인다.
+ */
+const ENV_API_KEY = import.meta.env?.VITE_GOOGLE_API_KEY as string | undefined;
+
+export const GOOGLE_API_KEY = (ENV_API_KEY?.trim() || '')
+  || 'AIzaSyCc61dyYbLWgObLZ7o2m018qtiV_2ZVE_I';
+
 /** Drive REST v3 기본 주소 */
 export const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 export const DRIVE_UPLOAD_API = 'https://www.googleapis.com/upload/drive/v3';
