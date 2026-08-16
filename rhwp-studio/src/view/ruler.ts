@@ -3,6 +3,7 @@ import { WasmBridge } from '@/core/wasm-bridge';
 import type { ParaProperties } from '@/core/types';
 import { VirtualScroll } from './virtual-scroll';
 import { ViewportManager } from './viewport-manager';
+import { resolvePageScreenLeft } from './ruler-geometry';
 
 /** 1mm = 96 / 25.4 px (at 96dpi, zoom=1) */
 const PX_PER_MM = 96 / 25.4;
@@ -14,8 +15,14 @@ const RULER_SIZE = 20;
 const MARKER_SIZE = 6;
 
 interface RulerPalette {
+  /** 용지 밖(작업 영역) */
+  bgOutside: string;
+  /** 용지 안쪽이지만 본문이 아닌 여백 */
   bgMargin: string;
+  /** 본문 영역 */
   bgBody: string;
+  /** 용지 경계선 */
+  edge: string;
   tick: string;
   text: string;
   marker: string;
@@ -24,6 +31,7 @@ interface RulerPalette {
 function cssVar(name: string, fallback: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 }
+
 
 export class Ruler {
   private hCtx: CanvasRenderingContext2D | null;
@@ -82,8 +90,10 @@ export class Ruler {
 
   private palette(): RulerPalette {
     return {
+      bgOutside: cssVar('--ruler-outside', '#a8a8a8'),
       bgMargin: cssVar('--ruler-bg', '#d0d0d0'),
       bgBody: cssVar('--ruler-body', '#ffffff'),
+      edge: cssVar('--ruler-edge', '#8a8a8a'),
       tick: cssVar('--ruler-tick', '#555555'),
       text: cssVar('--ruler-text', '#333333'),
       marker: cssVar('--ruler-marker', '#4080c0'),
@@ -124,12 +134,26 @@ export class Ruler {
     this.drawVertical();
   }
 
-  /** 페이지 좌측 화면 좌표를 계산한다 (scroll-container 뷰포트 기준). */
+  /**
+   * 페이지 좌측 화면 좌표를 계산한다 (scroll-container 뷰포트 기준).
+   *
+   * `#scroll-content` 는 `margin: 0 auto` 라서 컨테이너보다 좁으면 CSS 가 가운데로
+   * 밀어 준다. 이 이동량을 더하지 않으면 눈금자가 실제 용지보다 왼쪽에 그려진다
+   * (1245px 컨테이너 / 834px 콘텐츠에서 206px, 약 5.4cm 어긋났다).
+   * 콘텐츠가 컨테이너보다 넓으면 정렬이 일어나지 않고 scrollX 가 그 역할을 한다.
+   *
+   * 폭은 `#scroll-content` 의 실측값을 쓴다 — 캐럿 렌더러가 쓰는 기준과 같아야
+   * 눈금자와 캐럿이 어긋나지 않는다.
+   */
   private getPageScreenLeft(scrollX: number): number {
-    return this.virtualScroll.getPageLeftResolved(
-      0,
-      this.virtualScroll.getTotalWidth(),
-    ) - scrollX;
+    const content = this.container.querySelector<HTMLElement>('#scroll-content');
+    const contentWidth = content?.clientWidth || this.virtualScroll.getTotalWidth();
+    return resolvePageScreenLeft(
+      this.virtualScroll.getPageLeftResolved(0, contentWidth),
+      this.container.clientWidth,
+      contentWidth,
+      scrollX,
+    );
   }
 
   /** 커서가 위치한 문단 속성이 변경되었을 때 호출 */
@@ -195,8 +219,8 @@ export class Ruler {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const palette = this.palette();
 
-    // 전체 배경 (여백색)
-    ctx.fillStyle = palette.bgMargin;
+    // 전체 배경 (용지 밖 = 작업 영역)
+    ctx.fillStyle = palette.bgOutside;
     ctx.fillRect(0, 0, canvasW, canvasH);
 
     if (this.wasm.pageCount === 0) {
@@ -211,6 +235,10 @@ export class Ruler {
     // 페이지 화면 좌표 (편집 용지와 정확히 일치)
     const pageScreenLeft = this.getPageScreenLeft(scrollX);
     const pageDisplayWidth = pageInfo.width * zoom;
+
+    // 용지 범위 (여백색) — 용지 밖과 확실히 구분되게 먼저 깔고 경계선을 긋는다
+    ctx.fillStyle = palette.bgMargin;
+    ctx.fillRect(pageScreenLeft, 0, pageDisplayWidth, canvasH);
 
     // 본문 영역 배경
     const bodyLeftPx = pageScreenLeft + pageInfo.marginLeft * zoom;
@@ -241,6 +269,19 @@ export class Ruler {
     } else {
       ctx.fillStyle = palette.bgBody;
       ctx.fillRect(bodyLeftPx, 0, bodyRightPx - bodyLeftPx, canvasH);
+    }
+
+    // 용지 좌우 경계선 — 어디까지가 종이인지 한눈에 보이게 한다
+    ctx.strokeStyle = palette.edge;
+    ctx.lineWidth = 1;
+    for (const edgeX of [pageScreenLeft, pageScreenLeft + pageDisplayWidth]) {
+      if (edgeX < -1 || edgeX > canvasW + 1) continue;
+      // 0.5 보정: 1px 선이 픽셀 경계에 걸쳐 흐려지는 것을 막는다
+      const x = Math.round(edgeX) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvasH);
+      ctx.stroke();
     }
 
     // mm 눈금 그리기
@@ -343,8 +384,8 @@ export class Ruler {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const palette = this.palette();
 
-    // 전체 배경 (여백색)
-    ctx.fillStyle = palette.bgMargin;
+    // 전체 배경 (용지 밖 = 작업 영역)
+    ctx.fillStyle = palette.bgOutside;
     ctx.fillRect(0, 0, canvasW, canvasH);
 
     if (this.wasm.pageCount === 0) {
@@ -364,12 +405,29 @@ export class Ruler {
       // 페이지 상단의 화면 좌표 (scroll-container 뷰포트 기준)
       const pageScreenTop = this.virtualScroll.getPageOffset(pageIdx) - scrollY;
       const pageInfo = this.wasm.getPageInfo(pageIdx);
+      const pageDisplayHeight = pageInfo.height * zoom;
+
+      // 용지 범위 (여백색) — 페이지 사이 간격이 용지 밖 색으로 남아 경계가 드러난다
+      ctx.fillStyle = palette.bgMargin;
+      ctx.fillRect(0, pageScreenTop, canvasW, pageDisplayHeight);
 
       // 본문 영역 배경
       const bodyTopPx = pageScreenTop + (pageInfo.marginHeader + pageInfo.marginTop) * zoom;
-      const bodyBottomPx = pageScreenTop + pageInfo.height * zoom - (pageInfo.marginFooter + pageInfo.marginBottom) * zoom;
+      const bodyBottomPx = pageScreenTop + pageDisplayHeight - (pageInfo.marginFooter + pageInfo.marginBottom) * zoom;
       ctx.fillStyle = palette.bgBody;
       ctx.fillRect(0, bodyTopPx, canvasW, bodyBottomPx - bodyTopPx);
+
+      // 용지 상하 경계선
+      ctx.strokeStyle = palette.edge;
+      ctx.lineWidth = 1;
+      for (const edgeY of [pageScreenTop, pageScreenTop + pageDisplayHeight]) {
+        if (edgeY < -1 || edgeY > canvasH + 1) continue;
+        const y = Math.round(edgeY) + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvasW, y);
+        ctx.stroke();
+      }
 
       // mm 눈금 그리기
       const pageHeightMm = Math.ceil(pageInfo.height / PX_PER_MM);

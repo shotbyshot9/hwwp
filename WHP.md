@@ -1,4 +1,4 @@
-# whp — Writer's Homeground Processor
+# WHP — Writer's Homeground Processor
 
 작가를 위한 워드프로세서. [rhwp](https://github.com/edwardkim/rhwp)(MIT)를 갈라 만들었다.
 
@@ -11,7 +11,7 @@
 - 문서 엔진: [rhwp](https://github.com/edwardkim/rhwp) — MIT, © 2025-2026 Edward Kim
 - 집중 모드의 착상: [Writer's Homeground](https://writerhomeground.lovable.app/) —
   배명훈 작가의 소설에 나오는 워드프로세서에서 출발한 웹 실험작. 문장부호를 하나 찍을
-  때마다 박수와 폭죽이 터지는 "응원하는 워드프로세서"라는 발상을 whp 로 옮겼다.
+  때마다 박수와 폭죽이 터지는 "응원하는 워드프로세서"라는 발상을 WHP 로 옮겼다.
 
 rhwp 는 MIT 라이선스이므로 파생·개명·재배포가 자유롭다. 원저작권 고지는 `LICENSE`와
 제품 정보 대화상자에 그대로 남긴다.
@@ -43,7 +43,7 @@ Writer's Homeground 의 화면을 그대로 옮긴다.
 구현은 `applyTheme()` 을 쓴다 — `setThemeMode()` 와 달리 화면에만 적용하고 설정에
 저장하지 않는다. 진입할 때 일반 화면의 배율·테마 모드를 기억해 두었다가 나갈 때 되돌린다.
 
-원본과 다른 점 하나 — whp 는 진짜 HWP 문서를 다루므로 가운데는 빈 textarea 가 아니라
+원본과 다른 점 하나 — WHP 는 진짜 HWP 문서를 다루므로 가운데는 빈 textarea 가 아니라
 실제 편집 용지다. 종이는 남기되 주변 크롬만 갈아 끼웠다.
 
 **어두운 편집 용지** — 렌더러는 용지를 늘 흰색으로 그린다(WYSIWYG 이라 당연하다).
@@ -139,7 +139,7 @@ rhwp-studio/src/
   문단 단위 알파를 넣어야 한다. DOM 오버레이로는 안 된다.
 - **뽀모도로 타이머** — 현재 세션 목표는 글자수 기준만 있다.
 - **집중 모드 중 대화상자 억제(큐잉)**
-- **전면 개명** — 제품 이름·창 제목·제품 정보는 whp 로 바꿨지만, 크레이트 이름과
+- **전면 개명** — 제품 이름·창 제목·제품 정보는 WHP 로 바꿨지만, 크레이트 이름과
   `pkg/rhwp.js` 등 WASM 산출물 식별자는 아직 rhwp 다. 빌드 파이프라인 전체를 함께
   옮겨야 해서 별도 작업으로 분리했다.
 

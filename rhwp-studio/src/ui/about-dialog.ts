@@ -44,7 +44,7 @@ export class AboutDialog extends ModalDialog {
     // 제품 영문명
     const titleEn = document.createElement('div');
     titleEn.className = 'about-product-name';
-    titleEn.textContent = "whp — Writer's Homeground Processor";
+    titleEn.textContent = "WHP — Writer's Homeground Processor";
     body.appendChild(titleEn);
 
     // 제품 한글명
@@ -102,8 +102,9 @@ export class AboutDialog extends ModalDialog {
     // 저작권
     const copyright = document.createElement('div');
     copyright.className = 'about-copyright';
-    // whp \uB294 rhwp(MIT) \uD30C\uC0DD\uBB3C\uC774\uBBC0\uB85C \uC6D0\uC800\uC791\uAD8C \uACE0\uC9C0\uB97C \uD568\uAED8 \uB0A8\uAE34\uB2E4.
-    copyright.textContent = '\u00A9 2026 whp \u00B7 based on rhwp (MIT) \u00A9 2025-2026 Edward Kim';
+    // WHP \uB294 rhwp(MIT) \uD30C\uC0DD\uBB3C\uC774\uB2E4. MIT \uB294 \uC800\uC791\uAD8C \uACE0\uC9C0\uC640 \uD5C8\uAC00 \uBB38\uAD6C\uB97C \uC0AC\uBCF8\uC5D0 \uD568\uAED8
+    // \uB0A8\uAE38 \uAC83\uC744 \uC694\uAD6C\uD558\uB294\uB370, \uC6F9\uC571 \uC0AC\uC6A9\uC790\uB294 LICENSE \uD30C\uC77C\uC744 \uBC1B\uC9C0 \uC54A\uC73C\uBBC0\uB85C \uC5EC\uAE30\uC5D0 \uB454\uB2E4.
+    copyright.textContent = '\u00A9 2026 WHP \u00B7 based on rhwp (MIT) \u00A9 2025-2026 Edward Kim';
     body.appendChild(copyright);
 
     return body;

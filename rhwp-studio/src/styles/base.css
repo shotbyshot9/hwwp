@@ -56,8 +56,11 @@
   --table-selection-stroke: #337ab7;
 
   /* 눈금자 */
+  /* 용지 밖(작업 영역) / 용지의 여백 / 본문 — 세 단계로 구분한다 */
+  --ruler-outside: #a8a8a8;
   --ruler-bg: #d0d0d0;
   --ruler-body: #ffffff;
+  --ruler-edge: #8a8a8a;
   --ruler-tick: #555555;
   --ruler-text: #333333;
   --ruler-marker: #4080c0;
@@ -198,8 +201,10 @@
   --table-selection-fill: rgba(139, 184, 255, 0.28);
   --table-selection-stroke: #8bb8ff;
 
+  --ruler-outside: #1b1f24;
   --ruler-bg: #2d333b;
   --ruler-body: var(--ui-surface-raised);
+  --ruler-edge: #59616b;
   --ruler-tick: #c2cad6;
   --ruler-text: #e3e7ed;
   --ruler-marker: #8bb8ff;
