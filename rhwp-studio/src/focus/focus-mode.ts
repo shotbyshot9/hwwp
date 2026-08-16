@@ -340,7 +340,8 @@ export class FocusMode {
     const sub = document.createElement('div');
     sub.className = 'fm-brand-sub';
     // 이름의 유래를 화면에 남겨 둔다 — 이 모드가 어디서 왔는지가 곧 제품의 뿌리다.
-    sub.textContent = '〈홈, 어웨이〉의 환호하는 에디터에서';
+    // 한 문장으로 끝맺는다. "…에서" 로 끊으면 말이 잘린 것처럼 읽힌다.
+    sub.textContent = '배명훈 〈홈, 어웨이〉의 환호하는 에디터에서 왔습니다';
     text.append(title, sub);
     brand.append(mark, text);
 
