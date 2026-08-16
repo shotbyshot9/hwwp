@@ -5,6 +5,12 @@
  * 섹션별 확장 가능한 구조.
  */
 
+// `@/` 별칭이 아니라 상대 경로로 부른다 — user-settings 는 node --test 가 직접
+// 불러오는 모듈이고, 거기서는 vite 별칭이 풀리지 않는다.
+import { normalizeCheerRate, type FocusCheerRate } from '../focus/cheer-rate.ts';
+
+export type { FocusCheerRate };
+
 /** 대표 글꼴 세트 (7개 언어별 글꼴) */
 export interface FontSet {
   name: string;
@@ -79,8 +85,15 @@ export interface FocusSettings {
    * 상한에 가깝다.
    */
   zoomPercent: number;
-  /** 응원 강도 */
+  /** 응원 강도 (한 번의 응원이 얼마나 큰가) */
   cheerLevel: FocusCheerLevel;
+  /**
+   * 응원 배속 (응원이 얼마나 자주 터지는가).
+   *
+   * x1 은 문장부호를 찍을 때 — 대략 한 문장에 한 번이다. 그보다 자주 응원받고
+   * 싶으면 올린다. 자세한 계산은 `focus/cheer-rate.ts`.
+   */
+  cheerRate: FocusCheerRate;
   /** 폭죽 효과 사용 여부 */
   confetti: boolean;
   /** 박수 효과음 사용 여부 */
@@ -197,6 +210,7 @@ function defaultSettings(): AppSettings {
       // 글이 편하게 읽히는 정도. 200% 는 A4 가 창을 넘어 가로 스크롤을 부른다.
       zoomPercent: 130,
       cheerLevel: 'normal',
+      cheerRate: 1,
       confetti: true,
       sound: true,
       praise: true,
@@ -299,6 +313,7 @@ class UserSettingsService {
           theme: focus.theme === 'light' || focus.theme === 'dark' ? focus.theme : defaults.focus.theme,
           zoomPercent: normalizeNumber(focus.zoomPercent, defaults.focus.zoomPercent, 50, 400),
           cheerLevel: normalizeCheerLevel(focus.cheerLevel, defaults.focus.cheerLevel),
+          cheerRate: normalizeCheerRate(focus.cheerRate, defaults.focus.cheerRate),
           confetti: normalizeBoolean(focus.confetti, defaults.focus.confetti),
           sound: normalizeBoolean(focus.sound, defaults.focus.sound),
           praise: normalizeBoolean(focus.praise, defaults.focus.praise),

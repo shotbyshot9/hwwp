@@ -1,5 +1,6 @@
 import type { CommandDef, CommandServices } from '../types';
 import { userSettings, type FocusCheerLevel } from '../../core/user-settings';
+import { normalizeCheerRate, type FocusCheerRate } from '../../focus/cheer-rate';
 import { FocusMode } from '../../focus/focus-mode';
 import { calculateFitWidthZoom } from '../../view/zoom-fit';
 
@@ -68,6 +69,11 @@ export function currentFocusMode(): FocusMode | null {
   return focusMode;
 }
 
+/** 메뉴의 `data-rate` 는 문자열이다 — 숫자 단계와 'max' 를 갈라 읽는다 */
+function readCheerRate(raw: string | undefined): FocusCheerRate {
+  return normalizeCheerRate(raw === 'max' ? 'max' : Number(raw));
+}
+
 /** 메뉴 항목의 켜짐 표시를 현재 설정과 맞춘다 */
 export function syncFocusMenu(): void {
   const s = userSettings.getFocusSettings();
@@ -89,6 +95,9 @@ export function syncFocusMenu(): void {
   document.querySelectorAll('[data-cmd="focus:goal"]').forEach((el) => {
     const goal = Number((el as HTMLElement).dataset.goal ?? '0');
     el.classList.toggle('active', goal === s.goalChars);
+  });
+  document.querySelectorAll('[data-cmd="focus:cheer-rate"]').forEach((el) => {
+    el.classList.toggle('active', readCheerRate((el as HTMLElement).dataset.rate) === s.cheerRate);
   });
   document.querySelectorAll('[data-cmd="focus:zoom"]').forEach((el) => {
     const zoom = Number((el as HTMLElement).dataset.zoom ?? '0');
@@ -169,6 +178,18 @@ export const focusCommands: CommandDef[] = [
       userSettings.updateFocusSettings({
         zoomPercent: Number.isFinite(zoom) ? Math.min(400, Math.max(50, zoom)) : 130,
       });
+      syncFocusMenu();
+      getFocusMode(services).refresh();
+    },
+  },
+  {
+    // 머리글의 배속 단추와 같은 설정을 가리킨다 — 배명훈 모드에 들어가지 않고도
+    // 바꿀 수 있게 메뉴에도 둔다. refresh() 가 단추 표시까지 맞춰 준다.
+    id: 'focus:cheer-rate',
+    label: '응원 배속',
+    execute(services, params) {
+      const cheerRate = readCheerRate(params?.rate as string | undefined);
+      userSettings.updateFocusSettings({ cheerRate });
       syncFocusMenu();
       getFocusMode(services).refresh();
     },

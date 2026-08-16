@@ -21,6 +21,7 @@ import { applyTheme, getThemeMode } from '@/core/theme';
 import { toRenderZoom } from '@/core/display-calibration.ts';
 import type { ThemeMode } from '@/core/user-settings';
 import { CheerEngine } from './cheer-engine';
+import { cheerRateLabel, describeCheerRate, nextCheerRate } from './cheer-rate.ts';
 
 /** 캐럿을 붙잡아 둘 화면 높이 비율 (0=최상단, 1=최하단) */
 const TYPEWRITER_ANCHOR = 0.4;
@@ -108,6 +109,7 @@ export class FocusMode {
   private confettiBtn: HTMLButtonElement | null = null;
   private soundBtn: HTMLButtonElement | null = null;
   private themeBtn: HTMLButtonElement | null = null;
+  private rateBtn: HTMLButtonElement | null = null;
 
   private startedAt = 0;
   private sessionChars = 0;
@@ -221,6 +223,7 @@ export class FocusMode {
     this.confettiBtn = null;
     this.soundBtn = null;
     this.themeBtn = null;
+    this.rateBtn = null;
 
     // 일반 화면의 배율·테마를 되돌린다.
     if (this.savedThemeMode) applyTheme(this.savedThemeMode);
@@ -341,7 +344,7 @@ export class FocusMode {
     sub.className = 'fm-brand-sub';
     // 이름의 유래를 화면에 남겨 둔다 — 이 모드가 어디서 왔는지가 곧 제품의 뿌리다.
     // 한 문장으로 끝맺는다. "…에서" 로 끊으면 말이 잘린 것처럼 읽힌다.
-    sub.textContent = '배명훈 〈홈, 어웨이〉의 환호하는 에디터에서 왔습니다';
+    sub.textContent = '배명훈 〈홈, 어웨이〉의 환호하는 에디터에서 영감을 받았습니다';
     text.append(title, sub);
     brand.append(mark, text);
 
@@ -366,6 +369,14 @@ export class FocusMode {
       userSettings.updateFocusSettings({ sound: next });
       this.syncToggleButtons();
     });
+    // 다른 버튼과 달리 켜고 끄는 것이 아니라 단계를 돌린다:
+    // x1 → x2 → x3 → x5 → x10 → MAX → x1.
+    this.rateBtn = this.makeIconButton(actions, () => {
+      const next = nextCheerRate(userSettings.getFocusSettings().cheerRate);
+      userSettings.updateFocusSettings({ cheerRate: next });
+      this.syncToggleButtons();
+    });
+    this.rateBtn.classList.add('fm-rate-btn');
 
     const exit = this.makeIconButton(actions, () => this.exit());
     exit.classList.add('fm-icon-btn-exit');
@@ -451,6 +462,16 @@ export class FocusMode {
       this.soundBtn.title = s.sound ? '박수 효과음 끄기' : '박수 효과음 켜기';
       this.soundBtn.setAttribute('aria-label', this.soundBtn.title);
       this.soundBtn.classList.toggle('fm-icon-btn-off', !s.sound);
+    }
+    if (this.rateBtn) {
+      const label = cheerRateLabel(s.cheerRate);
+      this.rateBtn.textContent = label;
+      // 글자수에 따라 크기를 줄여 'MAX' 도 같은 버튼 안에 들어가게 한다.
+      this.rateBtn.dataset.len = String(label.length);
+      this.rateBtn.title = `응원 배속 ${label} — ${describeCheerRate(s.cheerRate)} (눌러서 다음 단계)`;
+      this.rateBtn.setAttribute('aria-label', this.rateBtn.title);
+      this.rateBtn.classList.toggle('fm-rate-btn-boost', s.cheerRate !== 1);
+      this.rateBtn.classList.toggle('fm-rate-btn-max', s.cheerRate === 'max');
     }
     if (this.themeBtn) {
       const dark = s.theme === 'dark';

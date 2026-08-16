@@ -111,9 +111,12 @@ test('CanvasView and ruler consume the stable horizontal coordinate', () => {
   );
 
   assert.match(canvasSource, /getCenteredScrollLeft\(/);
+  // 눈금자는 여전히 안정 좌표(getPageLeftResolved)를 쓴다. 다만 폭은 `#scroll-content`
+  // 실측값을 넘긴다 — 캐럿 렌더러와 같은 기준이어야 눈금자가 용지와 어긋나지 않는다.
+  assert.match(rulerSource, /getPageLeftResolved\(\s*0,\s*contentWidth,?\s*\)/);
   assert.match(
     rulerSource,
-    /getPageLeftResolved\(\s*0,\s*this\.virtualScroll\.getTotalWidth\(\),?\s*\)/,
+    /contentWidth = content\?\.clientWidth \|\| this\.virtualScroll\.getTotalWidth\(\)/,
   );
   assert.doesNotMatch(rulerSource, /contentOffsetX/);
 });

@@ -4,12 +4,17 @@
  * 문장부호를 하나 찍을 때마다 박수와 폭죽으로 응원한다. 쉬지 않고 이어 쓸수록
  * 반응이 커지고(스트릭), 2초 이상 멈추면 처음부터 다시 쌓인다.
  *
+ * 문장부호만으로는 한 문장에 한 번(≈60타) 꼴이라 드문드문하게 느껴진다. 그래서
+ * 응원 배속(`cheer-rate.ts`)을 두어 정해진 글자수마다도 터지게 했다. 배속을 올려도
+ * 문장부호 응원은 그대로 남는다.
+ *
  * 효과음은 Writer's Homeground 가 쓰던 환호·박수 음원 15개(`/sounds/sfx-01~15.mp3`)를
  * 그대로 가져와 쓴다. 직전에 난 소리는 연속으로 고르지 않는다.
  * 음원을 못 불러오면 WebAudio 합성 박수로 물러난다(오프라인·자산 누락 대비).
  */
 
 import { userSettings, type FocusCheerLevel, type FocusSettings } from '@/core/user-settings';
+import { charsPerCheer, cheerRateGain } from './cheer-rate.ts';
 import { ConfettiLayer } from './confetti';
 
 /** 응원을 촉발하는 문장부호(한중일 전각 포함) */
@@ -29,6 +34,15 @@ const PRAISE_COOLDOWN_MS = 5000;
 
 /** 폭죽 최소 간격(ms) — 빠른 타이핑에서 화면이 뭉개지지 않게 한다 */
 const BURST_THROTTLE_MS = 250;
+
+/**
+ * 효과음 최소 간격(ms).
+ *
+ * 사람이 아무리 빨라도 한글 한 글자에 200ms 안팎이라 실제 타이핑에서는 걸리지
+ * 않는다. 붙여넣기처럼 글자가 한꺼번에 쏟아질 때 음원이 수십 개 겹쳐 소음이
+ * 되는 것만 막는 안전장치다.
+ */
+const SOUND_THROTTLE_MS = 90;
 
 /** 환호·박수 음원 개수 (`/sounds/sfx-01.mp3` ~ `sfx-15.mp3`) */
 const SFX_COUNT = 15;
@@ -78,11 +92,26 @@ export class CheerEngine {
 
   private lastInputAt = 0;
   private lastBurstAt = 0;
+  private lastSoundAt = 0;
   private lastPraiseAt = 0;
   /** 스트릭 중 터진 응원 횟수 */
   private burstCount = 0;
-  /** 마지막 응원 이후 입력된 글자수 */
+  /** 마지막 응원 이후 입력된 글자수 — 배속 문턱과 소리 크기를 정한다 */
   private charsSinceBurst = 0;
+  /**
+   * 마지막 문장부호 이후 입력된 글자수 — 축포(`longRun`) 판정에만 쓴다.
+   *
+   * 배속을 올리면 `charsSinceBurst` 가 몇 글자마다 0 이 되므로, 그것으로는
+   * "문장부호 없이 길게 이어 썼다" 를 알 수 없다. 그래서 따로 센다.
+   */
+  private charsSinceSentence = 0;
+  /**
+   * 이번 문장에서 축포를 이미 터뜨렸는가.
+   *
+   * 배속이 높으면 긴 문장 하나가 응원을 여러 번 부르는데, 그때마다 축포를 쏘면
+   * 문장이 길어질수록 화면이 폭죽으로 덮인다. 한 문장에 한 번으로 제한한다.
+   */
+  private longRunFired = false;
 
   /**
    * 오디오 잠금 해제. 브라우저는 사용자 제스처 없이 소리를 못 내므로
@@ -127,13 +156,24 @@ export class CheerEngine {
     }
     this.lastInputAt = now;
     this.charsSinceBurst += text.length;
+    this.charsSinceSentence += text.length;
 
-    if (!TRIGGERS.some((t) => text.includes(t))) return;
+    // 문장을 끝냈거나, 배속이 정한 글자수만큼 썼거나 — 둘 중 하나면 응원한다.
+    const sentenceEnded = TRIGGERS.some((t) => text.includes(t));
+    const pacedOut = this.charsSinceBurst >= charsPerCheer(settings.cheerRate);
+    if (!sentenceEnded && !pacedOut) return;
 
     this.burstCount += 1;
-    const longRun = this.charsSinceBurst > LONG_RUN_CHARS;
-    const volume = this.currentVolume();
+    // 축포는 "문장부호 없이 길게 이어 썼다" 에 대한 보상이다 — 배속과 무관하고,
+    // 한 문장에 한 번만 터진다.
+    const longRun = this.charsSinceSentence > LONG_RUN_CHARS && !this.longRunFired;
+    if (longRun) this.longRunFired = true;
+    const volume = this.currentVolume() * cheerRateGain(settings.cheerRate);
     this.charsSinceBurst = 0;
+    if (sentenceEnded) {
+      this.charsSinceSentence = 0;
+      this.longRunFired = false;
+    }
 
     this.burst(settings, volume, longRun, now);
   }
@@ -166,6 +206,8 @@ export class CheerEngine {
     this.lastSfx = -1;
     this.burstCount = 0;
     this.charsSinceBurst = 0;
+    this.charsSinceSentence = 0;
+    this.longRunFired = false;
   }
 
   /** 현재 스트릭 길이 (연속 응원 횟수) */
@@ -182,7 +224,8 @@ export class CheerEngine {
       else this.confetti.fireEdgeBurst(gain.confetti);
     }
 
-    if (settings.sound && gain.sound > 0) {
+    if (settings.sound && gain.sound > 0 && now - this.lastSoundAt >= SOUND_THROTTLE_MS) {
+      this.lastSoundAt = now;
       this.playCheer(volume * gain.sound, longRun);
       if (longRun) this.playChime(volume * gain.sound);
     }
