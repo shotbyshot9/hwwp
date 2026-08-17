@@ -36,6 +36,14 @@ export interface AutosaveDeps {
   onRenamed: (name: string) => void;
   /** 상태 변화 통지 (제목 줄 표시용) */
   onState: (state: SaveState) => void;
+  /**
+   * 이 문서가 저장소에 **처음 만들어졌을 때** 한 번 불린다 (덮어쓰기는 제외).
+   *
+   * 로컬에서 연 문서를 고치면 그 순간 드라이브에 새 파일이 생기는데, 아무 말도
+   * 없으면 사용자는 자기 글이 어디로 갔는지 모른다. 나중에 디스크의 원본을 다시
+   * 열고 "고친 게 없다" 고 놀라게 된다. 그 순간을 알릴 수 있게 뚫어 둔 자리다.
+   */
+  onCreated?: (ref: StoredDocRef) => void;
 }
 
 /**
@@ -107,7 +115,8 @@ export class AutosaveController {
     if (this.timer === null && !this.saving) this.firstChangeAt = now;
     this.lastChangeAt = now;
     this.dirty = true;
-    this.deps.onState({ kind: 'dirty' });
+    // 저장할 곳이 없으면 "변경됨" 이라고 하지 않는다 — 곧 저장될 것처럼 읽힌다.
+    this.deps.onState(this.deps.getBackend() ? { kind: 'dirty' } : { kind: 'unsaved' });
     this.schedule();
   }
 
@@ -157,7 +166,13 @@ export class AutosaveController {
     }
 
     const backend = this.deps.getBackend();
-    if (!backend || !backend.isReady()) {
+    // 저장소가 없는 것과 있는데 지금 못 쓰는 것은 사용자가 할 일이 다르다.
+    // 앞은 직접 저장해야 하고, 뒤는 기다리면 된다.
+    if (!backend) {
+      this.deps.onState({ kind: 'unsaved' });
+      return;
+    }
+    if (!backend.isReady()) {
       this.deps.onState({ kind: 'offline' });
       return;
     }
@@ -175,13 +190,16 @@ export class AutosaveController {
 
     try {
       const blob = this.deps.serialize();
-      const outcome = this.ref
-        ? await backend.update(this.ref, blob)
-        : await backend.create(this.deps.getFileName(), blob);
+      const creating = this.ref === null;
+      const outcome = creating
+        ? await backend.create(this.deps.getFileName(), blob)
+        : await backend.update(this.ref!, blob);
 
       this.ref = outcome.ref;
       this.failures = 0;
       if (outcome.renamedTo) this.deps.onRenamed(outcome.renamedTo);
+      // 이름 변경 통지 뒤에 알린다 — 알림 문구가 최종 이름을 써야 하기 때문이다.
+      if (creating) this.deps.onCreated?.(outcome.ref);
       this.deps.onState({ kind: 'saved', at: Date.now(), where: backend.kind });
     } catch (error) {
       // 실패했으니 다시 올려야 한다 — 그 사이 들어온 변경도 함께 간다.

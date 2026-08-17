@@ -68,6 +68,15 @@ export type SaveState =
   | { kind: 'dirty' }
   | { kind: 'saving' }
   | { kind: 'saved'; at: number; where: StorageKind }
+  /**
+   * 자동 저장할 곳이 아예 없다 (드라이브 미연결).
+   *
+   * `offline` 과 갈라 둔다. 예전에는 둘을 묶어 "오프라인 — 변경분 보관 중" 이라고
+   * 했는데, 드라이브를 한 번도 연결하지 않은 사람에게는 거짓말이다. 연결이 끊긴
+   * 것이 아니라 저장할 곳을 정한 적이 없는 것이고, 사용자가 할 일도 다르다
+   * (기다리기 vs 직접 저장하기).
+   */
+  | { kind: 'unsaved' }
   | { kind: 'offline' }
   | { kind: 'error'; message: string };
 
@@ -82,9 +91,42 @@ export function describeSaveState(state: SaveState): string {
       return '저장 중…';
     case 'saved':
       return state.where === 'drive' ? '드라이브에 저장됨' : '저장됨';
+    // 상태 보고가 아니라 할 일을 적는다 — "변경됨" 만 보고 저장된 줄 알았다는
+    // 것이 이 표시를 고친 이유다.
+    case 'unsaved':
+      return '자동 저장 안 됨 · Ctrl+S';
     case 'offline':
       return '오프라인 — 변경분 보관 중';
     case 'error':
       return `저장 실패 — ${state.message}`;
+  }
+}
+
+/**
+ * 저장 상태를 한 문단으로 풀어 준다 (제목 줄 툴팁).
+ *
+ * 한 줄 표시는 짧아야 하는데, 짧으면 "그래서 내 글은 어디 있나" 에 답하지 못한다.
+ * 마우스를 올리면 나오는 자리에 그 답을 둔다.
+ */
+export function explainSaveState(state: SaveState): string {
+  switch (state.kind) {
+    case 'idle':
+      return '';
+    case 'dirty':
+      return '방금 고친 내용을 저장하는 중입니다.';
+    case 'saving':
+      return '저장하는 중입니다.';
+    case 'saved':
+      return state.where === 'drive'
+        ? '구글 드라이브의 hwwp 폴더에 저장했습니다. 쓰는 동안 계속 저장됩니다.'
+        : '이 기기의 파일에 저장했습니다.';
+    case 'unsaved':
+      return '이 문서를 대신 저장해 주는 곳이 없습니다. Ctrl+S 로 직접 저장하세요.\n'
+        + '구글 드라이브를 연결하면 쓰는 동안 자동으로 저장됩니다.\n'
+        + '(복구본은 이 브라우저에 보관 중이라, 창이 닫혀도 다음에 열 때 되살릴 수 있습니다.)';
+    case 'offline':
+      return '연결이 끊겨 지금은 올리지 못합니다. 고친 내용은 보관해 두었다가 연결되면 올립니다.';
+    case 'error':
+      return `저장하지 못했습니다: ${state.message}\n다시 시도하고 있습니다.`;
   }
 }

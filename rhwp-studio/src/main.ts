@@ -230,6 +230,25 @@ const autosave = new AutosaveController({
     // 드라이브에 올라갔으면 앱의 변경 표시도 내린다 (창 닫기 경고가 남지 않도록).
     if (state.kind === 'saved') documentState.markClean('drive-autosave');
   },
+  /**
+   * 문서가 드라이브에 처음 만들어진 순간.
+   *
+   * 로컬에서 연 파일을 고치면 여기로 온다. 아무 말도 없으면 사용자는 자기 글이
+   * 어디로 갔는지 모른 채, 나중에 디스크의 원본을 열고 "고친 게 없다" 고 놀란다.
+   * 그래서 두 가지를 분명히 말한다 — 어디에 올렸는지, 그리고 원본은 그대로라는 것.
+   *
+   * 새 문서에는 이 말을 하지 않는다. 걱정할 원본이 없고, 매번 뜨면 잔소리가 된다.
+   */
+  onCreated: (ref) => {
+    if (docOrigin !== 'local') return;
+    showToast({
+      message: `"${ref.name}" 을 구글 드라이브 hwwp 폴더에 올렸습니다.\n`
+        + '이제부터 고치는 내용은 드라이브에 저장됩니다. 이 기기의 원본 파일은 그대로 둡니다.',
+      durationMs: 7000,
+    });
+    // 한 번 알렸으면 됐다 — 같은 문서에서 다시 뜨지 않게 한다.
+    docOrigin = 'drive';
+  },
 });
 
 // 편집이 일어날 때마다 자동 저장 타이머를 건드린다.
@@ -271,7 +290,11 @@ async function openDocumentFromDrive(ref: StoredDocRef): Promise<void> {
       requestId,
     });
 
-    if (await loaded) autosave.attach(ref);
+    if (await loaded) {
+      autosave.attach(ref);
+      // 이 문서는 이미 드라이브의 파일이다 — 새로 만들어질 일이 없으니 알릴 것도 없다.
+      docOrigin = 'drive';
+    }
   } catch (error) {
     console.error('[drive] 문서 열기 실패:', error);
     msg.textContent = `드라이브에서 열지 못했습니다 — ${error instanceof Error ? error.message : String(error)}`;
@@ -1094,11 +1117,23 @@ function applySavedTextMarkSettings(): void {
   syncClipMenu(clipEnabled);
 }
 
+/**
+ * 지금 문서가 어디서 왔는가.
+ *
+ * 드라이브에 처음 올라가는 순간 무슨 말을 할지가 여기서 갈린다. 로컬 파일을 고쳐서
+ * 올라간 경우에만 "디스크의 원본은 그대로다" 를 말해 줘야 한다 — 새 문서에는 걱정할
+ * 원본이 없고, 드라이브에서 연 문서는 애초에 새로 만들어지지 않는다.
+ */
+type DocOrigin = 'new' | 'local' | 'drive';
+let docOrigin: DocOrigin = 'new';
+
 async function initializeDocument(
   docInfo: DocumentInfo,
   displayName: string,
-  options: { suppressDialogs?: boolean } = {},
+  options: { suppressDialogs?: boolean; origin?: DocOrigin } = {},
 ): Promise<void> {
+  // 드라이브 경로는 로드가 끝난 뒤 'drive' 로 덮어쓴다 (attach 와 같은 자리에서).
+  docOrigin = options.origin ?? 'local';
   const msg = sbMessage();
   try {
     console.log('[initDoc] 1. 폰트 로딩 시작');
@@ -1496,7 +1531,7 @@ async function createNewDocument(): Promise<void> {
       { fileName: wasm.fileName, sourceFormat: wasm.getSourceFormat() },
       { discardPreviousDraft: true },
     );
-    await initializeDocument(docInfo, `새 문서.hwp — ${docInfo.pageCount}페이지`);
+    await initializeDocument(docInfo, `새 문서.hwp — ${docInfo.pageCount}페이지`, { origin: 'new' });
   } catch (error) {
     msg.textContent = `새 문서 생성 실패: ${error}`;
     console.error('[main] 새 문서 생성 실패:', error);
@@ -1583,7 +1618,7 @@ async function openWelcomeDocument(): Promise<void> {
       { fileName: wasm.fileName, sourceFormat: wasm.getSourceFormat() },
       { discardPreviousDraft: true },
     );
-    await initializeDocument(docInfo, `${WELCOME_DOC_NAME} — ${docInfo.pageCount}페이지`);
+    await initializeDocument(docInfo, `${WELCOME_DOC_NAME} — ${docInfo.pageCount}페이지`, { origin: 'new' });
   } catch (error) {
     // 사용법 문서는 편의 기능이다 — 실패해도 앱은 그냥 빈 화면으로 시작한다.
     console.warn('[main] 사용법 문서 생성 실패:', error);

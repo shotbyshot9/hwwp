@@ -8,7 +8,7 @@
 
 import type { EventBus } from '@/core/event-bus';
 import { DEFAULT_DOC_TITLE, displayTitle, sanitizeDocTitle, splitExtension } from '@/storage/doc-name.ts';
-import { describeSaveState, type SaveState } from '@/storage/storage-backend.ts';
+import { describeSaveState, explainSaveState, type SaveState } from '@/storage/storage-backend.ts';
 import type { DriveAuth } from '@/storage/drive-auth.ts';
 
 export interface TitleBarDeps {
@@ -160,6 +160,10 @@ export class TitleBar {
   private renderState(): void {
     const text = describeSaveState(this.state);
     this.stateEl.textContent = text ? `· ${text}` : '';
+    this.stateEl.title = explainSaveState(this.state);
     this.stateEl.classList.toggle('tbar-save-error', this.state.kind === 'error');
+    // 저장할 곳이 없다는 것은 오류는 아니지만 그냥 지나칠 일도 아니다 —
+    // 회색 글씨로 묻히지 않게 눈에 띄는 색을 준다.
+    this.stateEl.classList.toggle('tbar-save-warn', this.state.kind === 'unsaved');
   }
 }
