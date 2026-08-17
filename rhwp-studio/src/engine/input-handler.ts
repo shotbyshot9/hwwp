@@ -4958,10 +4958,27 @@ export class InputHandler {
           paraLevel: 0,
         } as Partial<import('@/core/types').ParaProperties>);
       }
+      this.refreshCaretAfterParaHeadChange();
       this.focusTextarea();
     } catch (err) {
       console.warn('[InputHandler] toggleNumbering 실패:', err);
     }
+  }
+
+  /**
+   * 문단 머리(번호·글머리표)가 붙거나 떨어진 뒤 캐럿 좌표를 다시 잡는다.
+   *
+   * 머리가 생기면 글이 오른쪽으로 밀린다. 논리 위치는 그대로여서 타이핑은 제자리에
+   * 들어가지만 화면의 캐럿은 옛 자리에 남는다 — 번호를 켠 직후 캐럿이 숫자 앞에 있는
+   * 것처럼 보이고, 한 글자 치면 그때 제자리로 뛰던 것이 이 때문이다.
+   *
+   * 두 번 계산한다. 서식 적용이 지연 조판을 거칠 수 있어 즉시 계산만으로는 옛 배치의
+   * 좌표를 읽는다(`command/commands/view.ts` 의 refreshCaretAfterViewChange 와 같은 이유).
+   * 스크롤은 건드리지 않는다 — 같은 줄에 머무는 일이라 화면이 튀면 오히려 방해다.
+   */
+  private refreshCaretAfterParaHeadChange(): void {
+    this.updateCaret(true);
+    requestAnimationFrame(() => this.updateCaret(true));
   }
 
   /**
@@ -5012,6 +5029,7 @@ export class InputHandler {
         paraLevel: next,
         marginLeft: marginRaw,
       } as Partial<import('@/core/types').ParaProperties>);
+      this.refreshCaretAfterParaHeadChange();
       return true;
     } catch (err) {
       console.warn('[InputHandler] changeListLevel 실패:', err);
@@ -5049,6 +5067,7 @@ export class InputHandler {
         headType: 'None',
         marginLeft: 0,
       } as Partial<import('@/core/types').ParaProperties>);
+      this.refreshCaretAfterParaHeadChange();
       return true;
     } catch (err) {
       console.warn('[InputHandler] endListIfEmpty 실패:', err);
@@ -5072,6 +5091,7 @@ export class InputHandler {
           paraLevel: 0,
         } as Partial<import('@/core/types').ParaProperties>);
       }
+      this.refreshCaretAfterParaHeadChange();
       this.focusTextarea();
     } catch (err) {
       console.warn('[InputHandler] toggleBullet 실패:', err);
@@ -5087,6 +5107,7 @@ export class InputHandler {
         numberingId: bid,
         paraLevel: 0,
       } as Partial<import('@/core/types').ParaProperties>);
+      this.refreshCaretAfterParaHeadChange();
       this.focusTextarea();
     } catch (err) {
       console.warn('[InputHandler] applyBullet 실패:', err);
@@ -5101,6 +5122,7 @@ export class InputHandler {
         numberingId,
         paraLevel: 0,
       } as Partial<import('@/core/types').ParaProperties>);
+      this.refreshCaretAfterParaHeadChange();
       this.focusTextarea();
     } catch (err) {
       console.warn('[InputHandler] applyNumbering 실패:', err);

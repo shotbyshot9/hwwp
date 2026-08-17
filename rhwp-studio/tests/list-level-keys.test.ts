@@ -101,3 +101,19 @@ test('수준을 바꿀 때 번호와 여백을 함께 보낸다', () => {
 test('목록을 벗어날 때 들여쓰기도 걷는다', () => {
   assert.match(engine, /headType: 'None',\s*\n\s*marginLeft: 0,/);
 });
+
+/**
+ * 문단번호를 켜면 글이 오른쪽으로 밀리는데 캐럿이 옛 자리에 남았다. 논리 위치는
+ * 맞아서 타이핑은 제자리에 들어가고, 그 순간 캐럿이 뒤늦게 뛰었다.
+ */
+test('문단 머리가 바뀌면 캐럿 좌표를 다시 잡는다', () => {
+  assert.match(engine, /private refreshCaretAfterParaHeadChange\(\): void \{/);
+  // 지연 조판을 거칠 수 있어 즉시 계산만으로는 옛 배치의 좌표를 읽는다.
+  assert.match(engine, /this\.updateCaret\(true\);\s*\n\s*requestAnimationFrame\(\(\) => this\.updateCaret\(true\)\);/);
+});
+
+test('목록을 켜고 끄고 수준을 옮기는 모든 길에서 캐럿을 갱신한다', () => {
+  // 하나라도 빠지면 그 경로에서만 캐럿이 뒤처져, 원인을 찾기 어려운 버그가 된다.
+  const calls = engine.match(/this\.refreshCaretAfterParaHeadChange\(\);/g) ?? [];
+  assert.ok(calls.length >= 6, `갱신 호출이 ${calls.length}곳뿐이다`);
+});
