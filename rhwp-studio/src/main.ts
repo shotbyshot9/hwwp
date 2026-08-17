@@ -408,6 +408,26 @@ registry.register({
   id: 'tool:welcome-doc',
   label: '사용법 문서 열기',
   async execute() {
+    /*
+     * 쓰던 문서를 밀어내지 않는다.
+     *
+     * 예전에는 이 자리에서 사용법 문서를 그냥 열었다. 저장은 돼 있으니 글이 사라지지는
+     * 않지만, 쓰던 자리와 스크롤 위치를 잃는다. 게다가 드라이브에 자동 저장된 뒤라면
+     * "저장하지 않은 변경" 이 없어서 경고조차 뜨지 않는다 — 화면이 그냥 바뀐다.
+     *
+     * 사용법은 쓰던 것을 멈추고 볼 것이 아니라 **옆에 두고 볼 것**이다. 그래서 문서가
+     * 열려 있으면 새 탭에서 연다. 두 문서가 나란히 있으니 보면서 따라 할 수도 있다.
+     */
+    if (wasm.pageCount > 0 && wasm.fileName !== WELCOME_DOC_NAME) {
+      const url = `${window.location.pathname}?${USAGE_DOC_PARAM}=${USAGE_DOC_VALUE}`;
+      // 사용자 클릭 안에서 부르므로 보통은 막히지 않는다. 막히면 null 이 온다.
+      const opened = window.open(url, '_blank', 'noopener');
+      if (opened) return;
+      showToast({
+        message: '새 탭이 브라우저에 막혔습니다. 이 탭에서 사용법을 엽니다.',
+        durationMs: 4000,
+      });
+    }
     if (!await canReplaceCurrentDocument()) return;
     await openWelcomeDocument();
   },
@@ -1576,11 +1596,37 @@ function enterFocusModeOnStartup(): void {
  * 비동기라 "시작이 끝났다" 를 알리는 신호가 없어, 잠깐 기다린 뒤 아직도 문서가
  * 없을 때만 나선다.
  */
+/**
+ * 사용법 문서를 새 탭에서 열 때 붙이는 표. 그 탭은 시작 문서 대신 사용법을 연다.
+ */
+const USAGE_DOC_PARAM = 'doc';
+const USAGE_DOC_VALUE = 'usage';
+
+/** 이 탭이 사용법을 보러 열린 탭인가 */
+function wantsUsageDoc(): boolean {
+  return new URLSearchParams(window.location.search).get(USAGE_DOC_PARAM) === USAGE_DOC_VALUE;
+}
+
 async function prepareStartupDocument(): Promise<void> {
   await new Promise((resolve) => window.setTimeout(resolve, 600));
   if (wasm.pageCount > 0) return;
   // 복구 대화상자 등이 떠 있으면 사용자의 선택을 기다린다.
   if (document.querySelector('.modal-overlay')) return;
+
+  // 사용법을 보러 열린 탭이면 첫 실행 표식과 무관하게 사용법을 연다.
+  if (wantsUsageDoc()) {
+    await openWelcomeDocument();
+    // 표를 지운다 — 이 탭에서 이어서 글을 쓰다가 새로고침했을 때
+    // 쓰던 문서 대신 사용법이 다시 열리면, 방금 없앤 그 놀람이 되살아난다.
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete(USAGE_DOC_PARAM);
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    } catch {
+      // 주소를 못 고쳐도 문서는 열렸다 — 여기서 실패해도 넘어간다.
+    }
+    return;
+  }
 
   let firstRun = false;
   try {
