@@ -71,9 +71,9 @@
 .icon-format-copy   { background-position: calc(-40px * 0) calc(-40px * 10); }
 /* icon_small_ko.svg에 조판부호/문단부호 아이콘이 없으므로 CSS 대체 아이콘.
 
-   색은 글자색 계열로 둔다. 예전에는 강조색(갈색)이었는데, 옆의 다른 아이콘들은
-   스프라이트에서 온 중립색이라 이 둘만 튀었다. 도구 아이콘은 브랜드를 말하는 자리가
-   아니다 — 브랜드색은 로고와 제목 줄의 두 버튼이 맡는다. */
+   색은 렌더러가 용지에 그리는 표시색과 같게 맞춘다(--mark-color). 그러면 아이콘이
+   "이걸 켜면 무엇이 나오는지" 를 미리 보여준다. 예전에는 강조색(갈색)이었는데, 그건
+   화면에 나오는 것과 아무 관계가 없는 색이었다. */
 .icon-ctrl-mark {
   background-image: none !important;
   position: relative;
@@ -86,7 +86,7 @@
   font-size: var(--font-size-lg);
   line-height: 18px;
   text-align: center;
-  color: var(--ui-text-secondary);
+  color: var(--mark-color);
   font-family: serif;
 }
 
@@ -102,7 +102,7 @@
   font-size: var(--font-size-lg);
   line-height: 18px;
   text-align: center;
-  color: var(--ui-text-secondary);
+  color: var(--mark-color);
   font-family: sans-serif;
 }
 .icon-grid          { background-position: calc(-40px * 13) calc(-40px * 2); }
@@ -145,7 +145,9 @@
   white-space: nowrap;
 }
 
-/* 텍스트 기반 아이콘 (스프라이트 없는 버튼용) */
+/* 텍스트 기반 아이콘 (스프라이트 없는 버튼용).
+   문단번호·글머리표·수준 증감·이력관리·문서비교가 쓴다. 조판·문단 부호와 달리 화면에
+   무언가를 그리는 기능이 아니므로 표시색이 아니라 글자색 계열로 둔다. */
 .tb-icon-text {
   display: block;
   width: 18px;

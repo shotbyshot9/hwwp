@@ -286,6 +286,22 @@ function createOverlayLabel(x: number, y: number, text: string): HTMLDivElement 
   return label;
 }
 
+/**
+ * 개요 수준 변경 결과.
+ *
+ * 못 한 이유를 갈라 두는 까닭은, 사용자에게 할 말이 각각 다르기 때문이다 —
+ * 개요 스타일이 아니면 "먼저 개요 스타일을 주세요" 고, 끝에 닿았으면 "더는 못 갑니다" 다.
+ */
+export type OutlineLevelResult =
+  | 'changed'
+  /** 문단이 개요 스타일(개요 1~7)이 아니다 */
+  | 'not-outline'
+  /** 이미 1수준이거나 7수준이다 */
+  | 'at-limit'
+  /** 문서에 대상 개요 스타일이 없다 */
+  | 'no-style'
+  | 'failed';
+
 /** 클릭 커서 배치 + 키보드 입력을 처리한다 */
 export class InputHandler {
   private cursor: CursorState;
@@ -4883,8 +4899,15 @@ export class InputHandler {
     }
   }
 
-  /** 개요 수준 변경 (delta: +1=한 수준 증가, -1=한 수준 감소) */
-  changeOutlineLevel(delta: number): void {
+  /**
+   * 개요 수준 변경 (delta: +1=한 수준 증가, -1=한 수준 감소)
+   *
+   * 지금은 문단 스타일 이름이 `개요 1`~`개요 7` 인 경우에만 동작한다. 그 밖에서는
+   * 할 수 있는 일이 없는데, 예전에는 그냥 `return` 해서 눌러도 아무 일도 아무 말도
+   * 없었다 — 사용자에게는 버튼이 고장 난 것으로 보인다. 무엇을 못 했는지 부르는 쪽이
+   * 알 수 있게 결과를 돌려준다.
+   */
+  changeOutlineLevel(delta: number): OutlineLevelResult {
     const pos = this.cursor.getPosition();
     try {
       const inCell = pos.parentParaIndex !== undefined;
@@ -4897,11 +4920,11 @@ export class InputHandler {
 
       // 현재 개요 수준 파싱 (개요 1~7)
       const match = currentStyle.name.match(/^개요\s*(\d)$/);
-      if (!match) return; // 개요 스타일이 아니면 무시
+      if (!match) return 'not-outline';
 
       const currentLevel = parseInt(match[1], 10);
       const targetLevel = currentLevel + delta;
-      if (targetLevel < 1 || targetLevel > 7) return;
+      if (targetLevel < 1 || targetLevel > 7) return 'at-limit';
 
       // 스타일 목록에서 대상 개요 스타일 찾기
       const styles = this.wasm.getStyleList();
@@ -4909,11 +4932,13 @@ export class InputHandler {
         const m = s.name.match(/^개요\s*(\d)$/);
         return m && parseInt(m[1], 10) === targetLevel;
       });
-      if (!targetStyle) return;
+      if (!targetStyle) return 'no-style';
 
       this.applyStyle(targetStyle.id);
+      return 'changed';
     } catch (err) {
       console.warn('[InputHandler] changeOutlineLevel 실패:', err);
+      return 'failed';
     }
   }
 

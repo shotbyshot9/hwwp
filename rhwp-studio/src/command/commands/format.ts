@@ -7,6 +7,47 @@ import { StyleEditDialog } from '@/ui/style-edit-dialog';
 import { PicturePropsDialog } from '@/ui/picture-props-dialog';
 import { EquationPropertiesDialog } from '@/ui/equation-props-dialog';
 import { TableCellPropsDialog } from '@/ui/table-cell-props-dialog';
+import { showToast } from '@/ui/toast';
+import type { OutlineLevelResult } from '@/engine/input-handler';
+
+/**
+ * 개요 수준을 못 바꿨을 때 왜 그런지 알린다.
+ *
+ * 이 두 버튼은 개요 스타일(개요 1~7)인 문단에서만 동작한다. 예전에는 그 밖에서
+ * 조용히 아무 일도 하지 않아, 버튼이 고장 난 것처럼 보였다. 못 한 이유마다 할 말이
+ * 다르므로 갈라서 말한다.
+ */
+function reportOutlineLevel(result: OutlineLevelResult | undefined, action: '증가' | '감소'): void {
+  switch (result) {
+    case undefined:
+    case 'changed':
+      return;
+    case 'not-outline':
+      showToast({
+        message: '이 문단은 개요 스타일이 아니라 수준을 바꿀 수 없습니다.\n'
+          + '서식 도구 모음의 스타일에서 「개요 1」~「개요 7」 중 하나를 먼저 지정하세요.',
+        durationMs: 6000,
+      });
+      return;
+    case 'at-limit':
+      showToast({
+        message: action === '증가'
+          ? '이미 개요 1수준입니다. 더 올릴 수 없습니다.'
+          : '이미 개요 7수준입니다. 더 내릴 수 없습니다.',
+        durationMs: 3500,
+      });
+      return;
+    case 'no-style':
+      showToast({
+        message: '이 문서에 해당 개요 스타일이 없어 수준을 바꿀 수 없습니다.',
+        durationMs: 4500,
+      });
+      return;
+    case 'failed':
+      showToast({ message: `개요 수준 ${action}에 실패했습니다.`, durationMs: 4000 });
+      return;
+  }
+}
 
 export const formatCommands: CommandDef[] = [
   {
@@ -391,7 +432,7 @@ export const formatCommands: CommandDef[] = [
     shortcutLabel: 'Ctrl+Num -',
     canExecute: (ctx) => ctx.hasDocument,
     execute(services) {
-      services.getInputHandler()?.changeOutlineLevel(-1);
+      reportOutlineLevel(services.getInputHandler()?.changeOutlineLevel(-1), '증가');
     },
   },
   {
@@ -400,7 +441,7 @@ export const formatCommands: CommandDef[] = [
     shortcutLabel: 'Ctrl+Num +',
     canExecute: (ctx) => ctx.hasDocument,
     execute(services) {
-      services.getInputHandler()?.changeOutlineLevel(1);
+      reportOutlineLevel(services.getInputHandler()?.changeOutlineLevel(1), '감소');
     },
   },
   // 스타일 대화상자

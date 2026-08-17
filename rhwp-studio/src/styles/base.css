@@ -83,6 +83,13 @@
   --brand-ink: #0c0a09;
   --brand-ink-hover: #2b2522;
 
+  /* 조판·문단 부호 표시색.
+     렌더러가 용지에 그리는 색과 같게 맞춘다(`renderer/skia/text_replay.rs` 의
+     `from_argb(255, 0, 102, 255)`). 도구 아이콘이 "켜면 무엇이 나오는지" 를 미리
+     보여주게 된다. HTML·SVG 내보내기 경로에는 개체 대괄호용 붉은색(#CC3333)이
+     따로 있지만 화면에는 쓰이지 않으므로 여기서도 쓰지 않는다. */
+  --mark-color: #0066ff;
+
   --accent-primary: #b45309;
   --accent-strong: #8a3f07;
   --accent-light: #c2620c;
@@ -219,6 +226,10 @@
   --doc-workspace: #1a1816;
   --doc-paper: #ffffff;
   --doc-shadow: rgba(0, 0, 0, 0.5);
+
+  /* 어두운 도구 모음 위에서는 #0066ff 가 1.73:1 로 묻힌다. 용지에 그려지는 색은
+     그대로 두고(용지는 늘 흰색이다) 아이콘만 밝게 올려 같은 파랑으로 읽히게 한다. */
+  --mark-color: #6aa8ff;
 
   --focus-ring: #d98324;
   --selection-fill: #315f91;
