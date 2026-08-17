@@ -50,10 +50,26 @@ export const GAPI_SCRIPT_URL = 'https://apis.google.com/js/api.js';
 /**
  * Picker 전용 API 키.
  *
- * 클라이언트 ID 와 마찬가지로 브라우저에 노출되는 공개 값이다. 실질 방어선은
- * 콘솔의 키 제한(HTTP 리퍼러 + Google Picker API 한정)이다.
- * 드라이브 읽기·쓰기는 이 키가 아니라 OAuth 토큰으로 한다 — 키는 피커 창을
- * 띄우는 데만 쓰인다.
+ * 클라이언트 ID 와 마찬가지로 브라우저에 노출되는 공개 값이다. 드라이브 읽기·쓰기는
+ * 이 키가 아니라 OAuth 토큰으로 하고, 키는 피커 창을 띄우는 데만 쓰인다.
+ *
+ * ## 이 키에 HTTP 리퍼러 제한을 걸면 안 된다
+ *
+ * 콘솔의 「애플리케이션 제한사항」을 `웹사이트` 로 두면 피커가 이 오류로 죽는다.
+ *
+ *     There was an error!
+ *     The API developer key is invalid.
+ *
+ * 피커 창은 우리 페이지가 아니라 `docs.google.com` 의 iframe 이라, 그 안에서 나가는
+ * 요청의 출처가 우리 도메인이 아니어서 리퍼러 검사에 걸린다. 주소를 정확히 넣어도
+ * 마찬가지다 — 넣는 값의 문제가 아니라 구조의 문제다.
+ *
+ * 그래서 「애플리케이션 제한사항」은 `없음`, 「API 제한사항」은 `키 제한`(Google
+ * Picker API + Google Drive API 만)으로 둔다. 실수로 열어 둔 것이 아니다.
+ *
+ * 이 상태가 받아들일 만한 이유: 이 키만으로는 누구의 드라이브도 못 본다. 드라이브에
+ * 닿으려면 사용자가 직접 로그인해 내준 OAuth 토큰이 반드시 필요하고 그건 키와 별개다.
+ * 키가 유출돼도 남이 할 수 있는 일은 피커 할당량을 축내는 것뿐이다.
  */
 const ENV_API_KEY = import.meta.env?.VITE_GOOGLE_API_KEY as string | undefined;
 

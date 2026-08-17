@@ -286,3 +286,42 @@ wasm-pack build --target web --out-dir pkg
 ```bash
 cd rhwp-studio && npm install && npm run dev
 ```
+
+## 배포
+
+Cloudflare Workers 정적 자산으로 올린다. `main` 에 푸시하면 자동으로 다시 빌드된다.
+
+| | |
+| --- | --- |
+| 주소 | https://hwwp.shotbyshot9.workers.dev |
+| 저장소 | `origin` = `shotbyshot9/hwwp` (private) |
+| 빌드 명령 | `cd rhwp-studio && npm ci && npm run build` |
+| 출력 | `rhwp-studio/dist` (`wrangler.jsonc` 가 지정) |
+
+서버가 없다. 문서는 사용자 본인의 구글 드라이브로만 가고 배포자의 서버를 거치지 않는다.
+
+`pkg/` 의 wasm 산출물을 커밋해 두는 이유는 빌드 환경에 Rust 툴체인이 없어서다.
+엔진을 새로 빌드했으면 `pkg/.gitignore` 를 비운 상태로 되돌리고 함께 커밋해야 한다.
+
+### 구글 콘솔 설정
+
+배포 주소를 바꾸면 세 곳을 같이 고쳐야 한다.
+
+| 항목 | 값 | 형식 |
+| --- | --- | --- |
+| OAuth 클라이언트 → 승인된 JavaScript 원본 | `https://hwwp.shotbyshot9.workers.dev` | 경로·`/`·와일드카드 불가 |
+| API 키 → 애플리케이션 제한사항 | **`없음`** | 아래 참조 |
+| API 키 → API 제한사항 | Google Picker API + Google Drive API | 둘 다 필요 |
+
+**API 키에 HTTP 리퍼러 제한을 걸면 피커가 죽는다**(`The API developer key is invalid`).
+피커 창이 `docs.google.com` 의 iframe 이라 그 안에서 나가는 요청의 출처가 우리 도메인이
+아니기 때문이다. 자세한 사정과 그래도 안전한 이유는 `storage/drive-config.ts` 에 적었다.
+
+`API 제한사항` 에 Drive API 가 빠져 있어도 같은 오류가 난다 — 창을 띄우는 것까지가
+Picker API 고 목록을 채우는 것은 Drive API 다.
+
+### 아직 안 한 것
+
+- 개인정보처리방침·서비스 약관 페이지. 구글 동의 화면이 "링크가 표시되지 않는다" 고 안내한다.
+- 자체 도메인. `*.workers.dev` 는 Cloudflare 소유라 구글에 소유 증명을 할 수 없어서,
+  동의 화면에 앱 이름(`hwwp`) 대신 도메인이 뜬다. 도메인을 붙이면 해결된다.
