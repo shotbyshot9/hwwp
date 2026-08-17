@@ -1267,6 +1267,13 @@ export function onKeyDown(this: any, e: KeyboardEvent): void {
           if (committedCellEnterSplit) this.flushDeferredPaginationIfNeeded('cell-enter-split-fallback', false);
           throw err;
         }
+      } else if (this.endListIfEmpty()) {
+        /*
+         * 빈 목록 항목에서 Enter — 문단을 나누지 않고 목록을 끝낸다.
+         *
+         * "번호를 그만 매기려면 빈 줄에서 Enter 를 한 번 더" 라는 문법이다. 이 분기가
+         * 없으면 번호만 붙은 빈 줄이 계속 늘어난다.
+         */
       } else {
         this.executeOperation({ kind: 'command', command: new SplitParagraphCommand(this.cursor.getPosition()) });
       }
@@ -1385,9 +1392,17 @@ export function onKeyDown(this: any, e: KeyboardEvent): void {
         break;
       }
       if (e.shiftKey) {
+        // 목록 안에서는 상위 수준으로. 목록이 아니면 예전대로 내어쓰기.
+        if (this.changeListLevel(-1)) break;
         this.applyHangingIndentAtCursor();
         break;
       }
+      /*
+       * 목록 문단의 맨 앞에서 Tab 은 하위 수준으로 내려간다 — 워드프로세서의 기본
+       * 문법이다. 글 중간에서 누른 Tab 은 그대로 탭 문자다. 위치를 보지 않고 수준만
+       * 바꾸면 목록 안에서는 탭 문자를 아예 넣을 수 없게 된다.
+       */
+      if (this.cursor.getPosition().charOffset === 0 && this.changeListLevel(1)) break;
       // 탭 문자 삽입 (본문·글상자 공통)
       this.executeOperation({ kind: 'command', command: new InsertTabCommand(this.cursor.getPosition()) });
       break;

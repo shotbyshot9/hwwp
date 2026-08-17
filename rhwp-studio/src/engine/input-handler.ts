@@ -4964,6 +4964,71 @@ export class InputHandler {
     }
   }
 
+  /**
+   * 문단번호·글머리표 목록의 수준을 한 단계 옮긴다.
+   *
+   * Tab 으로 하위 단계로 내려가는 것은 워드프로세서의 기본 문법인데 없었다 — Tab 이
+   * 언제나 탭 문자를 넣어서, 목록 안에서 눌러도 수준이 바뀌지 않았다.
+   *
+   * 목록 문단이 아니면 아무 것도 하지 않고 false 를 돌려준다. 부르는 쪽(Tab 처리)은
+   * 그때 원래대로 탭 문자를 넣는다.
+   *
+   * 표 안은 다루지 않는다. 셀 문단은 좌표가 따로이고(parentParaIndex/cellParaIndex)
+   * Tab 이 이미 다음 셀로 이동하는 뜻을 갖고 있어 섞으면 위험하다.
+   */
+  changeListLevel(delta: number): boolean {
+    if (this.cursor.isInCell()) return false;
+    try {
+      const props = this.getParaProperties();
+      if (!props.headType || props.headType === 'None') return false;
+
+      const current = props.paraLevel ?? 0;
+      const next = current + delta;
+      // 0~6 = 1~7수준. 끝에 닿으면 탭 문자를 넣지 않고 그냥 멈춘다 —
+      // 목록 안에서 Tab 이 갑자기 탭 문자를 넣기 시작하면 더 놀랍다.
+      if (next < 0 || next > 6) return true;
+
+      this.applyParaFormat({ paraLevel: next } as Partial<import('@/core/types').ParaProperties>);
+      return true;
+    } catch (err) {
+      console.warn('[InputHandler] changeListLevel 실패:', err);
+      return false;
+    }
+  }
+
+  /**
+   * 빈 목록 문단에서 Enter 를 눌렀을 때 목록을 끝낸다.
+   *
+   * "번호를 그만 매기고 싶으면 빈 줄에서 Enter 를 한 번 더" 는 어느 워드프로세서에나
+   * 있는 문법인데 없었다 — 빈 항목에서 Enter 를 쳐도 번호만 붙은 빈 줄이 계속 늘었다.
+   *
+   * 하위 수준에 있으면 먼저 한 단계 올린다. 3수준에서 곧바로 목록을 벗어나면 중간
+   * 단계를 건너뛰는 셈이라, 한 번에 하나씩 빠져나오게 한다.
+   *
+   * 목록이 아니거나 글자가 있으면 false — 그때는 평소처럼 문단을 나눈다.
+   */
+  endListIfEmpty(): boolean {
+    if (this.cursor.isInCell()) return false;
+    try {
+      const props = this.getParaProperties();
+      if (!props.headType || props.headType === 'None') return false;
+
+      const pos = this.cursor.getPosition();
+      if (this.wasm.getParagraphLength(pos.sectionIndex, pos.paragraphIndex) > 0) return false;
+
+      const level = props.paraLevel ?? 0;
+      if (level > 0) {
+        this.applyParaFormat({ paraLevel: level - 1 } as Partial<import('@/core/types').ParaProperties>);
+        return true;
+      }
+      this.applyParaFormat({ headType: 'None' } as Partial<import('@/core/types').ParaProperties>);
+      return true;
+    } catch (err) {
+      console.warn('[InputHandler] endListIfEmpty 실패:', err);
+      return false;
+    }
+  }
+
   /** 글머리표 토글: None→Bullet, Bullet→None */
   toggleBullet(bulletChar = '●'): void {
     try {
