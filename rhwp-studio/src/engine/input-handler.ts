@@ -4972,13 +4972,20 @@ export class InputHandler {
    * 들어가지만 화면의 캐럿은 옛 자리에 남는다 — 번호를 켠 직후 캐럿이 숫자 앞에 있는
    * 것처럼 보이고, 한 글자 치면 그때 제자리로 뛰던 것이 이 때문이다.
    *
-   * 두 번 계산한다. 서식 적용이 지연 조판을 거칠 수 있어 즉시 계산만으로는 옛 배치의
-   * 좌표를 읽는다(`command/commands/view.ts` 의 refreshCaretAfterViewChange 와 같은 이유).
-   * 스크롤은 건드리지 않는다 — 같은 줄에 머무는 일이라 화면이 튀면 오히려 방해다.
+   * `updateCaret()` 만 불러서는 안 된다. 그것은 `cursor.getRect()` 가 돌려주는 **캐시된**
+   * 좌표를 다시 그리기만 하므로, 옛 자리에 다시 그리고 끝난다. 좌표 자체를 다시 계산하는
+   * 것은 `cursor.updateRect()` 다.
+   *
+   * 두 번 한다. 서식 적용이 지연 조판을 거칠 수 있어 즉시 계산만으로는 아직 옛 배치를
+   * 읽는다. 스크롤은 건드리지 않는다 — 같은 줄에 머무는 일이라 화면이 튀면 방해다.
    */
   private refreshCaretAfterParaHeadChange(): void {
-    this.updateCaret(true);
-    requestAnimationFrame(() => this.updateCaret(true));
+    const redraw = () => {
+      this.cursor.updateRect();
+      this.updateCaret(true);
+    };
+    redraw();
+    requestAnimationFrame(redraw);
   }
 
   /**

@@ -108,8 +108,14 @@ test('목록을 벗어날 때 들여쓰기도 걷는다', () => {
  */
 test('문단 머리가 바뀌면 캐럿 좌표를 다시 잡는다', () => {
   assert.match(engine, /private refreshCaretAfterParaHeadChange\(\): void \{/);
-  // 지연 조판을 거칠 수 있어 즉시 계산만으로는 옛 배치의 좌표를 읽는다.
-  assert.match(engine, /this\.updateCaret\(true\);\s*\n\s*requestAnimationFrame\(\(\) => this\.updateCaret\(true\)\);/);
+  /*
+   * updateCaret 만 부르면 안 된다 — cursor.getRect() 는 캐시된 좌표를 돌려주므로
+   * 옛 자리에 다시 그리고 끝난다. 좌표를 다시 계산하는 것은 cursor.updateRect() 다.
+   * 이 순서가 이 수정의 전부이므로 순서까지 못박는다.
+   */
+  assert.match(engine, /this\.cursor\.updateRect\(\);\s*\n\s*this\.updateCaret\(true\);/);
+  // 지연 조판을 거칠 수 있어 즉시 계산만으로는 아직 옛 배치를 읽는다.
+  assert.match(engine, /redraw\(\);\s*\n\s*requestAnimationFrame\(redraw\);/);
 });
 
 test('목록을 켜고 끄고 수준을 옮기는 모든 길에서 캐럿을 갱신한다', () => {
