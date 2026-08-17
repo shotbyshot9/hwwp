@@ -4988,7 +4988,30 @@ export class InputHandler {
       // 목록 안에서 Tab 이 갑자기 탭 문자를 넣기 시작하면 더 놀랍다.
       if (next < 0 || next > 6) return true;
 
-      this.applyParaFormat({ paraLevel: next } as Partial<import('@/core/types').ParaProperties>);
+      /*
+       * 왼쪽 여백도 함께 옮긴다.
+       *
+       * paraLevel 만 바꾸면 번호 모양은 바뀌는데(1. → 가\)) 문단이 제자리에 남는다.
+       * 하위 단계로 내려간 것으로 보이지 않아 "수준은 안 바뀌고 숫자만 엉망" 으로 읽힌다.
+       *
+       * 값은 코어의 스타일 적용 경로와 같은 규칙이다 — 수준 한 단계당 2000 raw
+       * (`document_core/commands/formatting.rs` 의 `margin_delta`). 두 경로가 다른 규칙을
+       * 쓰면 스타일로 수준을 바꿀 때와 Tab 으로 바꿀 때 들여쓰기가 어긋난다.
+       *
+       * 단위에 함정이 있다. 읽어 오는 marginLeft 는 px(96dpi)인데 적용할 때는 raw
+       * HWPUNIT 2x 를 받는다 — `ui/para-shape-dialog.ts` 의 pxToPt·ptToRaw2x 가 같은
+       * 변환을 한다(px → pt ×72/96 → raw ×200 = px ×150). 변환 없이 2000 을 더하면
+       * 2000px 를 들여쓰게 된다.
+       */
+      const RAW_PER_PX = 150;
+      const RAW_PER_LEVEL = 2000;
+      const currentRaw = Math.round((props.marginLeft ?? 0) * RAW_PER_PX);
+      const marginRaw = Math.max(0, currentRaw + delta * RAW_PER_LEVEL);
+
+      this.applyParaFormat({
+        paraLevel: next,
+        marginLeft: marginRaw,
+      } as Partial<import('@/core/types').ParaProperties>);
       return true;
     } catch (err) {
       console.warn('[InputHandler] changeListLevel 실패:', err);
@@ -5018,10 +5041,14 @@ export class InputHandler {
 
       const level = props.paraLevel ?? 0;
       if (level > 0) {
-        this.applyParaFormat({ paraLevel: level - 1 } as Partial<import('@/core/types').ParaProperties>);
-        return true;
+        // 올라갈 때도 여백을 함께 되돌린다 — changeListLevel 과 같은 규칙이다.
+        return this.changeListLevel(-1);
       }
-      this.applyParaFormat({ headType: 'None' } as Partial<import('@/core/types').ParaProperties>);
+      // 1수준에서 목록을 벗어난다. 들여쓰기도 함께 걷어야 글이 왼쪽으로 돌아온다.
+      this.applyParaFormat({
+        headType: 'None',
+        marginLeft: 0,
+      } as Partial<import('@/core/types').ParaProperties>);
       return true;
     } catch (err) {
       console.warn('[InputHandler] endListIfEmpty 실패:', err);

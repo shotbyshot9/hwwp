@@ -66,7 +66,9 @@ test('수준은 1~7 을 넘지 않는다', () => {
 
 test('하위 수준에서는 한 번에 하나씩 빠져나온다', () => {
   // 3수준에서 곧바로 목록을 벗어나면 중간 단계를 건너뛰는 셈이다.
-  assert.match(engine, /if \(level > 0\) \{[\s\S]{0,200}paraLevel: level - 1/);
+  // 올리는 일은 changeListLevel 에 맡긴다 — 여백 되돌리기와 단위 변환이 거기 있어서,
+  // 여기서 paraLevel 만 따로 내리면 들여쓰기가 남는다.
+  assert.match(engine, /if \(level > 0\) \{[\s\S]{0,160}return this\.changeListLevel\(-1\);/);
 });
 
 test('표 안에서는 두 동작 모두 비켜선다', () => {
@@ -78,4 +80,24 @@ test('표 안에서는 두 동작 모두 비켜선다', () => {
 test('목록이 아니면 false 를 돌려 원래 동작에 맡긴다', () => {
   const guards = engine.match(/if \(!props\.headType \|\| props\.headType === 'None'\) return false;/g) ?? [];
   assert.equal(guards.length, 2);
+});
+
+/**
+ * 단위 함정. 읽어 오는 marginLeft 는 px(96dpi) 인데 적용할 때는 raw HWPUNIT 2x 를 받는다.
+ * 변환 없이 코어의 2000 을 더하면 2000px 를 들여쓴다.
+ */
+test('여백을 옮길 때 px → raw 변환을 거친다', () => {
+  assert.match(engine, /const RAW_PER_PX = 150;/);
+  assert.match(engine, /Math\.round\(\(props\.marginLeft \?\? 0\) \* RAW_PER_PX\)/);
+  // 코어의 스타일 경로와 같은 값이어야 두 길의 들여쓰기가 어긋나지 않는다.
+  assert.match(engine, /const RAW_PER_LEVEL = 2000;/);
+});
+
+test('수준을 바꿀 때 번호와 여백을 함께 보낸다', () => {
+  // paraLevel 만 보내면 번호 모양만 바뀌고 문단이 제자리에 남아 내려간 것으로 안 보인다.
+  assert.match(engine, /paraLevel: next,\s*\n\s*marginLeft: marginRaw,/);
+});
+
+test('목록을 벗어날 때 들여쓰기도 걷는다', () => {
+  assert.match(engine, /headType: 'None',\s*\n\s*marginLeft: 0,/);
 });
