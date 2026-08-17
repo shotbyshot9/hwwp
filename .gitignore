@@ -11,6 +11,18 @@ bindings/Native/Cargo.lock
 /pkg/
 *.wasm
 
+# [hwwp] 다만 pkg/ 의 wasm 산출물은 커밋한다.
+#
+# rhwp 는 개발자가 로컬에서 Rust 를 컴파일하는 전제라 이것을 무시했다. hwwp 는
+# Cloudflare 에서 빌드하는데 거기에는 Rust 툴체인이 없고, 있어도 이 크기의 크레이트를
+# 매 배포마다 컴파일하면 빌드 시간 안에 못 끝낸다. 결과물을 저장소에 넣어 두면
+# 배포는 `npm run build` 하나로 끝난다.
+#
+# 엔진을 새로 빌드했으면 이 파일들도 함께 커밋해야 배포에 반영된다.
+!/pkg/
+!/pkg/**
+!/pkg/*.wasm
+
 # Output (렌더링 결과물)
 /output/
 /dist/swift/

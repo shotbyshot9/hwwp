@@ -1,0 +1,21 @@
+// Cloudflare Workers 배포 설정.
+//
+// hwwp 는 서버가 없다 — 정적 파일만 올린다. `main`(워커 스크립트)이 없고 `assets` 만
+// 있으면 Cloudflare 는 이것을 정적 사이트로 취급한다. 저장은 사용자 본인의 구글
+// 드라이브로 가므로 서버 쪽에서 할 일이 없다.
+//
+// Cloudflare 대시보드의 Workers 흐름에는 "출력 디렉터리" 칸이 없고 이 파일에서 읽는다.
+// 빌드 명령(`cd rhwp-studio && npm ci && npm run build`)과 배포 명령(`npx wrangler
+// deploy`)은 모두 저장소 루트에서 도는 것으로 보고 경로를 잡았다.
+{
+  "name": "hwwp",
+  "compatibility_date": "2026-08-17",
+  "assets": {
+    "directory": "./rhwp-studio/dist"
+    // not_found_handling 은 기본값(404)으로 둔다.
+    //
+    // single-page-application 으로 두면 없는 경로에 index.html 을 200 으로 돌려준다.
+    // hwwp 에는 해로운데, 폰트나 음원이 빠졌을 때 404 대신 HTML 이 와서 "글꼴 파일이
+    // 깨졌다" 는 엉뚱한 오류로 나타나기 때문이다. 없으면 없다고 해야 고칠 수 있다.
+  }
+}
