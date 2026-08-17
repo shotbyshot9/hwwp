@@ -6,23 +6,16 @@ import {
   WELCOME_LINE_COUNT,
   fillWelcomeDocument,
 } from '../src/core/welcome-document.ts';
+import { USAGE_SECTIONS, usageAsLines } from '../src/core/usage-guide.ts';
 
-/**
- * 소스에서 문장을 찾는다.
- *
- * 안내 문구는 줄 길이를 맞추려고 `'앞부분 ' + '뒷부분'` 으로 쪼개 적는다. 그대로
- * 검사하면 이어붙임 자리에서 문장이 끊겨 못 찾으므로, 붙여 놓고 본다.
- */
-function readJoined(path: string): string {
-  return readFileSync(new URL(path, import.meta.url), 'utf8').replace(/'\s*\+\s*'/g, '');
-}
-
-const welcomeSource = readJoined('../src/core/welcome-document.ts');
-const helpSource = readJoined('../src/ui/help-dialog.ts');
+/** 절의 모든 글을 한 덩어리로 — 문장이 어느 문단에 있든 찾을 수 있게 */
+const usageText = USAGE_SECTIONS
+  .flatMap((s) => [s.title, ...(s.paragraphs ?? []), ...(s.items ?? []).flat()])
+  .join('\n');
 
 test('문서 이름과 줄 수', () => {
   assert.equal(WELCOME_DOC_NAME, 'hwwp 사용법.hwp');
-  assert.ok(WELCOME_LINE_COUNT > 20, '내용이 너무 짧다');
+  assert.ok(WELCOME_LINE_COUNT > 30, '내용이 너무 짧다');
 });
 
 test('줄마다 글을 넣고 마지막 줄만 문단을 쪼개지 않는다', () => {
@@ -38,43 +31,64 @@ test('줄마다 글을 넣고 마지막 줄만 문단을 쪼개지 않는다', (
 });
 
 /**
- * 이 문서는 배명훈 모드 **안에서** 열린다. 읽는 사람은 이미 그 안에 있으므로
- * "들어가려면 Alt+Shift+F" 라고 쓰면 앞뒤가 맞지 않는다. 한 번 그렇게 되어 있었다.
+ * 이 저장소의 오래된 버릇: 대화상자와 문서가 각자 문장을 갖고 있다가 어긋났다.
+ * 원본이 하나라는 것을 배선으로 고정한다 — 주석으로는 못 막았다.
  */
-test('이미 배명훈 모드 안이라는 전제로 쓰여 있다', () => {
-  assert.match(welcomeSource, /지금 보고 계신 이 화면이 배명훈 모드입니다/);
-  // 나가는 법을 먼저 알려 주고, 들어오는 법은 그다음이다.
-  const exitAt = welcomeSource.indexOf('Esc 를 누르면 보통 편집 화면으로 나갑니다');
-  const enterAt = welcomeSource.indexOf('Alt+Shift+F');
-  assert.ok(exitAt > 0 && enterAt > 0 && exitAt < enterAt, '나가는 법이 먼저 나와야 한다');
+test('대화상자와 문서가 같은 원본을 읽는다', () => {
+  const help = readFileSync(new URL('../src/ui/help-dialog.ts', import.meta.url), 'utf8');
+  const welcome = readFileSync(new URL('../src/core/welcome-document.ts', import.meta.url), 'utf8');
+
+  assert.match(help, /import \{ USAGE_SECTIONS \} from '@\/core\/usage-guide\.ts'/);
+  assert.match(help, /for \(const section of USAGE_SECTIONS\)/);
+  assert.match(welcome, /\.\.\.usageAsLines\(\)/);
+
+  // 어느 쪽에도 자기만의 안내 문장이 남아 있으면 안 된다.
+  assert.doesNotMatch(help, /const SECTIONS/);
+  assert.doesNotMatch(welcome, /드라이브/, '문서 쪽에 안내 문장이 다시 박혔다');
+});
+
+test('문서에는 원본의 모든 절이 들어간다', () => {
+  const lines = usageAsLines();
+  for (const section of USAGE_SECTIONS) {
+    assert.ok(lines.includes(section.title), `절이 빠졌다: ${section.title}`);
+  }
+  // 단축키는 표를 만들 수 없으니 「키 — 뜻」 한 줄로 편다.
+  assert.ok(lines.some((l) => l.startsWith('Alt+Shift+F — ')));
+});
+
+/**
+ * 대화상자는 아무 화면에서나 열 수 있고, 문서는 배명훈 모드 안에서 열린다.
+ * "지금 이 화면은…" 같은 말은 한쪽에서 반드시 거짓이 된다. 한 번 그렇게 되어 있었다.
+ */
+test('읽는 사람이 어디에 있는지 가정하지 않는다', () => {
+  assert.doesNotMatch(usageText, /지금 보고 계신/);
+  assert.doesNotMatch(usageText, /지금 이 화면/);
+  assert.match(usageText, /켜면 바로 배명훈 모드로 들어갑니다/);
 });
 
 test('로컬 파일을 고치면 어디에 저장되는지 설명한다', () => {
-  for (const [name, source] of [['사용법 문서', welcomeSource], ['사용법 대화상자', helpSource]] as const) {
-    // 셋 다 있어야 한 사람이 안심하고 쓸 수 있다:
-    // 열기만 하면 안 올라간다 / 고치면 올라간다 / 원본은 그대로다.
-    assert.match(source, /읽기만 하면 드라이브에 올라가지 않습니다/, `${name}: 열기만 할 때`);
-    assert.match(source, /한 글자라도 고치면/, `${name}: 편집하면`);
-    assert.match(source, /원본 파일은 건드리지 않고 그대로 둡니다/, `${name}: 원본 보존`);
-    // 가장 놀랄 만한 결과 — 나중에 원본을 열면 옛날 내용이다.
-    assert.match(source, /고치기 전 상태입니다/, `${name}: 원본이 낡는다는 사실`);
-  }
+  // 셋 다 있어야 안심하고 쓸 수 있다:
+  // 열기만 하면 안 올라간다 / 고치면 올라간다 / 내 컴퓨터 원본은 그대로다.
+  assert.match(usageText, /읽기만 하면 드라이브에 올라가지 않습니다/);
+  assert.match(usageText, /한 글자라도 고치면/);
+  assert.match(usageText, /원본 파일은 건드리지 않고 그대로 둡니다/);
+  // 가장 놀랄 만한 결과 — 나중에 원본을 열면 옛날 내용이다.
+  assert.match(usageText, /고치기 전 상태입니다/);
 });
 
 test('드라이브를 연결하지 않았을 때 할 일을 알려 준다', () => {
-  for (const source of [welcomeSource, helpSource]) {
-    assert.match(source, /자동 저장 안 됨 · Ctrl\+S/);
-    // 복구본이 있다는 것을 함께 말해야 실제보다 무섭게 읽히지 않는다.
-    assert.match(source, /복구본/);
-  }
+  assert.match(usageText, /자동 저장 안 됨 · Ctrl\+S/);
+  // 복구본이 있다는 것을 함께 말해야 실제보다 무섭게 읽히지 않는다.
+  assert.match(usageText, /복구본/);
 });
 
 test('응원 배속을 안내한다', () => {
-  assert.match(welcomeSource, /x2 → x3 → x5 → x10 → MAX/);
-  assert.match(welcomeSource, /60타/);
+  assert.match(usageText, /x2 → x3 → x5 → x10 → MAX/);
+  assert.match(usageText, /60타/);
 });
 
-test('다시 여는 법을 알려 준다', () => {
-  // 첫 실행에만 뜨는 문서라, 이 줄이 없으면 두 번 다시 못 본다.
-  assert.match(welcomeSource, /도구 → 사용법 문서 열기/);
+test('다시 보는 법을 두 갈래 다 알려 준다', () => {
+  // 첫 실행에만 뜨는 문서라, 이 안내가 없으면 두 번 다시 못 본다.
+  assert.match(usageText, /도구 → 사용법」을 누르면 이 안내가 그대로 다시 나옵니다/);
+  assert.match(usageText, /도구 → 사용법 문서 열기」를 고르면 같은 내용이 문서로 열립니다/);
 });
