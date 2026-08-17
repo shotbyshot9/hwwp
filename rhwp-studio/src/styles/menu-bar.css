@@ -27,16 +27,19 @@
   border: 1px solid transparent;
 }
 
+/* 가리키는 것은 배경으로 알리고 글자는 읽히는 색 그대로 둔다.
+   글자까지 갈색으로 바뀌면 메뉴를 훑을 때마다 색이 널뛴다. */
 .menu-title:hover {
-  background: var(--ui-accent-bg);
-  border-color: var(--accent-hover);
-  color: var(--color-primary-dark);
+  background: var(--ui-hover);
+  border-color: var(--ui-border);
+  color: var(--color-text);
 }
 
+/* 열린 메뉴는 로고와 같은 짝 — 먹 바탕에 호박 글자 */
 .menu-item.open > .menu-title {
-  background: var(--ui-menu-open);
-  border-color: var(--ui-menu-open-border);
-  color: var(--ui-text-on-accent);
+  background: var(--brand-ink);
+  border-color: var(--brand-ink);
+  color: var(--brand-amber);
   z-index: 1001;
   position: relative;
 }
@@ -100,12 +103,12 @@
 
 .md-item:hover {
   background: var(--ui-selected);
-  color: var(--color-primary-dark);
+  color: var(--color-text);
 }
 
 .md-item.active {
   background: var(--ui-selected);
-  color: var(--color-primary-dark);
+  color: var(--color-text);
 }
 
 .md-item.disabled {
@@ -160,7 +163,7 @@
 
 .md-sub:hover {
   background: var(--ui-selected);
-  color: var(--color-primary-dark);
+  color: var(--color-text);
 }
 
 .md-sub.disabled {

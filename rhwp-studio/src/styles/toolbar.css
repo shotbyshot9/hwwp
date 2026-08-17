@@ -238,7 +238,7 @@
   padding: 0 12px;
   font-size: var(--font-size-md);
   font-weight: 600;
-  color: var(--accent-strong);
+  color: var(--color-text-secondary);
   white-space: nowrap;
 }
 
@@ -249,7 +249,7 @@
   padding: 0 12px;
   font-size: var(--font-size-md);
   font-weight: 600;
-  color: var(--accent-strong);
+  color: var(--color-text-secondary);
   white-space: nowrap;
 }
 

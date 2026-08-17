@@ -16,7 +16,9 @@
 
 .dialog-wrap {
   background: var(--color-surface-raised);
-  border: 1px solid var(--color-primary-subtle);
+  /* 테두리는 상자의 윤곽일 뿐이라 강조색을 쓸 자리가 아니다.
+     갈색 선이 창을 둘러싸고 있어서 대화상자 전체가 누렇게 보였다. */
+  border: 1px solid var(--ui-border);
   box-sizing: border-box;
   font-size: var(--font-size-base);
   color: var(--color-text);
@@ -217,14 +219,18 @@
   border-color: var(--color-primary-subtle);
 }
 
+/* 주 버튼 — 로고와 같은 짝(먹 바탕 + 호박 글자).
+   제목 줄의 두 버튼과 같은 규칙이라 앱 전체가 한 벌로 읽힌다.
+   밝은 호박 바탕에 흰 글자는 2.15:1 로 못 읽지만 이 조합은 9.26:1 이다. */
 .dialog-btn-primary {
-  background: var(--color-primary);
-  color: var(--ui-text-on-accent);
-  border-color: var(--accent-light);
+  background: var(--brand-ink);
+  color: var(--brand-amber);
+  border-color: var(--brand-ink);
 }
 
 .dialog-btn-primary:hover {
-  background: var(--accent-light);
+  background: var(--brand-ink-hover);
+  border-color: var(--brand-ink-hover);
 }
 
 .dialog-btn-primary.hml-save-format-primary {
@@ -445,16 +451,18 @@
   height: 72px;
 }
 
+/* 제품명은 글자색으로 둔다. 갈색 강조를 입히면 바로 위 로고(먹+호박)와 겉돈다 —
+   색은 로고가 맡고, 이름은 읽히기만 하면 된다. */
 .about-product-name {
   font-size: 18px;
   font-weight: bold;
-  color: var(--accent-strong);
+  color: var(--color-text);
   margin-bottom: 2px;
 }
 
 .about-product-name-ko {
   font-size: var(--font-size-md);
-  color: var(--accent-subtle);
+  color: var(--color-text-muted);
   margin-bottom: 8px;
 }
 
@@ -526,15 +534,21 @@
   line-height: 1.6;
 }
 
-/* 라이선스 전문 링크 — 웹앱 사용자가 고지에 닿을 유일한 통로다 */
+/* 라이선스 전문 링크 — 웹앱 사용자가 고지에 닿을 유일한 통로다.
+
+   글자는 본문색으로 두고 밑줄만 호박색으로 긋는다. 밝은 종이 위에서 호박색 글자는
+   1.99:1 로 읽히지 않는데, 밑줄은 형태라서 색이 옅어도 제 일을 한다. 링크임을 알리는
+   것은 밑줄이고 브랜드를 말하는 것은 그 색이다. */
 .about-license-link {
-  color: var(--color-accent, #b45309);
+  color: var(--color-text);
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration-color: var(--brand-amber);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 .about-license-link:hover {
-  text-decoration-thickness: 2px;
+  text-decoration-thickness: 3px;
 }
 
 .about-copyright {

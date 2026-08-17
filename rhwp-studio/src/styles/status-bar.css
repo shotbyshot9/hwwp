@@ -68,7 +68,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--accent-primary);
+  /* 상태 메시지는 알림이지 강조가 아니다. 갈색으로 띄우면 상태바에 늘 색 한 덩어리가
+     앉아 있게 된다 — 여기 글은 대부분 "1페이지" 같은 사실 보고다. */
+  color: var(--color-text-secondary);
   padding: 0 12px;
   line-height: 22px;
 }
