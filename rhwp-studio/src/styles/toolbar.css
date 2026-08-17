@@ -69,7 +69,11 @@
 .icon-copy          { background-position: calc(-40px * 3) calc(-40px * 1); }
 .icon-paste         { background-position: calc(-40px * 4) calc(-40px * 1); }
 .icon-format-copy   { background-position: calc(-40px * 0) calc(-40px * 10); }
-/* icon_small_ko.svg에 조판부호/문단부호 아이콘이 없으므로 CSS 대체 아이콘 */
+/* icon_small_ko.svg에 조판부호/문단부호 아이콘이 없으므로 CSS 대체 아이콘.
+
+   색은 글자색 계열로 둔다. 예전에는 강조색(갈색)이었는데, 옆의 다른 아이콘들은
+   스프라이트에서 온 중립색이라 이 둘만 튀었다. 도구 아이콘은 브랜드를 말하는 자리가
+   아니다 — 브랜드색은 로고와 제목 줄의 두 버튼이 맡는다. */
 .icon-ctrl-mark {
   background-image: none !important;
   position: relative;
@@ -82,7 +86,7 @@
   font-size: var(--font-size-lg);
   line-height: 18px;
   text-align: center;
-  color: var(--accent-light);
+  color: var(--ui-text-secondary);
   font-family: serif;
 }
 
@@ -98,7 +102,7 @@
   font-size: var(--font-size-lg);
   line-height: 18px;
   text-align: center;
-  color: var(--accent-light);
+  color: var(--ui-text-secondary);
   font-family: sans-serif;
 }
 .icon-grid          { background-position: calc(-40px * 13) calc(-40px * 2); }
@@ -149,7 +153,7 @@
   font-size: var(--font-size-xl);
   line-height: 18px;
   text-align: center;
-  color: var(--accent-light);
+  color: var(--ui-text-secondary);
   flex-shrink: 0;
 }
 

@@ -25,7 +25,9 @@
     <div id="title-bar">
       <!-- 로고 그림을 그대로 쓴다. 예전에는 갈색 상자에 'hwwp' 를 적어 흉내 냈는데,
            아이콘이 생긴 뒤로는 그 흉내가 진짜와 어긋나 보인다. -->
-      <img class="tbar-brand" src="/icons/icon-32.png" width="30" height="30" alt="" aria-hidden="true" />
+      <!-- 30px 자리에 128px 원본을 넣는다. UI 배율(1.28)과 고해상도 화면이 겹치면
+           실제로 필요한 픽셀이 77px 를 넘어, 32px 짜리를 쓰면 흐릿하게 번진다. -->
+      <img class="tbar-brand" src="/icons/icon-128.png" width="30" height="30" alt="" aria-hidden="true" />
       <input id="tbar-title" class="tbar-title" type="text" value="새 문서"
              aria-label="문서 이름" autocomplete="off" spellcheck="false" />
       <span id="tbar-save-state" class="tbar-save-state" role="status" aria-live="polite"></span>

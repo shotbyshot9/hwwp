@@ -105,10 +105,12 @@
   gap: 7px;
   padding: 7px 14px;
   margin-right: 8px;
-  border: 1px solid var(--accent-primary);
+  /* 로고와 같은 짝 — 먹 바탕에 호박 글자.
+     배명훈 모드가 이 제품의 핵심이므로 제목 줄에서 가장 강한 자리를 준다. */
+  border: 1px solid var(--brand-ink);
   border-radius: 999px;
-  background: transparent;
-  color: var(--accent-primary);
+  background: var(--brand-ink);
+  color: var(--brand-amber);
   font-family: inherit;
   font-size: var(--font-size-md);
   font-weight: 600;
@@ -119,7 +121,8 @@
 }
 
 .tbar-focus:hover {
-  background: var(--ui-accent-bg-light);
+  background: var(--brand-ink-hover);
+  border-color: var(--brand-ink-hover);
 }
 
 .tbar-focus-icon {
@@ -138,12 +141,12 @@
   gap: 7px;
   max-width: 260px;
   padding: 7px 14px;
-  /* 로고와 같은 짝 — 호박 바탕에 먹 글자.
-     흰 글자를 얹으면 2.15:1 로 읽히지 않는다. 먹 글자면 8.97:1 이다. */
-  border: 1px solid var(--brand-amber);
+  /* 배명훈 모드 버튼과 같은 먹 바탕 — 로고와 한 벌로 읽히게 한다.
+     흰 글자를 얹으면 2.15:1 로 읽히지 않으므로 호박 글자를 쓴다(8.97:1). */
+  border: 1px solid var(--brand-ink);
   border-radius: 999px;
-  background: var(--brand-amber);
-  color: var(--brand-ink);
+  background: var(--brand-ink);
+  color: var(--brand-amber);
   font-family: inherit;
   font-size: var(--font-size-md);
   font-weight: 600;
@@ -153,8 +156,8 @@
 }
 
 .tbar-drive:hover {
-  background: var(--brand-amber-hover);
-  border-color: var(--brand-amber-hover);
+  background: var(--brand-ink-hover);
+  border-color: var(--brand-ink-hover);
 }
 
 .tbar-drive-icon {

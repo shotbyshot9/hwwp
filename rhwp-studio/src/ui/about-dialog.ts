@@ -60,6 +60,7 @@ export class AboutDialog extends ModalDialog {
     // 로고. 제품 정보는 "이게 무엇인가" 를 말하는 자리이므로 이름보다 먼저 얼굴을 보인다.
     const logo = document.createElement('img');
     logo.className = 'about-logo';
+    // 72px 자리에 256px 원본 — 고해상도 화면에서 번지지 않게 넉넉히 준다.
     logo.src = '/icons/icon-256.png';
     logo.width = 72;
     logo.height = 72;
