@@ -437,6 +437,14 @@
   padding: 16px 24px;
 }
 
+/* 로고. 아이콘 파일 자체에 둥근 모서리가 있으므로 여기서 또 자르지 않는다. */
+.about-logo {
+  display: block;
+  margin: 4px auto 14px;
+  width: 72px;
+  height: 72px;
+}
+
 .about-product-name {
   font-size: 18px;
   font-weight: bold;

@@ -57,6 +57,16 @@ export class AboutDialog extends ModalDialog {
     const body = document.createElement('div');
     body.className = 'about-body';
 
+    // 로고. 제품 정보는 "이게 무엇인가" 를 말하는 자리이므로 이름보다 먼저 얼굴을 보인다.
+    const logo = document.createElement('img');
+    logo.className = 'about-logo';
+    logo.src = '/icons/icon-256.png';
+    logo.width = 72;
+    logo.height = 72;
+    // 바로 아래에 제품명이 글자로 나오므로 대체 텍스트를 또 읽히면 같은 말을 두 번 한다.
+    logo.alt = '';
+    body.appendChild(logo);
+
     // 제품 영문명
     const titleEn = document.createElement('div');
     titleEn.className = 'about-product-name';
@@ -78,7 +88,7 @@ export class AboutDialog extends ModalDialog {
     // 만든 사람
     const author = document.createElement('div');
     author.className = 'about-author';
-    author.textContent = '만든 사람: Jiwon Ryu';
+    author.textContent = '만든 사람: 류지원 (Jiwon Ryu)';
     body.appendChild(author);
 
     // 기술 스택

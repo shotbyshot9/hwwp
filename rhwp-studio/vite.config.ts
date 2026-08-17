@@ -176,7 +176,10 @@ export default defineConfig({
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-256.png', sizes: '256x256', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+          // maskable 은 따로 만든 파일을 쓴다. 안드로이드 적응형 아이콘은 바깥 20% 를
+          // 잘라내므로, 글자가 가장자리까지 차는 기본 아이콘을 그대로 쓰면 모서리가
+          // 깎여 나간다. 이 파일은 글자를 안쪽에 넣어 두었다.
+          { src: 'icons/icon-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {

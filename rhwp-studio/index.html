@@ -8,7 +8,11 @@
   <!-- 다크테마 FOUC 방지 — 확장 CSP가 인라인 스크립트를 금지하므로 외부 파일로 분리(#1444).
        module/defer 금지(동기 로드)로 번들 전 즉시 실행되어 FOUC 방지를 유지한다. -->
   <script src="/theme-init.js"></script>
-  <link rel="icon" href="/favicon.ico" />
+  <!-- favicon.ico 는 16/32/48 을 함께 담고 있다. 최신 브라우저는 아래 png 를 쓰고,
+       주소창에 직접 /favicon.ico 를 물어오는 옛 동작도 함께 받아 준다. -->
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png" />
   <link rel="apple-touch-icon" href="/icons/icon-256.png" />
   <title>hwwp</title>
   <link rel="stylesheet" href="/src/style.css" />
