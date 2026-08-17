@@ -31,7 +31,7 @@ import { showConfirm } from '@/ui/confirm-dialog';
 import { toRenderZoom, toUserZoom } from '@/core/display-calibration.ts';
 import { WELCOME_DOC_NAME, fillWelcomeDocument } from '@/core/welcome-document.ts';
 import { pickDriveFile } from '@/storage/drive-picker.ts';
-import { setDriveFileProvider } from '@/storage/drive-file-provider.ts';
+import { setDriveConnectedProbe, setDriveFileProvider } from '@/storage/drive-file-provider.ts';
 import type { StoredDocRef } from '@/storage/storage-backend.ts';
 import { installPwaFileHandling, type FileHandlingWindowLike } from '@/command/pwa-file-handling';
 import {
@@ -369,6 +369,10 @@ async function browseDriveWithPicker(): Promise<void> {
  *
  * 문서를 여는 것과 달리 편집기에 싣지 않고 바이트만 넘긴다.
  */
+// 저장이 내려받기로 떨어졌을 때 무슨 말을 할지 정하는 데 쓴다 — 커맨드 계층은
+// 인증 객체를 갖고 있지 않다.
+setDriveConnectedProbe(() => driveAuth.isConnected());
+
 setDriveFileProvider(async () => {
   if (!await ensureDriveConnected()) return null;
 

@@ -26,3 +26,22 @@ export function setDriveFileProvider(next: DriveFileProvider | null): void {
 export function getDriveFileProvider(): DriveFileProvider | null {
   return provider;
 }
+
+/**
+ * 지금 드라이브가 연결되어 있는가.
+ *
+ * 안내 문구를 고르는 데 쓴다 — "연결하면 …" 이라고 할지 "이미 저장되고 있습니다"
+ * 라고 할지는 이 값에 달렸다. 커맨드 계층은 인증 객체를 갖고 있지 않으므로 파일
+ * 통로와 같은 자리에 둔다. 등록 전이면 연결되지 않은 것으로 본다.
+ */
+type DriveConnectedProbe = () => boolean;
+
+let connectedProbe: DriveConnectedProbe | null = null;
+
+export function setDriveConnectedProbe(next: DriveConnectedProbe | null): void {
+  connectedProbe = next;
+}
+
+export function isDriveConnected(): boolean {
+  return connectedProbe?.() === true;
+}

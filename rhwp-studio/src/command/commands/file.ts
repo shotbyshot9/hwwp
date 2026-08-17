@@ -58,6 +58,7 @@ import { userSettings } from '@/core/user-settings';
 import { showToast } from '@/ui/toast';
 import { clearRecentDocs, listRecentDocs, removeRecentDoc } from '@/recent/recent-store';
 import { openRecentEntry } from '@/recent/recent-open';
+import { isDriveConnected } from '@/storage/drive-file-provider.ts';
 
 /**
  * 파일 열기 대화상자(File System Access picker, 미지원 시 숨김 input 폴백)를 열어
@@ -218,6 +219,36 @@ function completeHandleSave(
   services.documentState.markClean(reason);
 }
 
+/**
+ * 저장 위치를 고르지 못하고 내려받기로 떨어졌다는 것을 알린다.
+ *
+ * 파이어폭스·사파리에는 File System Access API 가 없다. 그래서 hwwp 가 할 수 있는
+ * 일이 내려받기뿐인데, 아무 말도 없으면 사용자는 "저장을 눌렀는데 왜 파일이 또
+ * 생기지" 하고 자기가 뭘 잘못한 줄 안다. 브라우저의 한계라는 것과, 그 한계를 비켜
+ * 가는 길(드라이브)이 있다는 것을 함께 말한다.
+ *
+ * 드라이브에 저장하면 같은 문서에 계속 덮어써지므로, 이 브라우저에서는 오히려
+ * 드라이브 쪽이 전통적인 "저장" 에 가깝다.
+ */
+function notifyDownloadFallback(fileName: string): void {
+  if (isDriveConnected()) {
+    // 드라이브가 이미 붙어 있으면 자동 저장이 돌고 있다 — 이 내려받기는 사본 만들기다.
+    showToast({
+      message: `"${fileName}" 을 내려받았습니다.\n`
+        + '이 브라우저는 저장 위치 고르기를 지원하지 않아 내려받기로 저장됩니다. '
+        + '문서 자체는 구글 드라이브에 계속 저장되고 있습니다.',
+      durationMs: 6000,
+    });
+    return;
+  }
+  showToast({
+    message: `"${fileName}" 을 내려받았습니다.\n`
+      + '이 브라우저는 저장 위치를 고르는 기능을 지원하지 않아, 저장할 때마다 새 파일이 '
+      + '내려받아집니다. 구글 드라이브를 연결하면 같은 문서에 이어서 저장됩니다.',
+    durationMs: 9000,
+  });
+}
+
 function downloadBlob(blob: Blob, fileName: string): void {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
@@ -300,7 +331,10 @@ async function saveAsFormat(services: CommandServices, format: SaveFormat): Prom
     services.wasm.requiresPasswordForSave = password !== null;
     persistDownloadWithContentLoss(
       payload.contentLoss,
-      () => downloadBlob(payload.blob, downloadName),
+      () => {
+        downloadBlob(payload.blob, downloadName);
+        notifyDownloadFallback(downloadName);
+      },
       showExportContentLoss,
     );
     services.documentState.markClean('save-as');
@@ -368,7 +402,10 @@ export async function saveCurrentDocument(services: CommandServices): Promise<Sa
     if (!downloadName) return 'cancelled';
     persistDownloadWithContentLoss(
       payload.contentLoss,
-      () => downloadBlob(payload.blob, downloadName),
+      () => {
+        downloadBlob(payload.blob, downloadName);
+        notifyDownloadFallback(downloadName);
+      },
       showExportContentLoss,
     );
     services.wasm.requiresPasswordForSave = password !== null;
