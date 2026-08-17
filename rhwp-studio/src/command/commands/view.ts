@@ -251,12 +251,25 @@ export const viewCommands: CommandDef[] = [
     execute(services) {
       const ctx = services.getContext();
       const next = !ctx.showControlCodes;
-      // 조판부호 ON → 문단부호도 ON (한컴 기준: 조판부호는 문단부호를 포함)
+      /*
+       * 문단부호 깃발은 건드리지 않는다.
+       *
+       * 예전에는 "조판부호는 문단부호를 포함한다" 며 두 깃발을 함께 켰다. 그래서 조판부호
+       * 하나를 누르면 문단부호 버튼에도 불이 들어왔다 — 누르지 않은 버튼이 켜지는 것으로
+       * 보인다.
+       *
+       * 그런데 함께 켤 이유가 없었다. 렌더러가 이미 두 깃발을 OR 로 묶는다
+       * (`paint/builder.rs` 의 `show_paragraph_marks || show_control_codes`,
+       * `renderer/skia/text_replay.rs` 의 `if !show_paragraph_marks &&
+       * !show_control_codes { 건너뜀 }`). 조판부호만 켜도 문단 표시는 그대로 나온다.
+       * 두 번째 깃발은 화면에 아무 영향이 없고 UI 상태와 저장된 설정만 어긋나게 했다.
+       *
+       * 끌 때도 마찬가지였다. 함께 껐으므로 사용자가 따로 켜 둔 문단부호가 조판부호를
+       * 끄는 순간 조용히 사라졌다.
+       */
       services.wasm.setShowControlCodes(next);
-      services.wasm.setShowParagraphMarks(next);
       userSettings.setShowControlCodes(next);
-      userSettings.setShowParagraphMarks(next);
-      syncTextMarkMenu(next, next);
+      syncTextMarkMenu(next, ctx.showParagraphMarks);
       refreshCaretAfterViewChange(services);
       services.eventBus.emit('document-view-changed');
     },
