@@ -129,6 +129,17 @@ export class AboutDialog extends ModalDialog {
     );
     body.appendChild(licenseNote);
 
+    // 개인정보처리방침·약관. 구글 동의 화면에서도 이 주소를 가리키므로, 앱 안에서도
+    // 닿을 수 있어야 한다 — 동의 화면에서만 보이면 나중에 다시 찾을 길이 없다.
+    const policyNote = document.createElement('div');
+    policyNote.className = 'about-license-note';
+    policyNote.append(
+      makeLicenseLink('privacy.html', '개인정보처리방침'),
+      ' · ',
+      makeLicenseLink('terms.html', '서비스 약관'),
+    );
+    body.appendChild(policyNote);
+
     // 저작권 — hwwp 자체 고지와 원본(rhwp) 고지를 줄을 나눠 둔다.
     // 한 줄에 섞으면 누구의 저작권인지 흐려진다.
     const copyright = document.createElement('div');
