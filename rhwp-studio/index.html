@@ -23,7 +23,9 @@
       <h1 class="visually-hidden">hwwp 문서 편집기</h1>
     <!-- 제목 줄: 문서 이름 · 저장 상태 · 저장소 연결 -->
     <div id="title-bar">
-      <div class="tbar-brand" aria-hidden="true">hwwp</div>
+      <!-- 로고 그림을 그대로 쓴다. 예전에는 갈색 상자에 'hwwp' 를 적어 흉내 냈는데,
+           아이콘이 생긴 뒤로는 그 흉내가 진짜와 어긋나 보인다. -->
+      <img class="tbar-brand" src="/icons/icon-32.png" width="30" height="30" alt="" aria-hidden="true" />
       <input id="tbar-title" class="tbar-title" type="text" value="새 문서"
              aria-label="문서 이름" autocomplete="off" spellcheck="false" />
       <span id="tbar-save-state" class="tbar-save-state" role="status" aria-live="polite"></span>
