@@ -54,6 +54,24 @@
   border-color: var(--ui-border-light);
 }
 
+/* 켜진 토글.
+ *
+ * 조판부호·문단부호·격자·짤림보기 등 열넷이 `.active` 를 받고 있었는데 이 규칙이 없어서
+ * 화면에 아무 변화가 없었다 — 편집기에는 표시가 나오는데 버튼은 그대로여서, 켠 것인지
+ * 아닌지 버튼만 봐서는 알 수 없었다.
+ *
+ * 눌린 것으로 보이게 배경을 채우고 호박색 테두리를 준다. 색만으로 알리지 않도록
+ * `aria-pressed` 도 함께 붙인다(view.ts).
+ */
+.tb-btn.active {
+  background: var(--ui-selected);
+  border-color: var(--brand-amber);
+}
+
+.tb-btn.active:hover {
+  background: var(--ui-accent-bg);
+}
+
 /* 한컴 SVG 스프라이트 아이콘 시스템 */
 .tb-sprite {
   display: block;

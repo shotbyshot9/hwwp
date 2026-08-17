@@ -46,13 +46,23 @@ function themeModeCommand(mode: ThemeMode, label: string): CommandDef {
   };
 }
 
+/**
+ * 켜짐 표시를 맞춘다.
+ *
+ * 같은 `data-cmd` 가 메뉴 항목과 도구 모음 버튼 양쪽에 있으므로 둘 다 잡힌다.
+ * 버튼에는 `aria-pressed` 도 붙인다 — 배경색만으로 알리면 색을 구별하기 어려운
+ * 사람에게는 켜진 것인지 알 길이 없다.
+ */
+function markToggleState(cmd: string, on: boolean): void {
+  document.querySelectorAll(`[data-cmd="${cmd}"]`).forEach((el) => {
+    el.classList.toggle('active', on);
+    if (el.tagName === 'BUTTON') el.setAttribute('aria-pressed', String(on));
+  });
+}
+
 export function syncTextMarkMenu(showControlCodes: boolean, showParagraphMarks: boolean): void {
-  document.querySelectorAll('[data-cmd="view:ctrl-mark"]').forEach(el => {
-    el.classList.toggle('active', showControlCodes);
-  });
-  document.querySelectorAll('[data-cmd="view:para-mark"]').forEach(el => {
-    el.classList.toggle('active', showParagraphMarks);
-  });
+  markToggleState('view:ctrl-mark', showControlCodes);
+  markToggleState('view:para-mark', showParagraphMarks);
 }
 
 /**
