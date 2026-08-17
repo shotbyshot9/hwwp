@@ -48,17 +48,24 @@ test('약관은 HWP 편집의 실제 위험을 감추지 않는다', () => {
   assert.match(terms, /한글과컴퓨터와 아무런 관련이 없으며/);
 });
 
+/**
+ * 링크는 `.html` 없는 주소로 건다.
+ *
+ * Cloudflare Workers 정적 자산은 `/privacy.html` 을 `/privacy` 로 307 넘긴다. 굳이
+ * 넘어가는 주소를 적어 두면 누를 때마다 왕복이 한 번씩 는다.
+ */
 test('두 문서가 서로를 가리키고 앱으로 돌아갈 수 있다', () => {
-  assert.match(privacy, /href="\/terms\.html"/);
-  assert.match(terms, /href="\/privacy\.html"/);
+  assert.match(privacy, /href="\/terms"/);
+  assert.match(terms, /href="\/privacy"/);
   for (const page of [privacy, terms]) {
     assert.match(page, /href="\/"/);
     assert.match(page, /href="\/LICENSE\.txt"/);
+    assert.doesNotMatch(page, /href="\/(privacy|terms)\.html"/);
   }
 });
 
 test('제품 정보에서 두 문서로 갈 수 있다', () => {
   const about = readFileSync(new URL('../src/ui/about-dialog.ts', import.meta.url), 'utf8');
-  assert.match(about, /makeLicenseLink\('privacy\.html', '개인정보처리방침'\)/);
-  assert.match(about, /makeLicenseLink\('terms\.html', '서비스 약관'\)/);
+  assert.match(about, /makeLicenseLink\('privacy', '개인정보처리방침'\)/);
+  assert.match(about, /makeLicenseLink\('terms', '서비스 약관'\)/);
 });

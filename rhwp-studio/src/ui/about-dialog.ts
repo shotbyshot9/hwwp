@@ -134,9 +134,9 @@ export class AboutDialog extends ModalDialog {
     const policyNote = document.createElement('div');
     policyNote.className = 'about-license-note';
     policyNote.append(
-      makeLicenseLink('privacy.html', '개인정보처리방침'),
+      makeLicenseLink('privacy', '개인정보처리방침'),
       ' · ',
-      makeLicenseLink('terms.html', '서비스 약관'),
+      makeLicenseLink('terms', '서비스 약관'),
     );
     body.appendChild(policyNote);
 
