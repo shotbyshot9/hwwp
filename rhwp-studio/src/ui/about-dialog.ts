@@ -106,6 +106,16 @@ export class AboutDialog extends ModalDialog {
       + '텍스트 에디터\'에서 영감을 받아, rhwp를 기반으로 개발했습니다.';
     body.appendChild(notice);
 
+    // 면책 고지. 약관에만 두면 읽는 사람이 거의 없다 — 제품 정보는 "이게 무엇인가" 를
+    // 묻는 사람이 오는 자리이므로 출처 혼동을 막을 자리도 여기다. hwwp 라는 이름과
+    // HWP 편집이라는 기능이 겹쳐 보이는 만큼, 관계 없음을 먼저 말해 둔다.
+    const disclaimer = document.createElement('div');
+    disclaimer.className = 'about-disclaimer';
+    disclaimer.textContent =
+      'hwwp는 (주)한글과컴퓨터와 아무런 관련이 없으며, HWP·HWPX 파일 형식 호환을 목적으로 하는 '
+      + '독립 프로젝트입니다.';
+    body.appendChild(disclaimer);
+
     // 오픈소스 라이선스
     const licenseTitle = document.createElement('div');
     licenseTitle.className = 'about-license-title';

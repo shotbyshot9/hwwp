@@ -189,6 +189,21 @@ RHWP_DISABLE_EXTERNAL_WEBFONTS=1 npm run build
 
 ---
 
+## 도구 모음 아이콘 — 미해결 위험
+
+`rhwp-studio/public/images/icon_small_ko.svg`(470KB)와 `icon_small_ko_dark.svg`(454KB)는
+rhwp 가 가져온 **한컴 SVG 스프라이트**다(rhwp 자체 문서가 "Hancom SVG sprite" 라고 적고
+있다). 도구 모음과 메뉴의 아이콘 31개가 이 파일에서 좌표로 잘라 쓴다.
+
+**이것은 지금 저장소에서 라이선스가 정리되지 않은 유일한 자산이다.** 글꼴은 대체본으로
+바꿔 두었고(맑은 고딕 → Pretendard 등) 함초롬체는 파일을 배포하지 않고 CDN 을 타지만,
+이 스프라이트는 **파일 자체를 배포한다**. 아이콘은 미술저작물이라 형식 호환이라는 명분이
+닿지 않는다.
+
+바꾸려면 아이콘 31개를 다시 그리거나 오픈소스 아이콘셋(Lucide, Phosphor — 둘 다 MIT)으로
+갈아 끼워야 한다. 참조가 CSS 두 곳(`base.css` 의 `--ui-icon-sprite-url`)에 모여 있어
+교체 자체는 어렵지 않다. 좌표 기반 스프라이트를 개별 아이콘으로 옮기는 일이 대부분이다.
+
 ## 음원 (hwwp 추가)
 
 배명훈 모드에서 문장을 끝낼 때마다 나는 환호·박수 음원이다. Writer's Homeground

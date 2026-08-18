@@ -1131,3 +1131,15 @@
 /* 계산식 오류 표시 */
 .formula-error { margin-top: 8px; padding: 8px 12px; background: var(--ui-warning-bg); border: 1px solid var(--ui-warning-border); border-radius: 4px; color: var(--ui-warning-text); font-size: var(--font-size-base); }
 .formula-input-error { border-color: var(--ui-danger-strong) !important; box-shadow: 0 0 0 2px var(--ui-danger-soft) !important; }
+
+/* 면책 고지. 눈에 띄되 제품 설명을 밀어내지 않게 — 작고 조용한 상자로 둔다. */
+.about-disclaimer {
+  margin: 10px 0 4px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--ui-surface-muted);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  text-align: left;
+}
