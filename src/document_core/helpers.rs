@@ -1132,17 +1132,203 @@ pub(crate) fn css_color_to_hwp_bgr(css: &str) -> Option<u32> {
     }
 }
 
+/// U+00A0..U+00FF 의 HTML4 이름. 이 구간은 이름이 코드포인트 순서와 정확히 1:1 이라
+/// 표 하나로 끝난다.
+const LATIN1_ENTITY_NAMES: [&str; 96] = [
+    "nbsp", "iexcl", "cent", "pound", "curren", "yen", "brvbar", "sect", "uml", "copy", "ordf",
+    "laquo", "not", "shy", "reg", "macr", "deg", "plusmn", "sup2", "sup3", "acute", "micro",
+    "para", "middot", "cedil", "sup1", "ordm", "raquo", "frac14", "frac12", "frac34", "iquest",
+    "Agrave", "Aacute", "Acirc", "Atilde", "Auml", "Aring", "AElig", "Ccedil", "Egrave", "Eacute",
+    "Ecirc", "Euml", "Igrave", "Iacute", "Icirc", "Iuml", "ETH", "Ntilde", "Ograve", "Oacute",
+    "Ocirc", "Otilde", "Ouml", "times", "Oslash", "Ugrave", "Uacute", "Ucirc", "Uuml", "Yacute",
+    "THORN", "szlig", "agrave", "aacute", "acirc", "atilde", "auml", "aring", "aelig", "ccedil",
+    "egrave", "eacute", "ecirc", "euml", "igrave", "iacute", "icirc", "iuml", "eth", "ntilde",
+    "ograve", "oacute", "ocirc", "otilde", "ouml", "divide", "oslash", "ugrave", "uacute", "ucirc",
+    "uuml", "yacute", "thorn", "yuml",
+];
+
+/// 구두점·기호·그리스 문자. 워드프로세서와 브라우저가 실제로 내보내는 것들이다.
+const NAMED_ENTITIES: [(&str, u32); 96] = [
+    ("quot", 0x22),
+    ("amp", 0x26),
+    ("apos", 0x27),
+    ("lt", 0x3C),
+    ("gt", 0x3E),
+    // 따옴표와 줄표 — 붙여넣기에서 가장 자주 나오는 것들이다.
+    ("lsquo", 0x2018),
+    ("rsquo", 0x2019),
+    ("sbquo", 0x201A),
+    ("ldquo", 0x201C),
+    ("rdquo", 0x201D),
+    ("bdquo", 0x201E),
+    ("lsaquo", 0x2039),
+    ("rsaquo", 0x203A),
+    ("ndash", 0x2013),
+    ("mdash", 0x2014),
+    ("horbar", 0x2015),
+    ("hellip", 0x2026),
+    ("bull", 0x2022),
+    ("middot", 0xB7),
+    ("dagger", 0x2020),
+    ("Dagger", 0x2021),
+    ("permil", 0x2030),
+    ("prime", 0x2032),
+    ("Prime", 0x2033),
+    ("oline", 0x203E),
+    ("frasl", 0x2044),
+    // 공백류. 폭이 다른 공백이지만 문서에서는 공백으로 읽히면 된다.
+    ("ensp", 0x2002),
+    ("emsp", 0x2003),
+    ("thinsp", 0x2009),
+    ("zwnj", 0x200C),
+    ("zwj", 0x200D),
+    ("lrm", 0x200E),
+    ("rlm", 0x200F),
+    // 기호
+    ("euro", 0x20AC),
+    ("trade", 0x2122),
+    ("fnof", 0x192),
+    ("circ", 0x2C6),
+    ("tilde", 0x2DC),
+    ("OElig", 0x152),
+    ("oelig", 0x153),
+    ("Scaron", 0x160),
+    ("scaron", 0x161),
+    ("Yuml", 0x178),
+    ("larr", 0x2190),
+    ("uarr", 0x2191),
+    ("rarr", 0x2192),
+    ("darr", 0x2193),
+    ("harr", 0x2194),
+    ("minus", 0x2212),
+    ("lowast", 0x2217),
+    ("radic", 0x221A),
+    ("infin", 0x221E),
+    ("ne", 0x2260),
+    ("le", 0x2264),
+    ("ge", 0x2265),
+    ("asymp", 0x2248),
+    ("equiv", 0x2261),
+    ("sum", 0x2211),
+    ("prod", 0x220F),
+    ("int", 0x222B),
+    ("part", 0x2202),
+    ("there4", 0x2234),
+    ("loz", 0x25CA),
+    ("spades", 0x2660),
+    ("clubs", 0x2663),
+    ("hearts", 0x2665),
+    ("diams", 0x2666),
+    // 그리스 문자 — 수식과 각주에서 나온다.
+    ("Alpha", 0x391),
+    ("Beta", 0x392),
+    ("Gamma", 0x393),
+    ("Delta", 0x394),
+    ("Theta", 0x398),
+    ("Lambda", 0x39B),
+    ("Pi", 0x3A0),
+    ("Sigma", 0x3A3),
+    ("Phi", 0x3A6),
+    ("Psi", 0x3A8),
+    ("Omega", 0x3A9),
+    ("alpha", 0x3B1),
+    ("beta", 0x3B2),
+    ("gamma", 0x3B3),
+    ("delta", 0x3B4),
+    ("epsilon", 0x3B5),
+    ("zeta", 0x3B6),
+    ("eta", 0x3B7),
+    ("theta", 0x3B8),
+    ("lambda", 0x3BB),
+    ("mu", 0x3BC),
+    ("pi", 0x3C0),
+    ("rho", 0x3C1),
+    ("sigma", 0x3C3),
+    ("tau", 0x3C4),
+    ("phi", 0x3C6),
+    ("chi", 0x3C7),
+    ("psi", 0x3C8),
+    ("omega", 0x3C9),
+];
+
 /// HTML 엔티티를 디코딩한다.
+///
+/// 예전에는 `replace` 아홉 개를 이어 붙였다. 두 가지가 잘못돼 있었다.
+///
+/// 첫째, 아는 이름이 아홉 개뿐이라 그 밖의 것은 글자로 남았다. 구글 독스에서 복사한
+/// 글을 붙여넣으면 큰따옴표가 `&ldquo;` `&rdquo;` 로 찍히던 것이 이 때문이다 — 작가가
+/// 대사를 쓰는 제품에서 따옴표가 깨지는 것은 작은 결함이 아니다.
+///
+/// 둘째, `&amp;` 를 먼저 풀어서 `&amp;lt;` 가 `&lt;` 를 거쳐 `<` 로 두 번 풀렸다.
+/// 원문에 "&lt;" 라고 쓰려던 사람의 글자가 태그 기호로 바뀌던 것이다.
+///
+/// 그래서 왼쪽에서 오른쪽으로 한 번만 훑는다. 푼 결과는 다시 보지 않는다. 모르는
+/// 이름은 건드리지 않고 원문 그대로 남긴다 — 임의로 지우는 것보다 낫다.
 pub(crate) fn decode_html_entities(s: &str) -> String {
-    s.replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&quot;", "\"")
-        .replace("&#39;", "'")
-        .replace("&apos;", "'")
-        .replace("&nbsp;", " ")
-        .replace("&#160;", " ")
-        .replace("&#xA0;", " ")
+    if !s.contains('&') {
+        return s.to_string();
+    }
+    let chars: Vec<char> = s.chars().collect();
+    let mut out = String::with_capacity(s.len());
+    let mut i = 0;
+    while i < chars.len() {
+        if chars[i] != '&' {
+            out.push(chars[i]);
+            i += 1;
+            continue;
+        }
+        // 이름은 길어야 여남은 글자다. 상한을 두어 `&` 하나 때문에 문서 끝까지 훑지 않는다.
+        let limit = (i + 34).min(chars.len());
+        let semi = (i + 1..limit).find(|&j| chars[j] == ';');
+        let Some(semi) = semi else {
+            out.push('&');
+            i += 1;
+            continue;
+        };
+        let name: String = chars[i + 1..semi].iter().collect();
+        if let Some(text) = resolve_entity(&name) {
+            out.push_str(&text);
+            i = semi + 1;
+        } else {
+            out.push('&');
+            i += 1;
+        }
+    }
+    out
+}
+
+/// `&` 와 `;` 사이의 이름을 글자로 바꾼다. 모르면 None.
+///
+/// 빈 문자열을 돌려주는 경우가 있다 — 눈에 보이지 않는 조판 제어 문자다. 문서에 넣어
+/// 봐야 보이지 않으면서 커서 이동과 글자 수 세기만 어긋나게 하므로 지운다.
+fn resolve_entity(name: &str) -> Option<String> {
+    if name.is_empty() {
+        return None;
+    }
+    let code = if let Some(num) = name.strip_prefix('#') {
+        if let Some(hex) = num.strip_prefix(['x', 'X']) {
+            u32::from_str_radix(hex, 16).ok()?
+        } else {
+            num.parse::<u32>().ok()?
+        }
+    } else if let Some(idx) = LATIN1_ENTITY_NAMES.iter().position(|&n| n == name) {
+        0xA0 + idx as u32
+    } else {
+        NAMED_ENTITIES.iter().find(|(n, _)| *n == name)?.1
+    };
+    Some(normalize_entity_char(code))
+}
+
+/// 이름으로 썼든 숫자로 썼든 같은 결과가 되도록 한 자리에서 정리한다.
+fn normalize_entity_char(code: u32) -> String {
+    match code {
+        // 폭이 다른 공백들. 예전 구현도 `&nbsp;` 를 일반 공백으로 바꿨고, 그 동작을
+        // 유지한다 — U+00A0 을 그대로 넣으면 줄바꿈 계산과 글자 배치가 달라진다.
+        0xA0 | 0x2002 | 0x2003 | 0x2007 | 0x2009 | 0x202F => " ".to_string(),
+        // 보이지 않는 제어 문자
+        0x200B..=0x200F | 0xFEFF | 0xAD => String::new(),
+        _ => char::from_u32(code).map(String::from).unwrap_or_default(),
+    }
 }
 
 /// HTML 태그를 제거하고 텍스트만 추출한다.
@@ -1663,5 +1849,80 @@ mod tests {
         assert_eq!(find_logical_control_positions(&para), vec![0, 0, 0, 0]);
         assert_eq!(logical_paragraph_length(&para), 1);
         assert_eq!(navigable_text_len(&para), 1);
+    }
+}
+
+#[cfg(test)]
+mod entity_tests {
+    use super::decode_html_entities;
+
+    #[test]
+    fn curly_quotes_from_google_docs_become_real_quotes() {
+        // 실제로 신고된 증상. 구글 독스에서 복사한 대사가 이렇게 들어온다.
+        let pasted = "&ldquo;그러게, 연애를 시작한 정황이 없는데&rdquo;";
+        assert_eq!(
+            decode_html_entities(pasted),
+            "\u{201C}그러게, 연애를 시작한 정황이 없는데\u{201D}",
+        );
+    }
+
+    #[test]
+    fn common_punctuation_survives() {
+        assert_eq!(decode_html_entities("&lsquo;a&rsquo;"), "\u{2018}a\u{2019}");
+        assert_eq!(
+            decode_html_entities("a&mdash;b&ndash;c"),
+            "a\u{2014}b\u{2013}c"
+        );
+        assert_eq!(decode_html_entities("&hellip;"), "\u{2026}");
+        assert_eq!(decode_html_entities("&middot;&bull;"), "\u{B7}\u{2022}");
+        assert_eq!(
+            decode_html_entities("&copy; &reg; &trade;"),
+            "\u{A9} \u{AE} \u{2122}"
+        );
+    }
+
+    #[test]
+    fn numeric_references_work_in_both_bases() {
+        assert_eq!(decode_html_entities("&#8220;x&#8221;"), "\u{201C}x\u{201D}");
+        assert_eq!(
+            decode_html_entities("&#x201C;x&#x201D;"),
+            "\u{201C}x\u{201D}"
+        );
+        assert_eq!(decode_html_entities("&#54620;&#44544;"), "한글");
+    }
+
+    #[test]
+    fn amp_is_not_decoded_twice() {
+        // 예전에는 &amp; 를 먼저 풀어서 이것이 "<" 가 됐다. 원문에 "&lt;" 라고 쓰려던
+        // 사람의 글자가 태그 기호로 바뀌던 것이다.
+        assert_eq!(decode_html_entities("&amp;lt;"), "&lt;");
+        assert_eq!(decode_html_entities("a &amp;&amp; b"), "a && b");
+    }
+
+    #[test]
+    fn spaces_stay_ordinary_spaces() {
+        // 폭이 다른 공백을 그대로 넣으면 줄바꿈 계산이 달라진다. 예전 동작을 지킨다.
+        assert_eq!(decode_html_entities("a&nbsp;b"), "a b");
+        assert_eq!(decode_html_entities("a&#160;b"), "a b");
+        assert_eq!(decode_html_entities("a&#xA0;b"), "a b");
+        assert_eq!(decode_html_entities("a&emsp;b"), "a b");
+    }
+
+    #[test]
+    fn invisible_controls_are_dropped() {
+        assert_eq!(decode_html_entities("a&zwj;b&shy;c"), "abc");
+    }
+
+    #[test]
+    fn unknown_names_are_left_alone() {
+        // 임의로 지우면 원문이 사라진다. 모르면 그대로 둔다.
+        assert_eq!(
+            decode_html_entities("&notarealentity; &"),
+            "&notarealentity; &"
+        );
+        assert_eq!(decode_html_entities("5 &amp; 3 &lt 4"), "5 & 3 &lt 4");
+        // `&` 하나 때문에 문서 끝까지 훑지 않는다.
+        let long = format!("&{}", "x".repeat(200));
+        assert_eq!(decode_html_entities(&long), long);
     }
 }

@@ -106,12 +106,27 @@ export class AboutDialog extends ModalDialog {
     tech.textContent = 'Rust + WebAssembly + TypeScript';
     body.appendChild(tech);
 
-    // 제품의 출발점
+    // 제품의 출발점.
+    //
+    // 〈홈, 어웨이〉는 배명훈 소설집 『미래과거시제』에 실려 있다. 여기까지
+    // 읽은 사람은 "그 소설이 뭔데" 를 궁금해할 참이므로 원작으로 가는 길을 붙여 둔다 —
+    // 빚진 것을 밝히는 자리에서 출처를 감추면 고지가 아니라 장식이 된다.
     const notice = document.createElement('div');
     notice.className = 'about-notice';
-    notice.textContent =
-      "배명훈 작가의 단편소설 〈홈, 어웨이〉에 등장하는 '문장을 쓰면 환호하고 박수쳐 주는 "
-      + '텍스트 에디터\'에서 영감을 받아, rhwp를 기반으로 개발했습니다.';
+    const source = document.createElement('a');
+    source.className = 'about-license-link';
+    source.href = 'https://product.kyobobook.co.kr/detail/S000201293357';
+    source.target = '_blank';
+    source.rel = 'noopener noreferrer';
+    source.textContent = '『미래과거시제』';
+    notice.append(
+      '배명훈 작가의 단편소설 〈홈, 어웨이〉',
+      '(소설집 ',
+      source,
+      ' 수록)',
+      "에 등장하는 '문장을 쓰면 환호하고 박수쳐 주는 텍스트 에디터'에서 영감을 받아, ",
+      'rhwp를 기반으로 개발했습니다.',
+    );
     body.appendChild(notice);
 
     // 면책 고지. 약관에만 두면 읽는 사람이 거의 없다 — 제품 정보는 "이게 무엇인가" 를
