@@ -113,7 +113,7 @@
   /* 로고와 같은 짝 — 먹 바탕에 호박 글자.
      배명훈 모드가 이 제품의 핵심이므로 제목 줄에서 가장 강한 자리를 준다. */
   border: 1px solid var(--brand-ink);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--brand-ink);
   color: var(--brand-amber);
   font-family: inherit;
@@ -149,7 +149,7 @@
   /* 배명훈 모드 버튼과 같은 먹 바탕 — 로고와 한 벌로 읽히게 한다.
      흰 글자를 얹으면 2.15:1 로 읽히지 않으므로 호박 글자를 쓴다(8.97:1). */
   border: 1px solid var(--brand-ink);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--brand-ink);
   color: var(--brand-amber);
   font-family: inherit;

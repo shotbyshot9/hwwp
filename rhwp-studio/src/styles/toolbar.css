@@ -7,7 +7,7 @@
   align-items: stretch;
   align-content: flex-start;
   padding: 2px 8px;
-  background: linear-gradient(to bottom, var(--ui-toolbar-bg-start), var(--ui-toolbar-bg-end));
+  background: var(--ui-toolbar-bg);
   border-bottom: 1px solid var(--ui-border);
   flex-shrink: 0;
   height: auto;
@@ -49,9 +49,14 @@
   color: var(--color-text);
 }
 
+/* 가리키는 것은 배경으로만 알린다.
+ *
+ * 쉴 때는 투명한 테두리가 자리만 잡고 있다가 호버에 색을 얻던 규칙이 여섯 군데 있었다.
+ * 자리는 그대로여서 레이아웃은 안 움직이지만, 마우스가 지나갈 때마다 사각 윤곽이
+ * 깜빡여 도구 상자 전체가 부산해 보였다. 테두리는 상태(선택·활성·포커스)를 위해 아껴
+ * 두고, 지나가는 손짓에는 배경만 응답한다. */
 .tb-btn:hover {
   background: var(--ui-hover-strong);
-  border-color: var(--ui-border-light);
 }
 
 /* 켜진 토글.

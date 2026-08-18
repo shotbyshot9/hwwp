@@ -27,11 +27,10 @@
   border: 1px solid transparent;
 }
 
-/* 가리키는 것은 배경으로 알리고 글자는 읽히는 색 그대로 둔다.
-   글자까지 갈색으로 바뀌면 메뉴를 훑을 때마다 색이 널뛴다. */
+/* 가리키는 것은 배경으로 알리고 글자와 테두리는 그대로 둔다. 글자까지 갈색으로
+   바뀌면 메뉴를 훑을 때마다 색이 널뛴다 — 테두리도 같은 이유로 뺐다(toolbar.css 참고). */
 .menu-title:hover {
   background: var(--ui-hover);
-  border-color: var(--ui-border);
   color: var(--color-text);
 }
 

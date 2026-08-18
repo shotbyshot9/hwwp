@@ -37,7 +37,6 @@
 }
 .shape-picker-btn:hover {
   background: var(--color-accent-bg);
-  border-color: var(--color-primary-subtle);
 }
 .shape-picker-icon {
   font-size: 18px;

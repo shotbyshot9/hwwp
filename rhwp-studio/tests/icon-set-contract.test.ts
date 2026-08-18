@@ -77,3 +77,43 @@ test('상태 바 줌 아이콘도 같은 체계를 쓴다', () => {
     );
   }
 });
+
+test('아이콘 획은 UI 선 굵기와 한 가족이다', () => {
+  // Lucide 기본값 2 는 24px 로 그릴 때를 전제한다. 우리는 18px(도구 모음)·16px(메뉴)로
+  // 줄여 그리므로 실효 굵기가 1.5·1.33px 이 되어 옆의 1px 테두리보다 굵었다. 1.75 로
+  // 낮추면 1.31·1.17px — 같은 계열로 읽힌다.
+  const dir = new URL('../public/icons/ui/', import.meta.url);
+  const svgs = readdirSync(dir).filter((f) => f.endsWith('.svg'));
+  assert.ok(svgs.length >= 37);
+  for (const f of svgs) {
+    const body = readFileSync(new URL(f, dir), 'utf8');
+    assert.match(body, /stroke-width="1\.75"/, `${f} 의 획 굵기가 다르다`);
+  }
+});
+
+test('모서리 반지름은 세 값뿐이다', () => {
+  // 토큰이 3·5·7px 이던 시절에도 CSS 에 2·3·4·6·8·10·12·999px 가 박혀 있어 실제로는
+  // 여덟 종류가 돌아다녔다. 새 규칙은 토큰만 쓴다.
+  for (const f of cssFiles) {
+    const css = readFileSync(new URL(f, styleDir), 'utf8');
+    for (const decl of css.match(/border-radius:[^;]+/g) ?? []) {
+      assert.doesNotMatch(decl, /[0-9]+px/, `${f} 에 하드코딩된 반지름이 있다: ${decl}`);
+    }
+  }
+  assert.match(readFileSync(new URL('base.css', styleDir), 'utf8'), /--radius-control: 4px;/);
+  assert.match(readFileSync(new URL('base.css', styleDir), 'utf8'), /--radius-container: 8px;/);
+});
+
+test('그림자는 위에서 아래로만 떨어진다', () => {
+  // 오른쪽 아래로 흐르는 그림자는 광원이 왼쪽 위에 있다고 가정하던 시절의 관습이다.
+  const base = readFileSync(new URL('base.css', styleDir), 'utf8');
+  for (const decl of base.match(/--shadow-[a-z]+:[^;]+/g) ?? []) {
+    assert.match(decl, /:\s*0 /, `그림자에 가로 오프셋이 남아 있다: ${decl}`);
+  }
+});
+
+test('도구 모음 배경은 단색이다', () => {
+  const toolbar = readFileSync(new URL('toolbar.css', styleDir), 'utf8');
+  assert.doesNotMatch(toolbar, /linear-gradient\(to bottom/);
+  assert.match(toolbar, /background: var\(--ui-toolbar-bg\);/);
+});

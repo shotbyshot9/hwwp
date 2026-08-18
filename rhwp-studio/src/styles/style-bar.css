@@ -227,7 +227,7 @@
   height: 27px;
   box-sizing: border-box;
   border: 1px solid var(--ui-border-light);
-  border-radius: var(--radius-sm) 0 0 2px;
+  border-radius: var(--radius-control) 0 0 var(--radius-control);
   text-align: center;
   font-size: var(--font-size-base);
   outline: none;
@@ -276,11 +276,11 @@
 
 #btn-size-up {
   border-bottom: none;
-  border-radius: 0 2px 0 0;
+  border-radius: 0 var(--radius-control) 0 0;
 }
 
 #btn-size-down {
-  border-radius: 0 0 2px 0;
+  border-radius: 0 0 var(--radius-control) 0;
 }
 
 /* 서식 버튼 */
@@ -302,7 +302,6 @@
 
 .sb-btn:hover {
   background: var(--ui-hover-strong);
-  border-color: var(--ui-border-light);
 }
 
 .sb-btn.active {
@@ -568,7 +567,7 @@
   box-sizing: border-box;
   font-size: var(--font-size-sm);
   border: 1px solid var(--ui-border-light);
-  border-radius: var(--radius-sm) 0 0 2px;
+  border-radius: var(--radius-control) 0 0 var(--radius-control);
   padding: 0 2px;
   background: var(--color-surface);
   color: var(--color-text);
@@ -592,9 +591,9 @@
 
 .sb-ls-arrows #btn-ls-up {
   border-bottom: none;
-  border-radius: 0 2px 0 0;
+  border-radius: 0 var(--radius-control) 0 0;
 }
 
 .sb-ls-arrows #btn-ls-down {
-  border-radius: 0 0 2px 0;
+  border-radius: 0 0 var(--radius-control) 0;
 }

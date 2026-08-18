@@ -2,7 +2,7 @@
 kind: reference
 status: active
 canonical: mydocs/manual/rhwp_studio_ui_conventions.md
-last_verified: 2026-07-17
+last_verified: 2026-08-18
 ---
 
 # rhwp-studio UI 명칭과 CSS 접두어
@@ -35,3 +35,17 @@ last_verified: 2026-07-17
 
 새 UI 영역이나 접두어를 도입할 때는 기존 DOM과 CSS에서 실제 사용 여부를 확인하고 이 표를 함께
 갱신한다.
+
+## 시각 규칙
+
+새 스타일을 쓸 때 아래 넷은 토큰과 규칙을 따른다. 어긴 것은
+`rhwp-studio/tests/icon-set-contract.test.ts` 가 잡는다.
+
+| 항목 | 규칙 |
+| --- | --- |
+| 모서리 | `--radius-control`(4px, 누르는 것) · `--radius-container`(8px, 담는 것) · `--radius-pill`(999px). px 를 직접 쓰지 않는다 |
+| 그림자 | `--shadow-light` · `--shadow-dropdown` · `--shadow-dialog`. 가로 오프셋은 0 이다 — 빛은 위에서 온다 |
+| 호버 | 배경만 바꾼다. 테두리 색은 상태(선택·활성·포커스)를 위해 아껴 둔다. 예외는 `.tbar-title` — 그 테두리가 "여기는 입력칸" 이라는 유일한 신호다 |
+| 아이콘 | Lucide(ISC) 개별 SVG 를 `public/icons/ui/` 에 두고 마스크 + `currentColor` 로 그린다. 획 굵기는 1.75 로 통일한다 |
+
+`--radius-sm`·`--radius-md`·`--radius-lg` 는 예전 이름의 별칭이다. 새로 쓰지 않는다.

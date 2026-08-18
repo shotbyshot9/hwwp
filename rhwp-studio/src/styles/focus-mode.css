@@ -121,7 +121,7 @@ html[data-theme-effective='dark'] body.fm-active #scroll-content canvas {
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: var(--radius-container);
   background: rgba(245, 159, 10, 0.1);
   color: var(--fm-accent);
 }
@@ -158,7 +158,7 @@ html[data-theme-effective='dark'] body.fm-active #scroll-content canvas {
   height: 40px;
   padding: 0;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-container);
   background: transparent;
   color: var(--fm-muted);
   cursor: pointer;
@@ -283,7 +283,7 @@ html[data-theme-effective='dark'] body.fm-active #scroll-content canvas {
 .fm-goal-bar {
   width: 110px;
   height: 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--fm-border);
   overflow: hidden;
 }
@@ -291,7 +291,7 @@ html[data-theme-effective='dark'] body.fm-active #scroll-content canvas {
 .fm-goal-fill {
   width: 0;
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--fm-accent);
   transition: width 0.3s ease;
 }

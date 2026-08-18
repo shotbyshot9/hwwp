@@ -128,7 +128,6 @@
 }
 
 .tcp-line-type-item:hover {
-  border-color: var(--accent-hover);
   background: var(--color-accent-bg-light);
 }
 

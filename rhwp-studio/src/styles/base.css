@@ -24,9 +24,9 @@
   --ui-hover-strong: #e2ded6;
   --ui-active: #ddd8d1;
   --ui-selected: #fdf0d9;
-  /* 그라데이션 툴바는 2000년대 데스크톱 관용구다 — 평면으로 편다. */
-  --ui-toolbar-bg-start: #faf9f7;
-  --ui-toolbar-bg-end: #faf9f7;
+  /* 그라데이션 툴바는 2000년대 데스크톱 관용구다. 시작색과 끝색을 같게 만들어 이미
+     평면이었는데, 문법만 남아 있었다 — 단색 한 값으로 정리했다. */
+  --ui-toolbar-bg: #faf9f7;
   --ui-accent-bg: #fbeed4;
   --ui-accent-bg-light: #fdf6e7;
   --ui-note-bg: #f5f6fa;
@@ -136,9 +136,9 @@
   --color-selected-bg: var(--ui-selected);
   --color-focus-border: var(--focus-ring);
 
-  --shadow-dropdown: 2px 2px 8px rgba(0, 0, 0, 0.15);
-  --shadow-dialog: 4px 4px 12px rgba(0, 0, 0, 0.2);
-  --shadow-light: 2px 2px 6px rgba(0, 0, 0, 0.12);
+  --shadow-dropdown: 0 6px 16px rgba(0, 0, 0, 0.12);
+  --shadow-dialog: 0 12px 32px rgba(0, 0, 0, 0.16);
+  --shadow-light: 0 2px 6px rgba(0, 0, 0, 0.10);
 
   --overlay-bg: rgba(0, 0, 0, 0.2);
 
@@ -163,10 +163,22 @@
   --space-10: 20px;
   --space-12: 24px;
 
-  /* 모서리 */
-  --radius-sm: 3px;
-  --radius-md: 5px;
-  --radius-lg: 7px;
+  /* 모서리.
+   *
+   * 값은 셋뿐이다. 토큰이 3·5·7px 이던 시절에도 CSS 안에는 2·3·4·6·8·10·12·999px 가
+   * 따로 박혀 있어 실제로는 여덟 종류가 돌아다녔다. 화면 곳곳이 미묘하게 어긋나 보이던
+   * 원인이다.
+   *
+   * 크기가 아니라 역할로 고른다 — 손으로 누르는 것은 control, 무언가를 담는 것은
+   * container, 알약 모양은 pill. 새 규칙은 이 셋만 쓴다. */
+  --radius-control: 4px;
+  --radius-container: 8px;
+  --radius-pill: 999px;
+
+  /* 예전 이름은 별칭으로 남긴다. 열여덟 파일을 한꺼번에 고치지 않기 위해서다. */
+  --radius-sm: var(--radius-control);
+  --radius-md: var(--radius-control);
+  --radius-lg: var(--radius-container);
 
   /* 컨트롤 크기 */
   --control-height-sm: 22px;
@@ -213,8 +225,7 @@
   --ui-hover-strong: #433d38;
   --ui-active: #4d463f;
   --ui-selected: #4a3616;
-  --ui-toolbar-bg-start: #2a2724;
-  --ui-toolbar-bg-end: #2a2724;
+  --ui-toolbar-bg: #2a2724;
   --ui-accent-bg: #3d2c10;
   --ui-accent-bg-light: #4a3616;
   --ui-note-bg: #2d3440;
@@ -260,9 +271,9 @@
   --accent-hover: #8a5a1e;
   --accent-subtle: #4a443e;
 
-  --shadow-dropdown: 2px 2px 12px rgba(0, 0, 0, 0.45);
-  --shadow-dialog: 4px 4px 16px rgba(0, 0, 0, 0.55);
-  --shadow-light: 2px 2px 8px rgba(0, 0, 0, 0.32);
+  --shadow-dropdown: 0 6px 16px rgba(0, 0, 0, 0.45);
+  --shadow-dialog: 0 12px 32px rgba(0, 0, 0, 0.55);
+  --shadow-light: 0 2px 6px rgba(0, 0, 0, 0.32);
   --overlay-bg: rgba(0, 0, 0, 0.45);
 }
 
