@@ -81,15 +81,17 @@
  *
  * 예전에는 한컴 SVG 스프라이트 한 장(밝은판 470KB + 어두운판 454KB)에서 좌표로 잘라
  * 썼다. 남의 미술저작물을 배포하는 것이었고, 아이콘은 형식 호환이라는 명분이 닿지
- * 않는 자산이다. Lucide 로 갈아 끼웠다 — 33개 50KB.
+ * 않는 자산이다. Lucide 로 갈아 끼웠다 — 22개 33KB.
+ *
+ * 아이콘은 도구 상자와 상태 표시줄에만 쓴다. 메뉴 드롭다운에서는 뺐다(menu-bar.css 참고)
+ * — 244행 중 41행만 채워진 아이콘 칸은 규칙이 아니라 미완성으로 읽혔다.
  *
  * 그림을 배경이 아니라 **마스크**로 쓰고 색은 currentColor 로 채운다. 그래서
  *  - 아이콘이 글자색을 따라간다(꺼짐·비활성·호버 상태가 저절로 맞는다)
  *  - 어두운 테마용 두 번째 파일이 필요 없다 — 스프라이트 시절 다크판이 통째로 사라졌다
  *
  * `--icon-url` 이 없는 칸은 투명 그라디언트를 마스크로 받아 통째로 비워진다. 이 대비가
- * 없으면 마스크가 `none` 이 되어 currentColor 배경이 그대로 드러난다 — 아이콘을 쓰지
- * 않는 메뉴 항목 121칸에 글자색 네모가 찍힌다.
+ * 없으면 마스크가 `none` 이 되어 currentColor 배경이 그대로 드러난다.
  */
 .tb-sprite {
   display: block;
@@ -159,23 +161,6 @@
 .icon-header        { --icon-url: url("/icons/ui/header.svg"); }
 .icon-footer        { --icon-url: url("/icons/ui/footer.svg"); }
 .icon-find          { --icon-url: url("/icons/ui/find.svg"); }
-
-/* 메뉴 드롭다운 전용 추가 아이콘 위치 */
-.icon-new-doc       { --icon-url: url("/icons/ui/new-doc.svg"); }
-.icon-save          { --icon-url: url("/icons/ui/save.svg"); }
-.icon-pdf           { --icon-url: url("/icons/ui/pdf.svg"); }
-.icon-undo          { --icon-url: url("/icons/ui/undo.svg"); }
-.icon-redo          { --icon-url: url("/icons/ui/redo.svg"); }
-.icon-print         { --icon-url: url("/icons/ui/print.svg"); }
-.icon-page-setup    { --icon-url: url("/icons/ui/page-setup.svg"); }
-.icon-help          { --icon-url: url("/icons/ui/help.svg"); }
-.icon-delete        { --icon-url: url("/icons/ui/delete.svg"); }
-.icon-select-all    { --icon-url: url("/icons/ui/select-all.svg"); }
-.icon-find-replace  { --icon-url: url("/icons/ui/find-replace.svg"); }
-.icon-textbox       { --icon-url: url("/icons/ui/textbox.svg"); }
-.icon-comment       { --icon-url: url("/icons/ui/comment.svg"); }
-.icon-zoom-menu-in  { --icon-url: url("/icons/ui/zoom-menu-in.svg"); }
-.icon-zoom-menu-out { --icon-url: url("/icons/ui/zoom-menu-out.svg"); }
 
 .tb-label {
   font-size: var(--font-size-xs);

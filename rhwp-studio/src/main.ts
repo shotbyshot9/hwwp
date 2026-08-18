@@ -1458,12 +1458,10 @@ async function renderRecentSubmenu(): Promise<void> {
     if (opts.cmd) item.dataset.cmd = opts.cmd;
     if (opts.id) item.dataset.id = opts.id;
     if (opts.title) item.title = opts.title;
-    const icon = document.createElement('span');
-    icon.className = 'md-icon';
     const label = document.createElement('span');
     label.className = 'md-label';
     label.textContent = opts.label;
-    item.append(icon, label);
+    item.append(label);
     if (opts.right) {
       const right = document.createElement('span');
       right.className = 'md-shortcut';

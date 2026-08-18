@@ -14,10 +14,6 @@ const printSurfaceSource = readFileSync(
   new URL('../src/command/print-surface.ts', import.meta.url),
   'utf8',
 );
-const toolbarCss = readFileSync(
-  new URL('../src/styles/toolbar.css', import.meta.url),
-  'utf8',
-);
 const pdfDialogSource = readFileSync(
   new URL('../src/ui/pdf-print-dialog.ts', import.meta.url),
   'utf8',
@@ -59,16 +55,13 @@ test('파일 메뉴는 별도 PDF 진입점과 브라우저의 남은 단계를 
     'PDF 저장은 다른 이름으로 저장 다음에 배치한다',
   );
   assert.ok(pdfIndex < hwpIndex, 'PDF 저장은 명시적 HWP/HWPX 형식 저장보다 앞에 배치한다');
-  assert.match(
-    indexHtml,
-    /data-cmd="file:print-to-pdf"[^>]*>.*class="md-icon icon-pdf"/,
-  );
-  // PDF 저장과 인쇄가 서로 다른 그림이어야 "따로 있는 진입점" 이라는 것이 화면에서도
-  // 읽힌다. 예전에는 스프라이트 좌표를 찍었는데, 아이콘을 Lucide 개별 SVG 로 바꾸면서
-  // 좌표가 사라졌다 — 지키려던 것(둘이 다른 아이콘이다)은 그대로다.
-  assert.match(toolbarCss, /\.icon-pdf\s+\{ --icon-url: url\("\/icons\/ui\/pdf\.svg"\); \}/);
-  assert.match(toolbarCss, /\.icon-print\s+\{ --icon-url: url\("\/icons\/ui\/print\.svg"\); \}/);
+  // 지키려는 것은 "PDF 저장과 인쇄가 따로 있는 진입점" 이라는 사실이 화면에서 읽히는
+  // 것이다. 예전에는 이것을 아이콘으로 확인했다 — 스프라이트 좌표였다가, Lucide 로
+  // 바뀌며 --icon-url 이 되었다가, 메뉴에서 아이콘을 걷어내며 사라졌다. 지금 그 구분을
+  // 지고 있는 것은 서로 다른 이름표다. 그림보다 오히려 분명하다.
   assert.match(indexHtml, /data-cmd="file:print"/);
+  assert.match(indexHtml, /data-cmd="file:print-to-pdf"[^>]*>[^<]*<span class="md-label">PDF로 저장…<\/span>/);
+  assert.match(indexHtml, /data-cmd="file:print"[^>]*>[^<]*<span class="md-label">인쇄/);
 });
 
 test('PDF 경로는 안내·진행 모달을 닫은 뒤 native 인쇄창을 호출한다', () => {

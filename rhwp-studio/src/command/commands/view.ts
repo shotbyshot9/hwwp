@@ -53,10 +53,19 @@ function themeModeCommand(mode: ThemeMode, label: string): CommandDef {
  * 버튼에는 `aria-pressed` 도 붙인다 — 배경색만으로 알리면 색을 구별하기 어려운
  * 사람에게는 켜진 것인지 알 길이 없다.
  */
-function markToggleState(cmd: string, on: boolean): void {
+export function markToggleState(cmd: string, on: boolean): void {
   document.querySelectorAll(`[data-cmd="${cmd}"]`).forEach((el) => {
     el.classList.toggle('active', on);
-    if (el.tagName === 'BUTTON') el.setAttribute('aria-pressed', String(on));
+    if (el.tagName === 'BUTTON') {
+      el.setAttribute('aria-pressed', String(on));
+    } else if (el.classList.contains('md-item')) {
+      // 메뉴 항목은 button 이 아니라 div 다. 화면에는 왼쪽 칸의 체크로 켜짐이 보이지만
+      // (menu-bar.css 의 `.md-item.active::before`) 그것만으로는 화면 낭독기에 아무
+      // 소리도 나지 않는다. 켜고 끄는 항목이라는 것과 지금 켜졌는지를 함께 알린다.
+      // 이미 역할이 적힌 항목(테마 고르기의 menuitemradio 등)은 건드리지 않는다.
+      if (!el.hasAttribute('role')) el.setAttribute('role', 'menuitemcheckbox');
+      el.setAttribute('aria-checked', String(on));
+    }
   });
 }
 
@@ -78,9 +87,7 @@ let clipEnabled = !userSettings.getViewSettings().clipView;
  */
 export function syncClipMenu(enabled: boolean): void {
   clipEnabled = enabled;
-  document.querySelectorAll('[data-cmd="view:toggle-clip"]').forEach(el => {
-    el.classList.toggle('active', !enabled);
-  });
+  markToggleState('view:toggle-clip', !enabled);
 }
 
 function refreshCaretAfterViewChange(services: Parameters<CommandDef['execute']>[0]): void {
@@ -299,9 +306,7 @@ export const viewCommands: CommandDef[] = [
       // WASM 실제 상태를 읽어 토글 — 셀 진입 자동 ON 등으로 인한 초기값 불일치 방지
       const next = !services.wasm.getShowTransparentBorders();
       services.wasm.setShowTransparentBorders(next);
-      document.querySelectorAll('[data-cmd="view:border-transparent"]').forEach(el => {
-        el.classList.toggle('active', next);
-      });
+      markToggleState('view:border-transparent', next);
       services.eventBus.emit('transparent-borders-changed', next);
       services.eventBus.emit('document-view-changed');
     },
@@ -325,9 +330,7 @@ export const viewCommands: CommandDef[] = [
     canExecute: (ctx) => ctx.hasDocument,
     execute(services) {
       const next = toggleGridVisibility();
-      document.querySelectorAll('[data-cmd="view:toggle-grid"]').forEach(el => {
-        el.classList.toggle('active', next.visible);
-      });
+      markToggleState('view:toggle-grid', next.visible);
       services.eventBus.emit('grid-view-changed', next);
     },
   },
@@ -346,9 +349,7 @@ export const viewCommands: CommandDef[] = [
         (settings, moveStepMm) => {
           const next = setGridViewSettings(settings);
           ih?.setGridStep(moveStepMm);
-          document.querySelectorAll('[data-cmd="view:toggle-grid"]').forEach(el => {
-            el.classList.toggle('active', next.visible);
-          });
+          markToggleState('view:toggle-grid', next.visible);
           services.eventBus.emit('grid-view-changed', next);
         },
       ).show();
@@ -365,9 +366,7 @@ export const viewCommands: CommandDef[] = [
         if (visible === null) visible = getComputedStyle(el).display !== 'none';
         visible = !visible;
         el.style.display = visible ? '' : 'none';
-        document.querySelectorAll('[data-cmd="view:toolbox-basic"]').forEach(btn => {
-          btn.classList.toggle('active', visible!);
-        });
+        markToggleState('view:toolbox-basic', visible);
       },
     } satisfies CommandDef;
   })(),
@@ -382,9 +381,7 @@ export const viewCommands: CommandDef[] = [
         if (visible === null) visible = getComputedStyle(el).display !== 'none';
         visible = !visible;
         el.style.display = visible ? '' : 'none';
-        document.querySelectorAll('[data-cmd="view:toolbox-format"]').forEach(btn => {
-          btn.classList.toggle('active', visible!);
-        });
+        markToggleState('view:toolbox-format', visible);
       },
     } satisfies CommandDef;
   })(),

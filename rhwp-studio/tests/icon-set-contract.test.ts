@@ -28,7 +28,7 @@ test('한컴 SVG 스프라이트는 저장소에서 사라졌다', () => {
 
 test('CSS 가 가리키는 아이콘 파일이 모두 실제로 있다', () => {
   const referenced = [...allCss.matchAll(/\/icons\/ui\/([a-z0-9-]+\.svg)/g)].map((m) => m[1]);
-  assert.ok(referenced.length >= 33, `아이콘 참조가 너무 적다: ${referenced.length}`);
+  assert.ok(referenced.length >= 22, `아이콘 참조가 너무 적다: ${referenced.length}`);
   for (const name of new Set(referenced)) {
     assert.ok(
       existsSync(new URL(`../public/icons/ui/${name}`, import.meta.url)),
@@ -38,20 +38,30 @@ test('CSS 가 가리키는 아이콘 파일이 모두 실제로 있다', () => {
 });
 
 test('아이콘은 마스크 + currentColor 라서 테마별 두 번째 파일이 필요 없다', () => {
-  for (const [label, css] of [['tb-sprite', toolbarCss], ['md-icon', menuBarCss]] as const) {
-    assert.match(css, /background-color: currentColor;/, `${label} 는 글자색을 따라가야 한다`);
-    assert.match(css, /mask: var\(--icon-url,/, `${label} 는 --icon-url 을 마스크로 써야 한다`);
-  }
+  assert.match(toolbarCss, /background-color: currentColor;/, '아이콘은 글자색을 따라가야 한다');
+  assert.match(toolbarCss, /mask: var\(--icon-url,/, '아이콘은 --icon-url 을 마스크로 써야 한다');
   // 어두운 테마가 아이콘 파일을 따로 지정하지 않는다는 것이 이 방식의 요점이다.
   assert.doesNotMatch(baseCss, /icons\/ui/);
 });
 
+test('메뉴 드롭다운은 아이콘을 쓰지 않는다', () => {
+  // 244행 중 41행(17%)만 그림이 있었다. 일부만 아이콘인 목록은 규칙이 아니라 미완성으로
+  // 읽히고, 그림에 왼쪽 칸을 뺏긴 탓에 켜짐 표시가 배경색을 호버와 나눠 쓰게 됐다.
+  // 아이콘은 도구 상자가 맡고, 메뉴의 왼쪽 칸은 상태로 돌려줬다.
+  assert.doesNotMatch(menuBarCss, /--icon-url/);
+  assert.doesNotMatch(indexHtml, /md-icon/);
+  assert.doesNotMatch(
+    readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8'),
+    /'md-icon'/,
+    '최근 문서 메뉴가 아이콘 칸을 다시 만들고 있다',
+  );
+});
+
 test('--icon-url 이 없는 칸은 비워진다', () => {
-  // 아이콘을 쓰지 않는 메뉴 항목이 121칸 있다. 대비값이 없으면 마스크가 none 이 되고
-  // currentColor 배경이 그대로 드러나 글자색 네모가 찍힌다.
-  for (const css of [toolbarCss, menuBarCss]) {
-    assert.match(css, /mask: var\(--icon-url, linear-gradient\(transparent, transparent\)\)/);
-  }
+  // 대비값이 없으면 마스크가 none 이 되고 currentColor 배경이 그대로 드러나 글자색
+  // 네모가 찍힌다. 지금은 도구 상자의 모든 칸이 그림을 갖고 있지만, 그림 없는 버튼이
+  // 하나 들어오는 순간 되살아나는 함정이라 대비값을 남겨 둔다.
+  assert.match(toolbarCss, /mask: var\(--icon-url, linear-gradient\(transparent, transparent\)\)/);
 });
 
 test('글자로 그리는 조판·문단 부호는 마스크를 끈다', () => {
@@ -84,7 +94,7 @@ test('아이콘 획은 UI 선 굵기와 한 가족이다', () => {
   // 낮추면 1.31·1.17px — 같은 계열로 읽힌다.
   const dir = new URL('../public/icons/ui/', import.meta.url);
   const svgs = readdirSync(dir).filter((f) => f.endsWith('.svg'));
-  assert.ok(svgs.length >= 37);
+  assert.ok(svgs.length >= 22);
   for (const f of svgs) {
     const body = readFileSync(new URL(f, dir), 'utf8');
     assert.match(body, /stroke-width="1\.75"/, `${f} 의 획 굵기가 다르다`);

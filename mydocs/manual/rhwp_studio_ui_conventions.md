@@ -46,6 +46,11 @@ last_verified: 2026-08-18
 | 모서리 | `--radius-control`(4px, 누르는 것) · `--radius-container`(8px, 담는 것) · `--radius-pill`(999px). px 를 직접 쓰지 않는다 |
 | 그림자 | `--shadow-light` · `--shadow-dropdown` · `--shadow-dialog`. 가로 오프셋은 0 이다 — 빛은 위에서 온다 |
 | 호버 | 배경만 바꾼다. 테두리 색은 상태(선택·활성·포커스)를 위해 아껴 둔다. 예외는 `.tbar-title` — 그 테두리가 "여기는 입력칸" 이라는 유일한 신호다 |
-| 아이콘 | Lucide(ISC) 개별 SVG 를 `public/icons/ui/` 에 두고 마스크 + `currentColor` 로 그린다. 획 굵기는 1.75 로 통일한다 |
+| 아이콘 | Lucide(ISC) 개별 SVG 를 `public/icons/ui/` 에 두고 마스크 + `currentColor` 로 그린다. 획 굵기는 1.75. **도구 상자와 상태 표시줄에만 쓴다** — 메뉴 드롭다운은 글자만 쓴다  |
 
 `--radius-sm`·`--radius-md`·`--radius-lg` 는 예전 이름의 별칭이다. 새로 쓰지 않는다.
+
+메뉴 드롭다운의 왼쪽 칸(24px)은 **상태를 위한 자리**다. 켜진 항목은 `.md-item.active` 가
+체크(`✓`)를 그리고, `markToggleState()`(`command/commands/view.ts`)가 `menuitemcheckbox` ·
+`aria-checked` 를 붙인다. 새 토글을 만들 때 `classList.toggle('active')` 를 직접 부르지 말고
+이 함수를 지나가게 한다 — 그래야 화면 낭독기에도 켜짐이 들린다.

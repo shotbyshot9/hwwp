@@ -191,15 +191,16 @@ RHWP_DISABLE_EXTERNAL_WEBFONTS=1 npm run build
 
 ## 도구 모음 아이콘
 
-도구 모음·메뉴·상태 바의 아이콘 37개는 [Lucide](https://lucide.dev) 를 쓴다.
+도구 상자와 상태 표시줄의 아이콘 22개는 [Lucide](https://lucide.dev) 를 쓴다. 메뉴
+드롭다운은 아이콘을 쓰지 않는다.
 
 | 리소스 | 라이선스 | 비고 |
 |--------|---------|------|
-| `rhwp-studio/public/icons/ui/*.svg` (37개, 54KB) | ISC | Lucide (`lucide-static`). 고지 원문은 `rhwp-studio/public/icons/LICENSE.txt` 에 함께 배포한다. Feather Icons(MIT) 에서 파생된 아이콘 목록과 원본 MIT 고지도 그 안에 있다 |
+| `rhwp-studio/public/icons/ui/*.svg` (22개, 33KB) | ISC | Lucide (`lucide-static`). 고지 원문은 `rhwp-studio/public/icons/LICENSE.txt` 에 함께 배포한다. Feather Icons(MIT) 에서 파생된 아이콘 목록과 원본 MIT 고지도 그 안에 있다 |
 
 빌드 시점이 아니라 저장소에 파일로 두고 쓴다 — `npm i -D lucide-static` 으로 받은 SVG 를
 필요한 것만 골라 `public/icons/ui/` 에 이름을 바꿔 넣는다. 그래서 배포물에는 Lucide 전체
-2027개가 아니라 실제로 쓰는 37개만 들어간다.
+2027개가 아니라 실제로 쓰는 22개만 들어간다.
 
 CSS 는 그림을 배경이 아니라 **마스크**로 쓰고 색은 `currentColor` 로 채운다
 (`toolbar.css` 의 `.tb-sprite`). 아이콘이 글자색을 따라가므로 어두운 테마용 두 번째 파일이
@@ -209,7 +210,7 @@ CSS 는 그림을 배경이 아니라 **마스크**로 쓰고 색은 `currentCol
 (`icon_small_ko.svg` 470KB, `icon_small_ko_dark.svg` 454KB, 합계 908KB)에서 좌표로 잘라
 썼다. 아이콘은 미술저작물이라 HWP 형식 호환이라는 명분이 닿지 않고, 스프라이트는 파일
 자체를 배포하는 것이었다 — 저장소에서 라이선스가 정리되지 않은 유일한 자산이었다. 두 장을
-지우고 Lucide 로 갈아 끼우면서 908KB → 54KB 가 되었고 다크판이 통째로 사라졌다.
+지우고 Lucide 로 갈아 끼우면서 908KB → 33KB 가 되었고 다크판이 통째로 사라졌다.
 `tests/icon-set-contract.test.ts` 가 스프라이트가 되돌아오지 않는지 지킨다.
 
 ## 음원 (hwwp 추가)

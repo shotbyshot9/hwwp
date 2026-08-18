@@ -61,11 +61,22 @@
   display: block;
 }
 
-/* 메뉴 항목 */
+/* 메뉴 항목.
+ *
+ * 왼쪽 칸은 상태를 위한 자리다 — 켜진 항목의 체크가 여기 앉는다.
+ *
+ * 예전에는 이 칸(32px)을 아이콘에 내주었다. 그런데 244행 중 41행(17%)만 그림이 있었고,
+ * 쪽 메뉴는 90행 중 3행뿐이었다. 일부만 아이콘인 목록은 "저 행들은 뭔가 특별한가" 를
+ * 묻게 만드는데 실제로는 아무 뜻도 없다. 게다가 그림에 자리를 뺏긴 탓에 켜짐 표시가
+ * 갈 데가 없어 배경색을 호버와 나눠 쓰게 됐고, 그래서 조판부호를 켜 두어도 커서를
+ * 옮기는 순간 켜졌는지 알 수 없었다.
+ *
+ * 아이콘은 도구 상자가 맡는다. 메뉴는 전부 있는 곳이라 훑어 읽는 자리고, 훑기에는
+ * 글자가 빠르다. 왼쪽 칸은 원래 용도인 상태로 돌려준다. */
 .md-item {
   display: flex;
   align-items: center;
-  padding: 5px 16px 5px 32px;
+  padding: 5px 16px 5px 24px;
   cursor: pointer;
   font-size: var(--font-size-base);
   color: var(--color-text);
@@ -74,42 +85,24 @@
   position: relative;
 }
 
-/* 메뉴 아이콘 (16×16). 도구 모음과 같은 Lucide 아이콘을 마스크로 쓴다 —
-   자세한 사정은 toolbar.css 의 `.tb-sprite` 주석에 있다. */
-.md-icon {
+/* 가리킴은 배경, 켜짐은 체크 — 둘이 같은 색을 쓰면 서로를 지운다. */
+.md-item:hover {
+  background: var(--ui-hover);
+  color: var(--color-text);
+}
+
+.md-item.active::before {
+  content: '✓';
   position: absolute;
-  left: 8px;
+  left: 7px;
   top: 50%;
   margin-top: -8px;
-  display: block;
-  width: 16px;
+  width: 12px;
   height: 16px;
-  background-color: currentColor;
-  -webkit-mask: var(--icon-url, linear-gradient(transparent, transparent)) center / contain no-repeat;
-  mask: var(--icon-url, linear-gradient(transparent, transparent)) center / contain no-repeat;
-}
-
-/* 텍스트 기반 아이콘은 메뉴에서도 absolute 유지 */
-.md-icon.icon-ctrl-mark,
-.md-icon.icon-para-mark {
-  position: absolute;
-}
-.md-icon.icon-ctrl-mark::before,
-.md-icon.icon-para-mark::before {
-  width: 16px;
-  height: 16px;
-  font-size: var(--font-size-base);
   line-height: 16px;
-}
-
-.md-item:hover {
-  background: var(--ui-selected);
-  color: var(--color-text);
-}
-
-.md-item.active {
-  background: var(--ui-selected);
-  color: var(--color-text);
+  text-align: center;
+  font-size: var(--font-size-md);
+  color: var(--accent-primary);
 }
 
 .md-item.disabled {
@@ -146,7 +139,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  padding: 5px 16px 5px 32px;
+  padding: 5px 16px 5px 24px;
   cursor: pointer;
   font-size: var(--font-size-base);
   color: var(--color-text);
@@ -154,16 +147,8 @@
   line-height: 16px;
 }
 
-/* 서브메뉴 컨테이너 내 아이콘 (absolute 배치) */
-.md-sub > .md-icon {
-  position: absolute;
-  left: 8px;
-  top: 50%;
-  margin-top: -8px;
-}
-
 .md-sub:hover {
-  background: var(--ui-selected);
+  background: var(--ui-hover);
   color: var(--color-text);
 }
 
