@@ -93,4 +93,11 @@ test('만든 사람 표기는 앱과 정책 문서에서 같다', () => {
     const html = readFileSync(new URL(`../public/${page}`, import.meta.url), 'utf8');
     assert.match(html, /만든 사람 — 류지원/, `${page} 의 이름 표기가 다르다`);
   }
+  // 저작권 고지와 패키지 메타데이터도 같은 이름을 쓴다. LICENSE 는 영문 문서지만
+  // 저작권자 이름은 표기 언어를 따라가지 않는다 — 사람이 하나면 이름도 하나다.
+  for (const path of ['../../LICENSE', '../../HWWP.md', '../package.json']) {
+    const text = readFileSync(new URL(path, import.meta.url), 'utf8');
+    assert.doesNotMatch(text, /Jiwon Ryu/, `${path} 에 옛 표기가 남아 있다`);
+    assert.match(text, /류지원/, `${path} 에 이름이 없다`);
+  }
 });
