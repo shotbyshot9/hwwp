@@ -80,3 +80,17 @@ test('제품 정보에 함초롬체 권리자를 밝힌다', () => {
   // 조건도 함께 적어야 고지가 제 일을 한다.
   assert.match(about, /비상업적 이용 조건으로 사용/);
 });
+
+test('만든 사람 표기는 앱과 정책 문서에서 같다', () => {
+  // 제품 정보에서는 한글 이름 옆에 트위터를 붙이고, 정책 문서에서는 메일을 붙인다.
+  // 이름 자체는 세 곳에서 같아야 한다 — 다르면 같은 사람인지 알 수 없다.
+  const about = readFileSync(new URL('../src/ui/about-dialog.ts', import.meta.url), 'utf8');
+  assert.match(about, /만든 사람: 류지원/);
+  assert.match(about, /twitter\.com\/shotbyshot/);
+  assert.match(about, /© 2026 hwwp — 류지원/);
+  assert.doesNotMatch(about, /Jiwon Ryu/);
+  for (const page of ['privacy.html', 'terms.html']) {
+    const html = readFileSync(new URL(`../public/${page}`, import.meta.url), 'utf8');
+    assert.match(html, /만든 사람 — 류지원/, `${page} 의 이름 표기가 다르다`);
+  }
+});

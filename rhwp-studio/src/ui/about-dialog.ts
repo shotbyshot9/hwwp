@@ -86,10 +86,18 @@ export class AboutDialog extends ModalDialog {
     version.textContent = `Version ${__APP_VERSION__}`;
     body.appendChild(version);
 
-    // 만든 사람
+    // 만든 사람. 이름 옆에 연락처를 붙여 둔다 — 제품 정보는 "무엇을 쓰고 있나" 만이
+    // 아니라 "누구에게 말하면 되나" 를 찾는 자리이기도 하다.
     const author = document.createElement('div');
     author.className = 'about-author';
-    author.textContent = '만든 사람: 류지원 (Jiwon Ryu)';
+    author.append('만든 사람: 류지원 · ');
+    const twitter = document.createElement('a');
+    twitter.className = 'about-license-link';
+    twitter.href = 'https://twitter.com/shotbyshot';
+    twitter.target = '_blank';
+    twitter.rel = 'noopener noreferrer';
+    twitter.textContent = '@shotbyshot';
+    author.appendChild(twitter);
     body.appendChild(author);
 
     // 기술 스택
@@ -165,7 +173,7 @@ export class AboutDialog extends ModalDialog {
     // 한 줄에 섞으면 누구의 저작권인지 흐려진다.
     const copyright = document.createElement('div');
     copyright.className = 'about-copyright';
-    copyright.textContent = '© 2026 hwwp — Jiwon Ryu';
+    copyright.textContent = '© 2026 hwwp — 류지원';
     body.appendChild(copyright);
 
     // 원본 고지. hwwp 는 rhwp(MIT)를 수정한 파생물이다. MIT 는 저작권 고지와 허가
