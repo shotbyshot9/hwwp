@@ -1414,10 +1414,21 @@ export function onKeyDown(this: any, e: KeyboardEvent): void {
       break;
     }
     default: {
-      // Function 키(F1~F12) 등 Ctrl 없는 단축키 처리
+      /*
+       * 수식어 없는 단축키(F6·F7, 그리고 개체 속성의 'p').
+       *
+       * 실행할 수 있을 때만 키를 가로챈다. 예전에는 표에 있기만 하면 preventDefault 를
+       * 먼저 하고 dispatch 했는데, dispatch 는 canExecute 가 거짓이면 아무 일도 하지
+       * 않는다. 그래서 개체를 고르지 않은 상태에서 'p' 를 누르면 개체 속성은 열리지
+       * 않으면서 글자도 찍히지 않았다 — 본문에 p 를 쓸 수 없었다. 대문자 P 는 shift
+       * 때문에 표에 걸리지 않아 멀쩡했고, 그래서 원인이 더 감춰졌다.
+       *
+       * isEnabled 로 먼저 묻는다. dispatch 의 반환값으로 판단하면 커맨드가 예외로 죽었을
+       * 때 그 글자가 본문에 새어 들어간다.
+       */
       if (this.dispatcher) {
         const cmdId = matchShortcut(e, defaultShortcuts);
-        if (cmdId) {
+        if (cmdId && this.dispatcher.isEnabled(cmdId)) {
           e.preventDefault();
           this.dispatcher.dispatch(cmdId);
         }
