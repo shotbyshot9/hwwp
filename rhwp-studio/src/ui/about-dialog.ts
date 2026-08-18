@@ -166,6 +166,14 @@ export class AboutDialog extends ModalDialog {
     upstream.textContent = 'Based on rhwp (MIT) © 2025-2026 Edward Kim — modified';
     body.appendChild(upstream);
 
+    // 글꼴 고지. hwwp 는 한컴 글꼴 파일을 배포하지 않지만, 함초롬체는 문서 호환을 위해
+    // 외부 CDN 에서 불러 쓴다. 권리자를 밝혀 두는 데 드는 비용이 없고, 나중에 문제가
+    // 생겨도 숨기지 않았다는 근거가 된다. 나머지 글꼴은 서드파티 목록에 있다.
+    const fonts = document.createElement('div');
+    fonts.className = 'about-copyright';
+    fonts.textContent = '함초롬체 © 주식회사 한글과컴퓨터 — 비상업적 이용 조건으로 사용';
+    body.appendChild(fonts);
+
     return body;
   }
 

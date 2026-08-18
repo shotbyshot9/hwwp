@@ -69,3 +69,14 @@ test('제품 정보에서 두 문서로 갈 수 있다', () => {
   assert.match(about, /makeLicenseLink\('privacy', '개인정보처리방침'\)/);
   assert.match(about, /makeLicenseLink\('terms', '서비스 약관'\)/);
 });
+
+/**
+ * 함초롬체는 저장소에 없고 눈누(jsdelivr) CDN 에서 불러 쓴다. 파일을 배포하지 않으므로
+ * 재배포는 아니지만, 권리자를 밝히는 데 드는 비용이 0 이라 제품 정보에 남긴다.
+ */
+test('제품 정보에 함초롬체 권리자를 밝힌다', () => {
+  const about = readFileSync(new URL('../src/ui/about-dialog.ts', import.meta.url), 'utf8');
+  assert.match(about, /함초롬체 © 주식회사 한글과컴퓨터/);
+  // 조건도 함께 적어야 고지가 제 일을 한다.
+  assert.match(about, /비상업적 이용 조건으로 사용/);
+});
