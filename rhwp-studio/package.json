@@ -50,6 +50,7 @@
   },
   "devDependencies": {
     "@types/chrome": "^0.2.5",
+    "lucide-static": "^1.32.0",
     "puppeteer-core": "^25.5.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.1",

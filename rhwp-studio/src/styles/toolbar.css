@@ -72,29 +72,44 @@
   background: var(--ui-accent-bg);
 }
 
-/* 한컴 SVG 스프라이트 아이콘 시스템 */
+/* 아이콘 시스템 — Lucide(ISC) 개별 SVG.
+ *
+ * 예전에는 한컴 SVG 스프라이트 한 장(밝은판 470KB + 어두운판 454KB)에서 좌표로 잘라
+ * 썼다. 남의 미술저작물을 배포하는 것이었고, 아이콘은 형식 호환이라는 명분이 닿지
+ * 않는 자산이다. Lucide 로 갈아 끼웠다 — 33개 50KB.
+ *
+ * 그림을 배경이 아니라 **마스크**로 쓰고 색은 currentColor 로 채운다. 그래서
+ *  - 아이콘이 글자색을 따라간다(꺼짐·비활성·호버 상태가 저절로 맞는다)
+ *  - 어두운 테마용 두 번째 파일이 필요 없다 — 스프라이트 시절 다크판이 통째로 사라졌다
+ *
+ * `--icon-url` 이 없는 칸은 투명 그라디언트를 마스크로 받아 통째로 비워진다. 이 대비가
+ * 없으면 마스크가 `none` 이 되어 currentColor 배경이 그대로 드러난다 — 아이콘을 쓰지
+ * 않는 메뉴 항목 121칸에 글자색 네모가 찍힌다.
+ */
 .tb-sprite {
   display: block;
   width: 18px;
   height: 18px;
-  background-image: var(--ui-icon-sprite-url);
-  background-repeat: no-repeat;
   flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask: var(--icon-url, linear-gradient(transparent, transparent)) center / contain no-repeat;
+  mask: var(--icon-url, linear-gradient(transparent, transparent)) center / contain no-repeat;
 }
 
-/* 스프라이트 위치: calc(-40px * col) calc(-40px * row) */
-.icon-cut           { background-position: calc(-40px * 2) calc(-40px * 1); }
-.icon-copy          { background-position: calc(-40px * 3) calc(-40px * 1); }
-.icon-paste         { background-position: calc(-40px * 4) calc(-40px * 1); }
-.icon-format-copy   { background-position: calc(-40px * 0) calc(-40px * 10); }
-/* icon_small_ko.svg에 조판부호/문단부호 아이콘이 없으므로 CSS 대체 아이콘.
+.icon-cut           { --icon-url: url("/icons/ui/cut.svg"); }
+.icon-copy          { --icon-url: url("/icons/ui/copy.svg"); }
+.icon-paste         { --icon-url: url("/icons/ui/paste.svg"); }
+.icon-format-copy   { --icon-url: url("/icons/ui/format-copy.svg"); }
+/* 조판부호·문단부호는 Lucide 에 대응이 없어 글자(¶·↵)로 그린다.
 
    색은 렌더러가 용지에 그리는 표시색과 같게 맞춘다(--mark-color). 그러면 아이콘이
    "이걸 켜면 무엇이 나오는지" 를 미리 보여준다. 예전에는 강조색(갈색)이었는데, 그건
    화면에 나오는 것과 아무 관계가 없는 색이었다. */
 .icon-ctrl-mark {
-  background-image: none !important;
   position: relative;
+  background-color: transparent;
+  -webkit-mask: none;
+  mask: none;
 }
 .icon-ctrl-mark::before {
   content: '¶';
@@ -109,8 +124,10 @@
 }
 
 .icon-para-mark {
-  background-image: none !important;
   position: relative;
+  background-color: transparent;
+  -webkit-mask: none;
+  mask: none;
 }
 .icon-para-mark::before {
   content: '↵';
@@ -123,37 +140,37 @@
   color: var(--mark-color);
   font-family: sans-serif;
 }
-.icon-grid          { background-position: calc(-40px * 13) calc(-40px * 2); }
-.icon-char-shape    { background-position: calc(-40px * 12) calc(-40px * 8); }
-.icon-para-shape    { background-position: calc(-40px * 13) calc(-40px * 8); }
-.icon-table         { background-position: calc(-40px * 2) calc(-40px * 3); }
-.icon-shape         { background-position: calc(-40px * 0) calc(-40px * 3); }
-.icon-image         { background-position: calc(-40px * 1) calc(-40px * 3); }
-.icon-obj-props     { background-position: calc(-40px * 17) calc(-40px * 1); }
-.icon-symbols       { background-position: calc(-40px * 4) calc(-40px * 3); }
-.icon-hyperlink     { background-position: calc(-40px * 5) calc(-40px * 3); }
-.icon-footnote      { background-position: calc(-40px * 4) calc(-40px * 4); }
-.icon-endnote       { background-position: calc(-40px * 5) calc(-40px * 4); }
-.icon-header        { background-position: calc(-40px * 1) calc(-40px * 4); }
-.icon-footer        { background-position: calc(-40px * 2) calc(-40px * 4); }
-.icon-find          { background-position: calc(-40px * 15) calc(-40px * 1); }
+.icon-grid          { --icon-url: url("/icons/ui/grid.svg"); }
+.icon-char-shape    { --icon-url: url("/icons/ui/char-shape.svg"); }
+.icon-para-shape    { --icon-url: url("/icons/ui/para-shape.svg"); }
+.icon-table         { --icon-url: url("/icons/ui/table.svg"); }
+.icon-shape         { --icon-url: url("/icons/ui/shape.svg"); }
+.icon-image         { --icon-url: url("/icons/ui/image.svg"); }
+.icon-obj-props     { --icon-url: url("/icons/ui/obj-props.svg"); }
+.icon-symbols       { --icon-url: url("/icons/ui/symbols.svg"); }
+.icon-hyperlink     { --icon-url: url("/icons/ui/hyperlink.svg"); }
+.icon-footnote      { --icon-url: url("/icons/ui/footnote.svg"); }
+.icon-endnote       { --icon-url: url("/icons/ui/endnote.svg"); }
+.icon-header        { --icon-url: url("/icons/ui/header.svg"); }
+.icon-footer        { --icon-url: url("/icons/ui/footer.svg"); }
+.icon-find          { --icon-url: url("/icons/ui/find.svg"); }
 
 /* 메뉴 드롭다운 전용 추가 아이콘 위치 */
-.icon-new-doc       { background-position: calc(-40px * 0) calc(-40px * 0); }
-.icon-save          { background-position: calc(-40px * 1) calc(-40px * 0); }
-.icon-pdf           { background-position: calc(-40px * 3) calc(-40px * 0); }
-.icon-undo          { background-position: calc(-40px * 0) calc(-40px * 1); }
-.icon-redo          { background-position: calc(-40px * 1) calc(-40px * 1); }
-.icon-print         { background-position: calc(-40px * 4) calc(-40px * 0); }
-.icon-page-setup    { background-position: calc(-40px * 5) calc(-40px * 0); }
-.icon-help          { background-position: calc(-40px * 26) calc(-40px * 6); }
-.icon-delete        { background-position: calc(-40px * 9) calc(-40px * 1); }
-.icon-select-all    { background-position: calc(-40px * 5) calc(-40px * 1); }
-.icon-find-replace  { background-position: calc(-40px * 16) calc(-40px * 1); }
-.icon-textbox       { background-position: calc(-40px * 3) calc(-40px * 3); }
-.icon-comment       { background-position: calc(-40px * 3) calc(-40px * 4); }
-.icon-zoom-menu-in  { background-position: -40px -960px; }
-.icon-zoom-menu-out { background-position: 0 -960px; }
+.icon-new-doc       { --icon-url: url("/icons/ui/new-doc.svg"); }
+.icon-save          { --icon-url: url("/icons/ui/save.svg"); }
+.icon-pdf           { --icon-url: url("/icons/ui/pdf.svg"); }
+.icon-undo          { --icon-url: url("/icons/ui/undo.svg"); }
+.icon-redo          { --icon-url: url("/icons/ui/redo.svg"); }
+.icon-print         { --icon-url: url("/icons/ui/print.svg"); }
+.icon-page-setup    { --icon-url: url("/icons/ui/page-setup.svg"); }
+.icon-help          { --icon-url: url("/icons/ui/help.svg"); }
+.icon-delete        { --icon-url: url("/icons/ui/delete.svg"); }
+.icon-select-all    { --icon-url: url("/icons/ui/select-all.svg"); }
+.icon-find-replace  { --icon-url: url("/icons/ui/find-replace.svg"); }
+.icon-textbox       { --icon-url: url("/icons/ui/textbox.svg"); }
+.icon-comment       { --icon-url: url("/icons/ui/comment.svg"); }
+.icon-zoom-menu-in  { --icon-url: url("/icons/ui/zoom-menu-in.svg"); }
+.icon-zoom-menu-out { --icon-url: url("/icons/ui/zoom-menu-out.svg"); }
 
 .tb-label {
   font-size: var(--font-size-xs);

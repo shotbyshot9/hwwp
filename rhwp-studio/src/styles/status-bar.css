@@ -120,7 +120,7 @@
 }
 
 /* 줌 스프라이트 아이콘 — 한컴 hcwo.css 참조 (row 24, -960px) */
-.icon-zoom-out       { background-position: 0 -960px; }
-.icon-zoom-in        { background-position: -40px -960px; }
-.icon-zoom-fit-width { background-position: -80px -960px; }
-.icon-zoom-fit       { background-position: -120px -960px; }
+.icon-zoom-out       { --icon-url: url("/icons/ui/zoom-out.svg"); }
+.icon-zoom-in        { --icon-url: url("/icons/ui/zoom-in.svg"); }
+.icon-zoom-fit-width { --icon-url: url("/icons/ui/zoom-fit-width.svg"); }
+.icon-zoom-fit       { --icon-url: url("/icons/ui/zoom-fit.svg"); }

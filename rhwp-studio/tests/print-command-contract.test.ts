@@ -63,10 +63,11 @@ test('파일 메뉴는 별도 PDF 진입점과 브라우저의 남은 단계를 
     indexHtml,
     /data-cmd="file:print-to-pdf"[^>]*>.*class="md-icon icon-pdf"/,
   );
-  assert.match(
-    toolbarCss,
-    /\.icon-pdf\s*\{\s*background-position:\s*calc\(-40px \* 3\) calc\(-40px \* 0\);\s*\}/,
-  );
+  // PDF 저장과 인쇄가 서로 다른 그림이어야 "따로 있는 진입점" 이라는 것이 화면에서도
+  // 읽힌다. 예전에는 스프라이트 좌표를 찍었는데, 아이콘을 Lucide 개별 SVG 로 바꾸면서
+  // 좌표가 사라졌다 — 지키려던 것(둘이 다른 아이콘이다)은 그대로다.
+  assert.match(toolbarCss, /\.icon-pdf\s+\{ --icon-url: url\("\/icons\/ui\/pdf\.svg"\); \}/);
+  assert.match(toolbarCss, /\.icon-print\s+\{ --icon-url: url\("\/icons\/ui\/print\.svg"\); \}/);
   assert.match(indexHtml, /data-cmd="file:print"/);
 });
 
