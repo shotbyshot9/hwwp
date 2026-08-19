@@ -53,13 +53,24 @@ rhwp 의 개발 기록(`mydocs/` 의 PR 아카이브·작업 계획·리포트 1
 
 ### 원격 저장소
 
-`upstream` 이 원본(`edwardkim/rhwp`)이다. 본인 저장소를 `origin` 으로 따로 두고,
-업스트림 변경은 이렇게 가져온다.
+`upstream` 이 원본(`edwardkim/rhwp`)이다. 본인 저장소는 `origin` 이다.
+
+**전체 병합은 하지 않는다.** rhwp 의 개발 기록 11,169개를 걷어냈으므로
+`git merge upstream/devel` 을 하면 그것들이 되살아난다. 필요한 것만 골라 온다.
 
 ```bash
 git fetch upstream
-git merge upstream/main
+git log --oneline HEAD..upstream/devel -- src/   # 엔진에 무슨 일이 있었나
+git cherry-pick <커밋>                            # 또는
+git checkout upstream/devel -- src/어떤/파일.rs
 ```
+
+받은 뒤에는 `cargo test --lib` 과 `wasm-pack build` 를 돌리고 `pkg/` 를 함께 커밋해야
+배포에 반영된다.
+
+고르는 기준은 갈라진 정도다. 갈라진 뒤 hwwp 가 손댄 파일은 **엔진 570개 중 1개, 웹앱
+632개 중 127개** 다. 그래서 **엔진 변경은 거의 그대로 들어오고, UI 변경은 읽고 손으로
+옮기는 편이 빠르다.**
 
 ## 구글 드라이브 저장 (작업 중)
 
