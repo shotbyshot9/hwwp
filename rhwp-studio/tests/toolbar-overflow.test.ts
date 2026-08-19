@@ -22,11 +22,28 @@ const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8'
  * 하필 세로가 짧은 화면에서 접힌다. 1280×720 에서 크롬이 화면의 63% 를 먹고 글 쓸
  * 자리가 270px 밖에 남지 않았다.
  */
-test('도구 모음은 접히지 않는다', () => {
-  assert.match(toolbarCss, /#icon-toolbar \{[^}]*flex-wrap: nowrap;/s);
-  assert.match(styleBarCss, /#style-bar \{[^}]*flex-wrap: nowrap;/s);
-  assert.doesNotMatch(toolbarCss, /#icon-toolbar \{[^}]*flex-wrap: wrap;/s);
-  assert.doesNotMatch(styleBarCss, /#style-bar \{[^}]*flex-wrap: wrap;/s);
+test('데스크톱에서는 접지 않는다', () => {
+  assert.match(toolbarCss, /@media \(min-width: 1280px\)[\s\S]*?flex-wrap: nowrap;/);
+  // 1280px 아래는 손대지 않는다. 서식 바는 767px 아래에서 통째로 세로가 되는데,
+  // 거기에 "한 줄에 넣고 나머지는 넘김" 을 얹으면 두 번째 칸부터 전부 넘침으로 들어간다.
+  assert.match(overflow, /const DESKTOP_MIN_WIDTH = 1280;/);
+  assert.match(overflow, /if \(window\.innerWidth < DESKTOP_MIN_WIDTH\)/);
+  assert.match(styleBarCss, /#style-bar \{[^}]*flex-wrap: wrap;/s);
+});
+
+test('폭 재기는 확대 배율에 오염되지 않는다', () => {
+  // 앱 크롬에는 --ui-scale 만큼 CSS zoom 이 걸려 있다. getBoundingClientRect() 는
+  // 확대된 픽셀을, clientWidth 는 확대 전 픽셀을 준다. 섞으면 오른쪽이 훤히 비어
+  // 있는데도 넘침 단추가 뜬다.
+  assert.match(overflow, /const width = item\.offsetWidth;/);
+  assert.doesNotMatch(overflow, /getBoundingClientRect\(\)\.width/);
+});
+
+test('프레임이 오지 않아도 다시 계산한다', () => {
+  // 탭이 가려져 requestAnimationFrame 이 멈추면 "이미 예약했다" 빗장이 영영 안 풀려
+  // 창을 넓혀도 넘침 메뉴가 그대로 남는다.
+  assert.match(overflow, /this\.timer = window\.setTimeout\(run, 120\);/);
+  assert.doesNotMatch(overflow, /if \(this\.frame !== null\) return;/);
 });
 
 test('넘치는 것은 » 안으로 보낸다', () => {
@@ -64,4 +81,27 @@ test('리본 그룹 캡션은 걷어내고 입력칸 이름은 낭독기에 남�
   // label 을 지우면 선택 상자가 이름을 잃는다. 화면에서만 감춘다.
   assert.match(styleBarCss, /\.sb-field-ribbon-group \.sb-field-label \{[^}]*clip-path: inset\(50%\);/s);
   assert.match(indexHtml, /<label class="sb-field-label" for="font-name">글꼴<\/label>/);
+});
+
+test('메뉴바는 제목 줄과 한 줄을 쓴다', () => {
+  const titleBarCss = readFileSync(
+    new URL('../src/styles/title-bar.css', import.meta.url),
+    'utf8',
+  );
+  const menuBarCss = readFileSync(
+    new URL('../src/styles/menu-bar.css', import.meta.url),
+    'utf8',
+  );
+  // 제목 줄 66px + 메뉴바 36px 이 각자 한 줄을 쓰고 있었다. 합치면 그만큼이 편집
+  // 영역으로 간다.
+  const titleBar = indexHtml.slice(
+    indexHtml.indexOf('<div id="title-bar">'),
+    indexHtml.indexOf('<div id="icon-toolbar"'),
+  );
+  assert.ok(titleBar.includes('<nav id="menu-bar"'), '메뉴바가 제목 줄 안에 있어야 한다');
+  // 줄을 따로 차지하지 않으므로 자기 바탕과 아래 선, 고정 높이는 버린다.
+  assert.doesNotMatch(menuBarCss, /#menu-bar \{[^}]*border-bottom:/s);
+  assert.doesNotMatch(menuBarCss, /#menu-bar \{[^}]*height: 28px;/s);
+  // 폭이 좁으면 메뉴가 제 줄로 내려가야 한다 — 모바일 햄버거 규칙이 그대로 살아 있다.
+  assert.match(titleBarCss, /#title-bar \{[^}]*flex-wrap: wrap;/s);
 });

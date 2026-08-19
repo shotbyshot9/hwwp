@@ -1,15 +1,14 @@
 /* ================================================================
    1행: 메뉴바
    ================================================================ */
+/* 메뉴바는 제목 줄 안에 산다(index.html). 자기 바탕과 아래 선, 고정 높이는 그때
+   버렸다 — 줄을 따로 차지하지 않으므로 필요 없다. */
 #menu-bar {
   display: flex;
   align-items: center;
   gap: 0;
-  padding: 0 8px;
-  background: var(--color-bg-light);
-  border-bottom: 1px solid var(--ui-border-light);
+  padding: 0;
   flex-shrink: 0;
-  height: 28px;
   font-size: var(--font-size-md);
 }
 

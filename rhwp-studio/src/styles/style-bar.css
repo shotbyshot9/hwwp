@@ -3,8 +3,7 @@
    ================================================================ */
 #style-bar {
   display: flex;
-  /* 도구 상자와 같은 규칙 — 접지 않고 넘치면 » 로 보낸다. 접히면 높이가 두 배다. */
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   min-height: 44px;
   align-items: stretch;
   align-content: stretch;

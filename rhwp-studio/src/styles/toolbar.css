@@ -3,9 +3,7 @@
    ================================================================ */
 #icon-toolbar {
   display: flex;
-  /* 접지 않는다. 넘치면 » 로 보낸다(view/toolbar-overflow.ts). 접히는 순간 도구
-     상자 높이가 두 배가 되고, 하필 세로가 짧은 화면에서 접힌다. */
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: stretch;
   align-content: flex-start;
   padding: 2px 8px;
@@ -310,4 +308,18 @@
 
 .tb-overflow.open > .tb-overflow-panel {
   display: flex;
+}
+
+/* 데스크톱에서는 접지 않는다.
+ *
+ * 접히는 순간 도구 상자 높이가 60px 에서 125px 로 두 배가 되는데, 접힘은 하필 세로가
+ * 짧은 화면에서 일어난다. 넘치는 그룹은 » 로 보낸다(view/toolbar-overflow.ts).
+ *
+ * 1280px 아래는 건드리지 않는다 — 태블릿·모바일에는 따로 설계된 배치가 있고(서식 바는
+ * 767px 아래에서 통째로 세로가 된다), 거기에 이 규칙을 얹으면 도리어 망가진다. */
+@media (min-width: 1280px) {
+  #icon-toolbar,
+  #style-bar {
+    flex-wrap: nowrap;
+  }
 }

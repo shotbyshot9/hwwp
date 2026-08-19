@@ -15,7 +15,9 @@ const responsive = readFileSync(new URL('../src/styles/responsive.css', import.m
  * 스크롤을 만들지 않는 것과, 그룹을 반으로 자르지 않는 것.
  */
 test('icon toolbar keeps one row and sends overflow to the menu', () => {
-  assert.match(toolbar, /#icon-toolbar\s*\{[^}]*flex-wrap:\s*nowrap;/s);
+  // 1280px 아래는 예전 그대로 접는다 — 태블릿·모바일에는 따로 설계된 배치가 있다.
+  assert.match(toolbar, /#icon-toolbar\s*\{[^}]*flex-wrap:\s*wrap;/s);
+  assert.match(toolbar, /@media \(min-width: 1280px\)[\s\S]*?flex-wrap: nowrap;/);
   assert.match(toolbar, /#icon-toolbar\s*\{[^}]*height:\s*auto;/s);
   assert.match(toolbar, /#icon-toolbar\s*\{[^}]*min-height:\s*56px;/s);
   assert.match(toolbar, /\.tb-group\s*\{[^}]*flex-shrink:\s*0;/s);
@@ -42,7 +44,8 @@ test('constrained layouts hide top-level separators and do not scroll the toolba
 });
 
 test('style ribbon keeps one row and sends overflow to the menu', () => {
-  assert.match(styleBar, /#style-bar\s*\{[^}]*flex-wrap:\s*nowrap;/s);
+  assert.match(styleBar, /#style-bar\s*\{[^}]*flex-wrap:\s*wrap;/s);
+  assert.match(toolbar, /#icon-toolbar,\s*\n\s*#style-bar \{\s*\n\s*flex-wrap: nowrap;/);
   assert.match(styleBar, /#style-bar\s*\{[^}]*height:\s*auto;/s);
   // 캡션을 걷어내 한 줄이 낮아졌다(68 → 44).
   assert.match(styleBar, /#style-bar\s*\{[^}]*min-height:\s*44px;/s);

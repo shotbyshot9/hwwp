@@ -15,6 +15,16 @@
 /** 넘침 단추가 스스로 차지하는 폭 — 자리를 계산할 때 미리 빼 둔다 */
 const OVERFLOW_BUTTON_WIDTH = 34;
 
+/**
+ * 이 폭 아래로는 손대지 않는다.
+ *
+ * 태블릿·모바일에는 이미 따로 설계된 배치가 있다 — 서식 도구 모음은 767px 아래에서
+ * `flex-direction: column` 으로 통째로 세로가 되고, 1023px 아래에서는 압축된 트랙을
+ * 쓴다. 거기에 "한 줄에 넣고 나머지는 넘김" 을 얹으면 세로 배치의 두 번째 칸부터
+ * 전부 넘침으로 들어간다. 이 문제(크롬이 화면을 먹는 것)는 데스크톱의 문제다.
+ */
+const DESKTOP_MIN_WIDTH = 1280;
+
 export class ToolbarOverflow {
   private readonly host: HTMLElement;
   private readonly button: HTMLButtonElement;
@@ -25,6 +35,7 @@ export class ToolbarOverflow {
   private observer: ResizeObserver | null = null;
   private mutations: MutationObserver | null = null;
   private frame: number | null = null;
+  private timer: number | null = null;
   /** layout() 이 스스로 일으킨 DOM 변화에 다시 반응하지 않도록 막는 빗장 */
   private applying = false;
 
@@ -92,12 +103,28 @@ export class ToolbarOverflow {
     }
   }
 
+  /**
+   * 다음 프레임에 한 번만 다시 계산한다.
+   *
+   * requestAnimationFrame 만 믿으면 안 된다. 탭이 가려져 있으면 프레임이 오지 않는데,
+   * 그동안 "이미 예약했다" 는 빗장이 걸린 채로 남아 이후의 모든 요청이 무시된다. 창을
+   * 넓혔는데도 넘침 메뉴가 그대로 남아 있던 것이 이 때문이었다 — 오른쪽이 훤히 비어
+   * 있는데 단추만 떠 있는 상태가 된다.
+   *
+   * 그래서 타이머를 함께 걸고 둘 중 먼저 오는 쪽이 이긴다.
+   */
   private schedule(): void {
-    if (this.frame !== null) return;
-    this.frame = requestAnimationFrame(() => {
+    if (this.frame !== null) cancelAnimationFrame(this.frame);
+    if (this.timer !== null) clearTimeout(this.timer);
+    const run = () => {
+      if (this.frame !== null) cancelAnimationFrame(this.frame);
+      if (this.timer !== null) clearTimeout(this.timer);
       this.frame = null;
+      this.timer = null;
       this.layout();
-    });
+    };
+    this.frame = requestAnimationFrame(run);
+    this.timer = window.setTimeout(run, 120);
   }
 
   /**
@@ -118,7 +145,18 @@ export class ToolbarOverflow {
   private applyLayout(): void {
     for (const item of this.items) this.host.insertBefore(item, this.wrap);
     this.wrap.classList.remove('tb-overflow-active');
+    if (window.innerWidth < DESKTOP_MIN_WIDTH) {
+      this.close();
+      return;
+    }
 
+    /*
+     * 폭은 반드시 offsetWidth·clientWidth 로 잰다.
+     *
+     * 앱 크롬은 `--ui-scale` 만큼 CSS `zoom` 이 걸려 있는데, `getBoundingClientRect()`
+     * 는 확대된 픽셀을 돌려주고 `clientWidth` 는 확대 전 픽셀을 돌려준다. 둘을 섞으면
+     * 항목이 1.28배 넓은 것으로 계산돼, 오른쪽이 훤히 비어 있는데도 넘침 단추가 뜬다.
+     */
     const style = getComputedStyle(this.host);
     const available = this.host.clientWidth
       - parseFloat(style.paddingLeft || '0')
@@ -128,7 +166,7 @@ export class ToolbarOverflow {
     let used = 0;
     let moved = false;
     for (const item of this.items) {
-      const width = item.getBoundingClientRect().width;
+      const width = item.offsetWidth;
       // 넘침 단추가 생길 자리를 남겨 둔다 — 마지막 하나가 딱 맞아 들어간 뒤 단추가
       // 밀려나 결국 접히는 것을 막는다.
       const budget = moved ? available - OVERFLOW_BUTTON_WIDTH : available;
@@ -167,6 +205,7 @@ export class ToolbarOverflow {
     this.observer?.disconnect();
     this.mutations?.disconnect();
     if (this.frame !== null) cancelAnimationFrame(this.frame);
+    if (this.timer !== null) clearTimeout(this.timer);
   }
 }
 
