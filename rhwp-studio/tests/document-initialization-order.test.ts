@@ -6,8 +6,16 @@ import { fileURLToPath } from 'node:url';
 
 const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
 
+/**
+ * 소스를 읽되 줄바꿈을 LF 로 맞춘다.
+ *
+ * 이 파일의 검사들은 `'\n        },\n      },'` 처럼 들여쓰기와 개행을 글자 그대로
+ * 찾는다. 그런데 git 의 autocrlf 설정에 따라 작업 사본이 CRLF 로 바뀌면 같은 코드인데
+ * 찾지 못해 실패한다 — 실제로 병합 뒤 main.ts 가 CRLF 가 되면서 그렇게 됐다.
+ * 줄바꿈은 이 검사들이 지키려는 것과 아무 상관이 없으므로 읽는 자리에서 없앤다.
+ */
 function source(path: string): string {
-  return readFileSync(join(rootDir, path), 'utf8');
+  return readFileSync(join(rootDir, path), 'utf8').replace(/\r\n/g, '\n');
 }
 
 function initializeDocumentSource(): string {

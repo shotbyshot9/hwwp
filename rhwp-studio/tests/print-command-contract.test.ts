@@ -49,12 +49,20 @@ test('파일 메뉴는 별도 PDF 진입점과 브라우저의 남은 단계를 
   assert.match(indexHtml, /대상 → PDF로 저장/);
   const saveAsIndex = indexHtml.indexOf('data-cmd="file:save-as"');
   const pdfIndex = indexHtml.indexOf('data-cmd="file:print-to-pdf"');
-  const hwpIndex = indexHtml.indexOf('data-cmd="file:save-as-hwp"');
+  const pageSetupIndex = indexHtml.indexOf('data-cmd="file:page-setup"');
   assert.ok(
     saveAsIndex >= 0 && saveAsIndex < pdfIndex,
     'PDF 저장은 다른 이름으로 저장 다음에 배치한다',
   );
-  assert.ok(pdfIndex < hwpIndex, 'PDF 저장은 명시적 HWP/HWPX 형식 저장보다 앞에 배치한다');
+  /*
+   * PDF 는 저장 무리의 맨 끝에 온다.
+   *
+   * 예전에는 `HWP 형식으로 저장`·`HWPX 형식으로 저장` 이 뒤에 있어서 그것들보다 앞이라는
+   * 것으로 자리를 확인했다. 그 둘은 없앴다 — 형식은 이제 저장 대화상자에서 고른다.
+   * 지금 지키는 것은 "PDF 는 저장 무리에 속하되 마지막" 이라는 사실이고, 그 경계는
+   * 다음 무리(편집 용지)가 긋는다.
+   */
+  assert.ok(pdfIndex < pageSetupIndex, 'PDF 저장은 저장 무리 안에, 편집 용지보다 앞에 있어야 한다');
   // 지키려는 것은 "PDF 저장과 인쇄가 따로 있는 진입점" 이라는 사실이 화면에서 읽히는
   // 것이다. 예전에는 이것을 아이콘으로 확인했다 — 스프라이트 좌표였다가, Lucide 로
   // 바뀌며 --icon-url 이 되었다가, 메뉴에서 아이콘을 걷어내며 사라졌다. 지금 그 구분을

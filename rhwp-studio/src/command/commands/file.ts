@@ -273,7 +273,20 @@ async function promptFallbackName(
 
 interface SaveAsOptions {
   fileName: string;
+  format: SaveFormat;
   password: string | null;
+}
+
+/**
+ * 다른 이름으로 저장에서 고를 수 있는 형식.
+ *
+ * HWP·HWPX 는 언제나 있다. HML 은 내보내기를 실제로 할 수 있을 때만 넣는다 — 못 하는
+ * 형식을 목록에 두면 고른 뒤에 실패한다.
+ */
+function saveAsFormatChoices(services: CommandServices): SaveFormat[] {
+  const formats: SaveFormat[] = ['hwp', 'hwpx'];
+  if (isHmlSaveEnabled(services)) formats.push('hml');
+  return formats;
 }
 
 async function promptSaveAsOptions(
@@ -283,24 +296,34 @@ async function promptSaveAsOptions(
   const selection = await showSaveAs(
     saveBaseNameFor(services.wasm.fileName, format),
     format,
-    { allowPassword: format !== 'hml' },
+    { allowPassword: true, formats: saveAsFormatChoices(services) },
   );
   if (selection === null) return null;
   if (!selection.configurePassword) {
-    return { fileName: selection.fileName, password: null };
+    return { fileName: selection.fileName, format: selection.format, password: null };
   }
 
   const password = await showHwpSavePasswordDialog(selection.fileName);
   if (password === null) return null;
-  return { fileName: selection.fileName, password };
+  return { fileName: selection.fileName, format: selection.format, password };
 }
 
-async function saveAsFormat(services: CommandServices, format: SaveFormat): Promise<void> {
+/**
+ * 다른 이름으로 저장.
+ *
+ * 형식은 대화상자에서 고른다. 예전에는 파일 메뉴가 `다른 이름으로 저장`·`HWP 형식으로
+ * 저장`·`HWPX 형식으로 저장` 셋으로 갈라 놓았는데, 저장 하나에 항목이 셋이면 무엇이
+ * 무엇과 다른지 묻게 된다. 워드프로세서의 관례대로 저장은 하나로 두고 형식을 저장할
+ * 때 고르게 했다.
+ */
+async function saveAsDocument(services: CommandServices): Promise<void> {
   let password: string | null = null;
   try {
     const sourceFormat = services.wasm.getSourceFormat();
-    const options = await promptSaveAsOptions(services, format);
+    const defaultFormat: SaveFormat = sourceFormat === 'hwpx' ? 'hwpx' : 'hwp';
+    const options = await promptSaveAsOptions(services, defaultFormat);
     if (options === null) return;
+    const format = options.format;
     password = options.password;
 
     flushDeferredPaginationBeforeExplicitOutput(services, 'save-as');
@@ -765,26 +788,7 @@ export const fileCommands: CommandDef[] = [
     shortcutLabel: 'Ctrl+Shift+S',
     canExecute: (ctx) => ctx.hasDocument,
     async execute(services) {
-      const format = await chooseSaveAsFormat(services);
-      if (format !== null) await saveAsFormat(services, format);
-    },
-  },
-  {
-    // [#1613] HWP 형식으로 저장 — 출처 무관 HWP 출력.
-    id: 'file:save-as-hwp',
-    label: 'HWP 형식으로 저장',
-    canExecute: (ctx) => ctx.hasDocument,
-    async execute(services) {
-      await saveAsFormat(services, 'hwp');
-    },
-  },
-  {
-    // [#1613] HWPX 형식으로 저장 — 출처 무관 HWPX 출력.
-    id: 'file:save-as-hwpx',
-    label: 'HWPX 형식으로 저장',
-    canExecute: (ctx) => ctx.hasDocument,
-    async execute(services) {
-      await saveAsFormat(services, 'hwpx');
+      await saveAsDocument(services);
     },
   },
   {

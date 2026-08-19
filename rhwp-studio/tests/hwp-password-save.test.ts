@@ -30,16 +30,29 @@ test('암호 저장 dialog는 확인 입력, 최소 길이, 닫기 시 DOM 초�
   assert.match(saveDialog, /this\.confirmationInput\.value = ''/, '닫을 때 확인 DOM 값을 비워야 합니다');
 });
 
-test('다른 이름·HWP·HWPX 저장은 공통 대화상자에서 암호 설정을 선택한다', () => {
+test('다른 이름으로 저장은 한 대화상자에서 형식과 암호를 함께 고른다', () => {
   assert.match(commandSource, /async function promptSaveAsOptions/, '공통 저장 옵션 대화상자 경로가 있어야 합니다');
   assert.match(commandSource, /showSaveAs\(/, '파일명을 먼저 받는 대화상자를 열어야 합니다');
-  assert.match(commandSource, /allowPassword: format !== 'hml'/, 'HWP/HWPX에만 암호 설정을 노출해야 합니다');
+  // 형식을 대화상자에서 고르므로 암호 가능 여부도 대화상자가 판단한다(HML 이면 잠근다).
+  assert.match(
+    commandSource,
+    /allowPassword: true, formats: saveAsFormatChoices\(services\)/,
+    '형식 목록과 암호 설정을 함께 넘겨야 합니다',
+  );
+  assert.match(
+    saveAsDialogSource,
+    /this\.selectedFormat !== 'hml'/,
+    'HML 을 고르면 암호 단추를 잠가야 합니다',
+  );
   assert.match(commandSource, /showHwpSavePasswordDialog\(selection\.fileName\)/, '암호 설정을 누르면 암호/확인 대화상자를 열어야 합니다');
   assert.match(commandSource, /exportPasswordProtectedDocumentWithReportForFormat/, '내용 손실 보고를 포함한 전용 암호 serializer를 선택해야 합니다');
   assert.match(commandSource, /암호 설정 저장은 HWP 또는 HWPX 형식에서만 지원합니다/, 'HML 암호 저장을 거부해야 합니다');
   assert.match(commandSource, /id: 'file:save-as'/, '다른 이름으로 저장 command를 유지해야 합니다');
-  assert.match(commandSource, /saveAsFormat\(services, 'hwp'\)/, 'HWP 저장도 공통 저장 경로를 써야 합니다');
-  assert.match(commandSource, /saveAsFormat\(services, 'hwpx'\)/, 'HWPX 저장도 공통 저장 경로를 써야 합니다');
+  // 형식별 저장 command 는 없앴다. 저장 하나에 항목이 셋이면 무엇이 무엇과 다른지
+  // 묻게 되고, 정작 저장 대화상자에서는 형식을 고를 수 없었다.
+  assert.doesNotMatch(commandSource, /id: 'file:save-as-hwpx?'/, '형식별 저장 command 를 되살리면 안 됩니다');
+  assert.doesNotMatch(indexSource, /file:save-as-hwpx?"/, '파일 메뉴에도 형식별 저장 항목이 있으면 안 됩니다');
+  assert.match(commandSource, /formats\.push\('hml'\)/, 'HML 은 내보낼 수 있을 때만 목록에 넣어야 합니다');
   assert.doesNotMatch(commandSource, /file:save-as-password/, '별도 암호 저장 menu command를 두면 안 됩니다');
   assert.doesNotMatch(indexSource, /file:save-as-password/, '파일 메뉴에도 별도 암호 저장 항목이 있으면 안 됩니다');
 });
@@ -52,7 +65,7 @@ test('저장 대화상자는 HWP/HWPX에서만 암호 설정 action을 반환한
 });
 
 test('Studio는 암호 문자열을 보관하지 않고 보호 저장 여부만 기억한다', () => {
-  const protectedSave = between(commandSource, 'async function saveAsFormat', 'function reportSaveError');
+  const protectedSave = between(commandSource, 'async function saveAsDocument', 'function reportSaveError');
   const currentSave = between(commandSource, 'export async function saveCurrentDocument', 'async function fallbackNameForCurrentSave');
   assert.match(protectedSave, /password = '';/, '암호 저장 시도 뒤 지역 암호 참조를 비워야 합니다');
   assert.match(currentSave, /services\.wasm\.requiresPasswordForSave/, '다음 저장에서 재입력을 결정할 상태가 있어야 합니다');
@@ -70,4 +83,14 @@ test('Studio public WASM 배포물도 암호 저장 binding을 제공한다', ()
   assert.match(publicWasmSource, /exportHwpxWithPassword\(password\)/, 'public JS HWPX binding이 있어야 합니다');
   assert.match(publicWasmTypes, /exportHwpWithPassword\(password: string\): Uint8Array/, 'public HWP type이 있어야 합니다');
   assert.match(publicWasmTypes, /exportHwpxWithPassword\(password: string\): Uint8Array/, 'public HWPX type이 있어야 합니다');
+});
+
+test('형식을 바꾸면 파일 이름의 확장자도 따라간다', () => {
+  // 고른 형식과 다른 확장자가 이름에 남아 있으면 무엇으로 저장되는지 화면에서 어긋난다.
+  assert.match(
+    saveAsDialogSource,
+    /this\.input\.value = fileNameForFormat\(name, this\.selectedFormat\)/,
+    '형식을 바꾸면 확장자를 다시 붙여야 합니다',
+  );
+  assert.match(saveAsDialogSource, /'파일 형식\(T\):'/, '대화상자에 형식 선택이 있어야 합니다');
 });

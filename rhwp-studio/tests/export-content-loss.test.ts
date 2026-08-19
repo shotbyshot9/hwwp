@@ -202,7 +202,7 @@ test('Studio 명시 저장은 reported artifact를 primary 저장 뒤 fallback d
   assert.doesNotMatch(payloadFactory, /exportPasswordProtectedDocumentForFormat\s*\(/);
 
   const explicitSaveBodies = [
-    between(fileCommandSource, 'async function saveAsFormat', 'function reportSaveError'),
+    between(fileCommandSource, 'async function saveAsDocument', 'function reportSaveError'),
     between(
       fileCommandSource,
       'export async function saveCurrentDocument',
