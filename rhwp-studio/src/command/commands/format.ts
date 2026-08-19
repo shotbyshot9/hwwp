@@ -11,11 +11,12 @@ import { showToast } from '@/ui/toast';
 import type { OutlineLevelResult } from '@/engine/input-handler';
 
 /**
- * 개요 수준을 못 바꿨을 때 왜 그런지 알린다.
+ * 수준을 못 바꿨을 때 왜 그런지 알린다.
  *
- * 이 두 버튼은 개요 스타일(개요 1~7)인 문단에서만 동작한다. 예전에는 그 밖에서
- * 조용히 아무 일도 하지 않아, 버튼이 고장 난 것처럼 보였다. 못 한 이유마다 할 말이
- * 다르므로 갈라서 말한다.
+ * 두 단추는 문단번호·글머리표의 목록 수준과 개요 스타일의 개요 수준을 함께 다룬다
+ * (`changeParagraphLevel`). 둘 중 어느 것도 아닌 보통 문단에서는 바꿀 수준이 없다.
+ * 예전에는 그럴 때 조용히 아무 일도 하지 않아 단추가 고장 난 것처럼 보였다. 못 한
+ * 이유마다 할 말이 다르므로 갈라서 말한다.
  */
 function reportOutlineLevel(result: OutlineLevelResult | undefined, action: '증가' | '감소'): void {
   switch (result) {
@@ -24,8 +25,9 @@ function reportOutlineLevel(result: OutlineLevelResult | undefined, action: '증
       return;
     case 'not-outline':
       showToast({
-        message: '이 문단은 개요 스타일이 아니라 수준을 바꿀 수 없습니다.\n'
-          + '서식 도구 모음의 스타일에서 「개요 1」~「개요 7」 중 하나를 먼저 지정하세요.',
+        message: '이 문단에는 바꿀 수준이 없습니다.\n'
+          + '문단 번호나 글머리표를 넣거나, 서식 도구 모음의 스타일에서 '
+          + '「개요 1」~「개요 7」 중 하나를 지정하세요.',
         durationMs: 6000,
       });
       return;
@@ -432,7 +434,7 @@ export const formatCommands: CommandDef[] = [
     shortcutLabel: 'Ctrl+Num -',
     canExecute: (ctx) => ctx.hasDocument,
     execute(services) {
-      reportOutlineLevel(services.getInputHandler()?.changeOutlineLevel(-1), '증가');
+      reportOutlineLevel(services.getInputHandler()?.changeParagraphLevel(-1), '증가');
     },
   },
   {
@@ -441,7 +443,7 @@ export const formatCommands: CommandDef[] = [
     shortcutLabel: 'Ctrl+Num +',
     canExecute: (ctx) => ctx.hasDocument,
     execute(services) {
-      reportOutlineLevel(services.getInputHandler()?.changeOutlineLevel(1), '감소');
+      reportOutlineLevel(services.getInputHandler()?.changeParagraphLevel(1), '감소');
     },
   },
   // 스타일 대화상자

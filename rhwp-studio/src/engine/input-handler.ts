@@ -4910,6 +4910,26 @@ export class InputHandler {
    * 없었다 — 사용자에게는 버튼이 고장 난 것으로 보인다. 무엇을 못 했는지 부르는 쪽이
    * 알 수 있게 결과를 돌려준다.
    */
+  /**
+   * 수준을 한 칸 옮긴다 — `delta` 가 -1 이면 상위, +1 이면 하위다.
+   *
+   * 이 앱에는 "수준" 이 둘 있다. 문단번호·글머리표의 **목록 수준**과 개요 스타일의
+   * **개요 수준**이다. 예전에는 도구 상자의 수준 단추가 개요만 알아서, 바로 옆
+   * 문단번호 단추로 만든 목록에서 누르면 아무 일도 일어나지 않고 "개요 스타일이
+   * 아닙니다" 라는 안내만 떴다. 반대로 목록 수준을 바꾸는 길은 Tab·Shift+Tab 밖에
+   * 없어 단추가 아예 없었다.
+   *
+   * 그래서 부르는 쪽이 문단 종류를 알 필요가 없게 여기서 가른다. 단추는 "수준을 한 칸
+   * 옮긴다" 는 하나의 뜻만 갖는다.
+   *
+   * 목록을 먼저 본다 — `changeListLevel` 은 목록이 아니면 아무것도 하지 않고 false 를
+   * 돌려주므로 그대로 개요 경로로 넘어간다.
+   */
+  changeParagraphLevel(delta: number): OutlineLevelResult {
+    if (this.changeListLevel(delta)) return 'changed';
+    return this.changeOutlineLevel(delta);
+  }
+
   changeOutlineLevel(delta: number): OutlineLevelResult {
     const pos = this.cursor.getPosition();
     try {
