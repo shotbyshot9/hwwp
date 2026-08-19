@@ -112,3 +112,24 @@ test('형광펜에만 색 없음이 있다', () => {
   );
   assert.doesNotMatch(textColor, /clear:/);
 });
+
+test('드롭다운은 한 번에 하나만 열린다', () => {
+  /*
+   * 글자색을 열어 둔 채 배경색을 누르면 둘이 겹쳐 떠 있었다.
+   *
+   * 드롭다운은 저마다 document 의 mousedown 을 듣고 "내 안이 아니면 닫는다" 로 스스로를
+   * 닫는데, 여는 단추가 stopPropagation() 을 부르고 있어서 **다른** 드롭다운의 그
+   * 처리기가 아예 불리지 않았다. 단추는 자기 드롭다운 안에 있으므로 전파를 열어 두어도
+   * 자기가 방금 연 것을 곧바로 닫지는 않는다.
+   */
+  const toggles = [
+    toolbar.slice(toolbar.indexOf('opts.button.addEventListener'), toolbar.indexOf('document.addEventListener', toolbar.indexOf('opts.button.addEventListener'))),
+    toolbar.slice(toolbar.indexOf('this.charfxBtn.addEventListener'), toolbar.indexOf('this.charfxMenu.addEventListener')),
+  ];
+  for (const toggle of toggles) {
+    assert.ok(toggle.length > 0, '토글 단추 처리기를 찾지 못했다');
+    assert.doesNotMatch(toggle, /stopPropagation/, '여는 단추가 전파를 막으면 다른 메뉴가 안 닫힌다');
+  }
+  // 닫는 쪽은 그대로 있어야 한다.
+  assert.equal(toolbar.match(/document\.addEventListener\('mousedown'/g)?.length, 3);
+});

@@ -143,8 +143,9 @@ export class Toolbar {
   private setupCharfxDropdown(): void {
     // 버튼 클릭 → 드롭다운 열기/닫기
     this.charfxBtn.addEventListener('mousedown', (e) => {
+      // 전파를 막지 않는 이유는 bindColorDropdown 의 같은 자리 주석에 있다 — 막으면
+      // 다른 드롭다운이 닫히지 않는다.
       e.preventDefault();
-      e.stopPropagation();
       this.charfxDropdown.classList.toggle('open');
     });
 
@@ -415,8 +416,17 @@ export class Toolbar {
     };
 
     opts.button.addEventListener('mousedown', (e) => {
+      /*
+       * 전파를 막지 않는다.
+       *
+       * 드롭다운은 저마다 document 의 mousedown 을 듣고 "내 안이 아니면 닫는다" 로
+       * 스스로를 닫는다. 여기서 전파를 끊으면 **다른** 드롭다운의 그 처리기가 아예
+       * 불리지 않는다 — 글자색을 열어 둔 채 배경색을 누르면 둘이 겹쳐 떠 있었다.
+       *
+       * 단추는 자기 드롭다운 안에 있으므로, 전파를 열어 두어도 자기가 방금 연 것을
+       * 곧바로 닫지는 않는다.
+       */
       e.preventDefault();
-      e.stopPropagation();
       opts.dropdown.classList.toggle('open');
       syncExpanded();
     });
