@@ -138,3 +138,18 @@ test('alignment icons use the shared theme-aware mask contract', () => {
     /\.sb-al-(?:left|center|right|justify|distribute|split)\s*\{[^}]*background-image:/s,
   );
 });
+
+test('글자 서식 견본은 모두 같은 글자를 쓴다', () => {
+  /*
+   * 밑줄만 「간」이었다. rhwp 초기 커밋부터 그랬고 이유가 적힌 곳은 없었다 — 의도가
+   * 아니라 어긋난 것이다.
+   *
+   * 이런 견본에서 글자는 상수여야 한다. 효과만 달라져야 눈이 "무엇이 바뀌는지" 를
+   * 집어낼 수 있는데, 글자까지 다르면 밑줄 때문인지 받침 때문인지 구별되지 않는다.
+   */
+  const samples = [...html.matchAll(/class="sb-ga[^"]*"[^>]*>([^<]+)</g)].map((m) => m[1]);
+  assert.ok(samples.length >= 5, `견본을 찾지 못했다: ${samples.length}`);
+  for (const sample of samples) {
+    assert.equal(sample, '가', `견본 글자가 다르다: ${sample}`);
+  }
+});
