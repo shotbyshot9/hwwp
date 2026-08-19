@@ -1,0 +1,52 @@
+/* 배명훈 모드 설정 대화상자 (fs-) */
+
+.fs-body {
+  /* 서브메뉴 스물다섯 줄을 대체하는 자리다. 항목이 늘어도 화면 밖으로 밀려나지 않게
+     대화상자 안에서만 스크롤한다 — 잘려서 못 고르던 것이 애초의 문제였다. */
+  max-height: min(68vh, 620px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.fs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+}
+
+/* 이름은 왼쪽에 고정 폭으로 세워 선택 상자의 왼쪽 끝이 한 줄로 맞는다. */
+.fs-label {
+  flex: 0 0 96px;
+  color: var(--color-text);
+}
+
+.fs-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fs-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.fs-check-row label {
+  cursor: pointer;
+}
+
+/* 설명은 줄을 낮춰 값과 구별한다 — 읽지 않아도 고르는 데 지장이 없어야 한다. */
+.fs-hint {
+  margin: 0 0 8px;
+  padding-left: 96px;
+  color: var(--color-text-hint);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.fs-check-row + .fs-hint {
+  padding-left: 24px;
+}

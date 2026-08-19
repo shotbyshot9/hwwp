@@ -3,6 +3,7 @@ import { userSettings, type FocusCheerLevel } from '../../core/user-settings';
 import { normalizeCheerRate, type FocusCheerRate } from '../../focus/cheer-rate';
 import { FocusMode } from '../../focus/focus-mode';
 import { calculateFitWidthZoom } from '../../view/zoom-fit';
+import { FocusSettingsDialog } from '../../ui/focus-settings-dialog';
 
 /**
  * 배명훈 모드 커맨드.
@@ -74,7 +75,13 @@ function readCheerRate(raw: string | undefined): FocusCheerRate {
   return normalizeCheerRate(raw === 'max' ? 'max' : Number(raw));
 }
 
-/** 메뉴 항목의 켜짐 표시를 현재 설정과 맞춘다 */
+/**
+ * 메뉴 항목의 켜짐 표시를 현재 설정과 맞춘다.
+ *
+ * 설정 항목들은 대화상자로 옮겨서(ui/focus-settings-dialog.ts) 지금 메뉴에 남은 것은
+ *  하나다. 나머지 조회는 맞는 요소가 없으면 조용히 지나가므로, 명령
+ * 팔레트처럼 같은 data-cmd 를 쓰는 다른 표면이 생겼을 때를 위해 남겨 둔다.
+ */
 export function syncFocusMenu(): void {
   const s = userSettings.getFocusSettings();
   const flags: [string, boolean][] = [
@@ -142,6 +149,18 @@ function cheerLevelCommand(level: FocusCheerLevel, label: string): CommandDef {
 }
 
 export const focusCommands: CommandDef[] = [
+  {
+    // 설정 열넷을 서브메뉴 스물다섯 줄로 늘어놓았더니 큰 화면에서도 아래가 잘렸다.
+    // 메뉴는 명령을 고르는 자리이지 설정판이 아니다.
+    id: 'focus:settings',
+    label: '배명훈 모드 설정',
+    execute(services) {
+      new FocusSettingsDialog(() => {
+        syncFocusMenu();
+        getFocusMode(services).refresh();
+      }).show();
+    },
+  },
   {
     id: 'focus:toggle',
     label: '배명훈 모드',
