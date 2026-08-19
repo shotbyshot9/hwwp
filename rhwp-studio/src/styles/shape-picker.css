@@ -1,4 +1,4 @@
-/* ─── 도형 선택 드롭다운 (한컴 스타일 층구조) ─── */
+/* ─── 도형 선택 드롭다운 ─── */
 .shape-picker {
   background: var(--color-surface-raised);
   border: 1px solid var(--color-primary-subtle);

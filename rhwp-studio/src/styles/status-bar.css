@@ -1,5 +1,5 @@
 /* ================================================================
-   하단 상태 바 — 한컴 웹기안기 #status_bar 패턴
+   하단 상태 바
    ================================================================ */
 #status-bar {
   display: flex;
@@ -15,7 +15,7 @@
   user-select: none;
 }
 
-/* 좌측 항목 — 한컴 .status_bar .inline_panel */
+/* 좌측 항목 — 쪽·구역 같은 사실 보고가 앉는 자리 */
 .stb-item {
   line-height: 22px;
   white-space: nowrap;
@@ -43,7 +43,7 @@
   outline-offset: 1px;
 }
 
-/* 세로 구분선 — 한컴 .vertical_line_wrap .col_line */
+/* 세로 구분선 */
 .stb-divider {
   display: inline-block;
   position: relative;
@@ -62,7 +62,7 @@
   border-right: 1px solid var(--doc-paper);
 }
 
-/* 상태 메시지 — 한컴 .status_bar .message */
+/* 상태 메시지 */
 .stb-message {
   flex: 1;
   overflow: hidden;
@@ -75,7 +75,7 @@
   line-height: 22px;
 }
 
-/* 우측 줌 영역 — 한컴 .inline_panel.justify_right.align_item_center */
+/* 우측 줌 영역 */
 .stb-right {
   display: flex;
   align-items: center;
@@ -85,10 +85,10 @@
   flex-wrap: nowrap;
 }
 
-/* 한컴 zoom_out 버튼 margin: 0 8px */
+/* 축소 버튼만 좌우 여백을 준다 — 줌 값과 확대 버튼이 한 덩어리로 읽히게 */
 #sb-zoom-out { margin: 0 8px; }
 
-/* 아이콘 버튼 — 한컴 .btn_wo.btn_icon (24x24) */
+/* 아이콘 버튼 (24×24) */
 .stb-icon-btn {
   width: 24px;
   height: 24px;
@@ -107,7 +107,7 @@
   background: var(--ui-hover);
 }
 
-/* 줌 값 표시 — 한컴 .btn_dropdown (height:20px) */
+/* 줌 값 표시 */
 .stb-zoom-val {
   font-size: var(--font-size-sm);
   height: 20px;
@@ -118,7 +118,7 @@
   padding: 0 4px;
 }
 
-/* 줌 스프라이트 아이콘 — 한컴 hcwo.css 참조 (row 24, -960px) */
+/* 줌 아이콘 — 도구 상자와 같은 Lucide 체계를 쓴다(toolbar.css 참고) */
 .icon-zoom-out       { --icon-url: url("/icons/ui/zoom-out.svg"); }
 .icon-zoom-in        { --icon-url: url("/icons/ui/zoom-in.svg"); }
 .icon-zoom-fit-width { --icon-url: url("/icons/ui/zoom-fit-width.svg"); }

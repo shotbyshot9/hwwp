@@ -1,5 +1,5 @@
 /* ================================================================
-   3행: 서식 도구 모음 (style bar) — 한컴 웹기안기 패턴
+   3행: 서식 도구 모음 (style bar)
    ================================================================ */
 #style-bar {
   display: flex;
@@ -120,7 +120,7 @@
 .sb-font-lang { width: 64px; font-size: var(--font-size-sm); }
 .sb-font { width: 160px; }
 
-/* 한컴형 글꼴 범주 메뉴 */
+/* 글꼴 범주 메뉴 */
 .font-picker-menu {
   position: fixed;
   z-index: 1200;

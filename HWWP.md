@@ -293,8 +293,8 @@ Cloudflare Workers 정적 자산으로 올린다. `main` 에 푸시하면 자동
 
 | | |
 | --- | --- |
-| 주소 | https://hwwp.shotbyshot9.workers.dev |
-| 저장소 | `origin` = `shotbyshot9/hwwp` (private) |
+| 주소 | https://hwwp.kr (Cloudflare Workers 기본 주소 `hwwp.shotbyshot9.workers.dev` 도 함께 살아 있다) |
+| 저장소 | `origin` = `shotbyshot9/hwwp` |
 | 빌드 명령 | `cd rhwp-studio && npm ci && npm run build` |
 | 출력 | `rhwp-studio/dist` (`wrangler.jsonc` 가 지정) |
 
@@ -309,7 +309,7 @@ Cloudflare Workers 정적 자산으로 올린다. `main` 에 푸시하면 자동
 
 | 항목 | 값 | 형식 |
 | --- | --- | --- |
-| OAuth 클라이언트 → 승인된 JavaScript 원본 | `https://hwwp.shotbyshot9.workers.dev` | 경로·`/`·와일드카드 불가 |
+| OAuth 클라이언트 → 승인된 JavaScript 원본 | `https://hwwp.kr` | 경로·`/`·와일드카드 불가. 기본 주소도 쓸 것이면 함께 등록한다 |
 | API 키 → 애플리케이션 제한사항 | **`없음`** | 아래 참조 |
 | API 키 → API 제한사항 | Google Picker API + Google Drive API | 둘 다 필요 |
 
@@ -320,8 +320,8 @@ Cloudflare Workers 정적 자산으로 올린다. `main` 에 푸시하면 자동
 `API 제한사항` 에 Drive API 가 빠져 있어도 같은 오류가 난다 — 창을 띄우는 것까지가
 Picker API 고 목록을 채우는 것은 Drive API 다.
 
-### 아직 안 한 것
+### 마무리된 것
 
-- 개인정보처리방침·서비스 약관 페이지. 구글 동의 화면이 "링크가 표시되지 않는다" 고 안내한다.
-- 자체 도메인. `*.workers.dev` 는 Cloudflare 소유라 구글에 소유 증명을 할 수 없어서,
-  동의 화면에 앱 이름(`hwwp`) 대신 도메인이 뜬다. 도메인을 붙이면 해결된다.
+- 개인정보처리방침·서비스 약관 — `/privacy`, `/terms` 로 배포본에 함께 실린다.
+- 자체 도메인 `hwwp.kr`. `*.workers.dev` 는 Cloudflare 소유라 구글에 소유 증명을 할 수
+  없어 동의 화면에 도메인이 뜨던 문제가 이것으로 해결됐다.

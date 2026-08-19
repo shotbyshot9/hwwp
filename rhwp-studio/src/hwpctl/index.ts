@@ -1,8 +1,12 @@
 /**
  * hwpctl 호환 HwpCtrl 클래스
  *
- * 한컴 웹기안기의 HwpCtrl ActiveX/JavaScript 객체와 동일한 인터페이스.
- * 내부적으로 rhwp WASM API를 호출한다.
+ * 기존 HWP 웹 편집 환경을 대상으로 쓰인 자동화 스크립트가 hwwp 에서도 그대로 돌도록
+ * 같은 이름·같은 시그니처의 인터페이스를 제공한다. 내부 구현은 rhwp WASM API 호출이며
+ * 원본 구현을 가져온 것이 아니다 — 호환되는 것은 부르는 방법뿐이다.
+ *
+ * 인터페이스 호환은 서로 다른 프로그램이 같은 자료를 주고받기 위한 것이고, 그 목적에
+ * 필요한 범위에서만 이름을 맞춘다.
  */
 import { Action } from './action';
 import type { ActionSupport } from './action';
