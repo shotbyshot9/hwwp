@@ -19,7 +19,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 5px 14px;
+  padding: 4px 14px;
   background: var(--ui-bg-light);
   border-bottom: 1px solid var(--ui-border-subtle);
   flex-shrink: 0;
@@ -29,8 +29,8 @@
 /* 로고. 그림 자체에 둥근 모서리와 바탕색이 들어 있어 여기서 더 입히지 않는다. */
 .tbar-brand {
   display: block;
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
   user-select: none;
 }
@@ -44,7 +44,9 @@
   min-width: 240px;
   /* 제목이 길어져도 연결 버튼이 화면 끝으로 밀려나지 않도록 상한을 둔다 */
   max-width: 420px;
-  padding: 5px 10px;
+  /* 두 줄로 쌓은 뒤로는 위아래 여백이 그대로 줄 높이가 된다. 5px 씩 주면 제목 칸
+     하나가 35px 를 차지해 메뉴까지 합친 덩어리가 두툼해진다. */
+  padding: 2px 10px;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: transparent;
@@ -243,4 +245,26 @@ body.fm-active #title-bar {
   .tbar-drive {
     padding: 7px 10px;
   }
+}
+
+/* 로고 옆에 제목(1행)과 메뉴(2행)를 쌓는다 — 구글 독스와 같은 배치다.
+ *
+ * 한 줄에 나란히 놓아 봤더니 "새 문서 ......... 파일 편집 보기" 가 되어, 제목과 메뉴가
+ * 아무 관계 없는 두 물건처럼 멀어졌다. 쌓으면 둘이 한 덩어리로 읽히고, 두 줄의 높이는
+ * 로고가 감당하므로 세로 자리가 따로 들지 않는다. */
+.tbar-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.tbar-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
 }

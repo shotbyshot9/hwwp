@@ -105,3 +105,21 @@ test('메뉴바는 제목 줄과 한 줄을 쓴다', () => {
   // 폭이 좁으면 메뉴가 제 줄로 내려가야 한다 — 모바일 햄버거 규칙이 그대로 살아 있다.
   assert.match(titleBarCss, /#title-bar \{[^}]*flex-wrap: wrap;/s);
 });
+
+test('제목은 메뉴 위에, 로고는 둘의 왼쪽에 선다', () => {
+  const titleBarCss = readFileSync(
+    new URL('../src/styles/title-bar.css', import.meta.url),
+    'utf8',
+  );
+  // 한 줄에 나란히 놓으면 "새 문서 ......... 파일 편집 보기" 가 되어 제목과 메뉴가
+  // 아무 관계 없는 두 물건처럼 멀어진다. 구글 독스처럼 쌓아야 한 덩어리로 읽힌다.
+  const brandIndex = indexHtml.indexOf('class="tbar-brand"');
+  const stackIndex = indexHtml.indexOf('class="tbar-stack"');
+  const titleIndex = indexHtml.indexOf('id="tbar-title"');
+  const menuIndex = indexHtml.indexOf('id="menu-bar"');
+  assert.ok(brandIndex >= 0 && brandIndex < stackIndex, '로고가 쌓은 덩어리보다 앞에 온다');
+  assert.ok(stackIndex < titleIndex && titleIndex < menuIndex, '제목이 메뉴보다 앞에 온다');
+  assert.match(titleBarCss, /\.tbar-stack \{[^}]*flex-direction: column;/s);
+  // 두 줄의 높이를 로고가 감당한다.
+  assert.match(titleBarCss, /\.tbar-brand \{[^}]*width: 40px;/s);
+});

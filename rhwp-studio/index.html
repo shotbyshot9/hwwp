@@ -25,12 +25,18 @@
     <div id="title-bar">
       <!-- 로고 그림을 그대로 쓴다. 예전에는 갈색 상자에 'hwwp' 를 적어 흉내 냈는데,
            아이콘이 생긴 뒤로는 그 흉내가 진짜와 어긋나 보인다. -->
-      <!-- 30px 자리에 128px 원본을 넣는다. UI 배율(1.28)과 고해상도 화면이 겹치면
-           실제로 필요한 픽셀이 77px 를 넘어, 32px 짜리를 쓰면 흐릿하게 번진다. -->
-      <img class="tbar-brand" src="/icons/icon-128.png" width="30" height="30" alt="" aria-hidden="true" />
-      <input id="tbar-title" class="tbar-title" type="text" value="새 문서"
-             aria-label="문서 이름" autocomplete="off" spellcheck="false" />
-      <span id="tbar-save-state" class="tbar-save-state" role="status" aria-live="polite"></span>
+      <!-- 40px 자리에 128px 원본을 넣는다. 제목과 메뉴 두 줄의 높이를 로고가 감당하는
+           배치라 30px 로는 옆이 허전하다. UI 배율(1.28)과 고해상도 화면이 겹치면 실제로
+           필요한 픽셀이 100px 를 넘으므로 원본은 128px 그대로 쓴다. -->
+      <img class="tbar-brand" src="/icons/icon-128.png" width="40" height="40" alt="" aria-hidden="true" />
+      <!-- 제목과 메뉴는 로고 옆에 두 줄로 쌓는다 — 구글 독스와 같은 배치다.
+           로고가 두 줄 높이를 감당하므로 세로 자리가 따로 들지 않는다. -->
+      <div class="tbar-stack">
+        <div class="tbar-name-row">
+          <input id="tbar-title" class="tbar-title" type="text" value="새 문서"
+                 aria-label="문서 이름" autocomplete="off" spellcheck="false" />
+          <span id="tbar-save-state" class="tbar-save-state" role="status" aria-live="polite"></span>
+        </div>
     <!-- 메뉴바 -->
     <nav id="menu-bar" aria-label="주 메뉴">
       <!-- ── 파일 ── -->
@@ -425,6 +431,7 @@
         </div>
       </div>
     </nav>
+      </div>
       <span class="tbar-spacer"></span>
       <button id="tbar-focus" class="tbar-focus" type="button" data-cmd="focus:toggle"
               title="배명훈 모드 (Alt+Shift+F)">

@@ -19,7 +19,9 @@
 
 .menu-title {
   display: inline-block;
-  padding: 4px 14px;
+  /* 제목 아래 두 번째 줄에 앉는다. 예전 padding(4px 14px)은 메뉴가 제 줄을 통째로
+     쓰던 시절 값이라, 쌓은 배치에서는 위아래가 너무 벌어진다. */
+  padding: 2px 10px;
   cursor: pointer;
   color: var(--color-text);
   line-height: 20px;
