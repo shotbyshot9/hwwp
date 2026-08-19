@@ -4,7 +4,7 @@
 #style-bar {
   display: flex;
   flex-wrap: wrap;
-  min-height: 68px;
+  min-height: 44px;
   align-items: stretch;
   align-content: stretch;
   gap: 0;
@@ -46,7 +46,6 @@
 
 .sb-ribbon-group {
   display: flex;
-  min-height: 68px;
   box-sizing: border-box;
   flex-direction: column;
   align-items: stretch;
@@ -55,16 +54,9 @@
   border-right: 1px solid var(--ui-border);
 }
 
-.sb-ribbon-label {
-  display: block;
-  min-height: 15px;
-  box-sizing: border-box;
-  padding: 1px 4px 2px;
-  color: var(--color-text-secondary);
-  font-size: 10px;
-  line-height: 12px;
-  text-align: center;
-}
+/* 리본 그룹 캡션(글꼴 및 간격·글자 모양·색·문단)은 걷어냈다.
+   바로 아래 상자에 "바탕글"·"함초롬바탕" 이라고 이미 적혀 있는데 그 위에 그룹 이름을
+   또 붙이는 것이었고, 접힌 줄마다 19px 를 먹었다. 구글 독스에는 이 층이 아예 없다. */
 
 .sb-field-ribbon-group .sb-field {
   min-width: 0;
@@ -73,11 +65,18 @@
   gap: 3px;
 }
 
+/* 스타일·언어·글꼴·크기·줄 간격 캡션은 화면에서만 감춘다.
+   상자 안의 값이 이미 무엇인지 말한다 — "대표", "함초롬바탕", "10.0 pt". 다만
+   label 을 지워 버리면 화면 낭독기가 상자의 이름을 잃으므로 마크업은 남긴다. */
 .sb-field-ribbon-group .sb-field-label {
-  margin-left: 1px;
-  color: var(--color-text-secondary);
-  font-size: 10px;
-  line-height: 1;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* 구분선 */
@@ -482,48 +481,129 @@
 }
 
 /* 형광펜 팔레트 */
+/* 색 고르기 메뉴 — 글자색과 형광펜이 같은 것을 쓴다(ui/color-menu.ts). */
 .sb-hl-palette {
   display: none;
   position: absolute;
   left: 0;
   top: 100%;
   z-index: 200;
+  min-width: 188px;
   background: var(--color-surface-raised);
-  border: 1px solid var(--ui-border-strong);
-  padding: 4px;
-  box-shadow: var(--shadow-light);
+  border: 1px solid var(--ui-border-light);
+  border-radius: var(--radius-container);
+  padding: 8px;
+  box-shadow: var(--shadow-dropdown);
 }
-#highlight-dropdown.open .sb-hl-palette { display: block; }
+#highlight-dropdown.open .sb-hl-palette,
+#text-color-dropdown.open .sb-hl-palette { display: block; }
 
-.sb-hl-palette-row {
-  display: flex;
-  gap: 1px;
-  margin-bottom: 1px;
-}
-.sb-hl-palette-actions {
-  display: flex;
+/* 프리셋. 한 줄에 여섯이면 두 줄로 끝난다 — 훑는 데 시선이 한 번만 움직인다. */
+.cm-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
   gap: 4px;
-  padding: 4px 0 2px;
-  border-top: 1px solid var(--ui-border-light);
-  margin-top: 2px;
 }
-.sb-hl-palette-actions button {
-  flex: 1;
-  font-size: var(--font-size-sm);
-  padding: 2px 4px;
+
+.cm-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.cm-swatch:hover {
+  border-color: var(--color-text);
+}
+
+.cm-swatch:focus-visible {
+  outline: 2px solid var(--color-focus-border);
+  outline-offset: 1px;
+}
+
+.cm-clear {
+  display: block;
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 3px 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-control);
   background: var(--color-surface);
-  border: 1px solid var(--ui-border-strong);
+  color: var(--color-text);
   cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-sm);
 }
-.sb-hl-palette-actions button:hover { background: var(--color-hover-bg); }
-.sb-hl-swatch {
-  width: 14px;
-  height: 14px;
-  border: 1px solid var(--ui-border-strong);
+
+.cm-clear:hover { background: var(--ui-hover); }
+
+/* 직접 입력. 프리셋 아래에 두어 "먼저 고르고, 없으면 적는다" 는 순서가 보이게 한다. */
+.cm-custom {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ui-border-subtle);
+}
+
+.cm-custom-label {
+  grid-column: 1 / -1;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.cm-custom-input {
+  min-width: 0;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 1px solid var(--ui-border-light);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.cm-custom-input:focus {
+  border-color: var(--color-focus-border);
+  outline: none;
+}
+
+/* 읽을 수 없는 값이면 테두리로 알린다 — 적용 단추가 꺼지는 것만으로는 왜 안 되는지
+   알 수 없다. */
+.cm-custom-input-bad {
+  border-color: var(--ui-danger-strong);
+}
+
+.cm-custom-preview {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-control);
+}
+
+.cm-custom-apply {
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
   cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-sm);
 }
-.sb-hl-swatch:hover { border-color: var(--color-text); }
-.sb-hl-swatch.selected { border: 2px solid var(--color-text); }
+
+.cm-custom-apply:hover:not(:disabled) { background: var(--ui-hover); }
+
+.cm-custom-apply:disabled {
+  color: var(--color-text-disabled);
+  cursor: default;
+}
 
 /* 정렬 아이콘: currentColor 기반 SVG 마스크 */
 .sb-align {

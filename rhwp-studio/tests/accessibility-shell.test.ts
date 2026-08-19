@@ -43,7 +43,11 @@ test('숨겨진 편집 입력과 글자색 입력은 접근 가능한 이름을 
   const html = source('index.html');
   const inputHandler = source('src/engine/input-handler.ts');
 
-  assert.match(html, /id="text-color-picker"[^>]*aria-label="글자 색 선택"/);
+  // 예전에는 숨은 <input type="color"> 가 이름을 갖고 있었다. 그 입력칸은 프리셋
+  // 메뉴로 바뀌면서 사라졌고, 이제 이름은 메뉴를 여는 단추가 갖는다.
+  assert.match(html, /id="btn-text-color"[^>]*aria-label="글자 색"/);
+  assert.match(html, /id="btn-text-color"[^>]*aria-haspopup="true"/);
+  assert.match(html, /id="btn-highlight"[^>]*aria-label="형광펜 색"/);
   assert.match(inputHandler, /setAttribute\('aria-label', '문서 편집 입력'\)/);
   assert.match(inputHandler, /this\.container\.closest\('main'\)/);
 });

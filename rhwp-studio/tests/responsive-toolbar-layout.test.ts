@@ -6,11 +6,23 @@ const toolbar = readFileSync(new URL('../src/styles/toolbar.css', import.meta.ur
 const styleBar = readFileSync(new URL('../src/styles/style-bar.css', import.meta.url), 'utf8');
 const responsive = readFileSync(new URL('../src/styles/responsive.css', import.meta.url), 'utf8');
 
-test('icon toolbar wraps complete groups and grows to its row count', () => {
+/*
+ * 예전에는 폭이 모자라면 줄을 늘려 접었다. 그러면 도구 상자 높이가 60px 에서 125px 로
+ * 두 배가 되는데, 접힘은 하필 세로가 짧은 화면에서 일어난다 — 1280×720 에서 크롬이
+ * 화면의 63% 를 먹고 글 쓸 자리가 270px 밖에 남지 않았다.
+ *
+ * 이제 접지 않고 넘치는 그룹만 `»` 로 보낸다. 지키려던 것 둘은 그대로다 — 가로
+ * 스크롤을 만들지 않는 것과, 그룹을 반으로 자르지 않는 것.
+ */
+test('icon toolbar keeps one row and sends overflow to the menu', () => {
+  // 1280px 아래는 예전 그대로 접는다 — 태블릿·모바일에는 따로 설계된 배치가 있다.
   assert.match(toolbar, /#icon-toolbar\s*\{[^}]*flex-wrap:\s*wrap;/s);
+  assert.match(toolbar, /@media \(min-width: 1280px\)[\s\S]*?flex-wrap: nowrap;/);
   assert.match(toolbar, /#icon-toolbar\s*\{[^}]*height:\s*auto;/s);
   assert.match(toolbar, /#icon-toolbar\s*\{[^}]*min-height:\s*56px;/s);
   assert.match(toolbar, /\.tb-group\s*\{[^}]*flex-shrink:\s*0;/s);
+  // 가로 스크롤은 예나 지금이나 답이 아니다.
+  assert.doesNotMatch(toolbar, /#icon-toolbar\s*\{[^}]*overflow-x:\s*auto;/s);
 });
 
 test('constrained layouts hide top-level separators and do not scroll the toolbar', () => {
@@ -31,10 +43,12 @@ test('constrained layouts hide top-level separators and do not scroll the toolba
   assert.doesNotMatch(mobileToolbar[1], /-webkit-overflow-scrolling/);
 });
 
-test('style ribbon wraps complete groups and grows to its row count', () => {
+test('style ribbon keeps one row and sends overflow to the menu', () => {
   assert.match(styleBar, /#style-bar\s*\{[^}]*flex-wrap:\s*wrap;/s);
+  assert.match(toolbar, /#icon-toolbar,\s*\n\s*#style-bar \{\s*\n\s*flex-wrap: nowrap;/);
   assert.match(styleBar, /#style-bar\s*\{[^}]*height:\s*auto;/s);
-  assert.match(styleBar, /#style-bar\s*\{[^}]*min-height:\s*68px;/s);
+  // 캡션을 걷어내 한 줄이 낮아졌다(68 → 44).
+  assert.match(styleBar, /#style-bar\s*\{[^}]*min-height:\s*44px;/s);
   assert.match(styleBar, /#style-bar\s*\{[^}]*overflow:\s*visible;/s);
 
   assert.match(

@@ -5,11 +5,21 @@
    올리면 상자가 드러나 "고칠 수 있는 곳"임을 알린다.
    ================================================================ */
 
+/* 제목 줄과 메뉴바를 한 줄에 둔다.
+ *
+ * 예전에는 두 줄이었다(66px + 36px). 구글 독스가 그러듯 한 줄로 합치면 그만큼이
+ * 편집 영역으로 간다 — 세로가 짧은 노트북에서 크롬이 화면의 절반을 먹던 문제의
+ * 한 갈래다.
+ *
+ * 모바일에서는 접히게 둔다. 폭이 좁으면 메뉴가 제 줄로 내려가는 편이 낫고, 햄버거
+ * 메뉴 규칙(responsive.css)은 #menu-bar 를 이름으로 잡으므로 자리를 옮겨도 그대로
+ * 작동한다. */
 #title-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 4px 14px;
   background: var(--ui-bg-light);
   border-bottom: 1px solid var(--ui-border-subtle);
   flex-shrink: 0;
@@ -19,8 +29,8 @@
 /* 로고. 그림 자체에 둥근 모서리와 바탕색이 들어 있어 여기서 더 입히지 않는다. */
 .tbar-brand {
   display: block;
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
   user-select: none;
 }
@@ -34,7 +44,9 @@
   min-width: 240px;
   /* 제목이 길어져도 연결 버튼이 화면 끝으로 밀려나지 않도록 상한을 둔다 */
   max-width: 420px;
-  padding: 5px 10px;
+  /* 두 줄로 쌓은 뒤로는 위아래 여백이 그대로 줄 높이가 된다. 5px 씩 주면 제목 칸
+     하나가 35px 를 차지해 메뉴까지 합친 덩어리가 두툼해진다. */
+  padding: 1px 10px;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: transparent;
@@ -42,7 +54,9 @@
   font-family: inherit;
   font-size: 18px;
   font-weight: 400;
-  line-height: 1.3;
+  /* 1.3 은 여러 줄 글을 위한 값이다. 한 줄짜리 제목에서는 글자 위아래로 5px 씩
+     떠서 칸이 실제 글자보다 훨씬 두툼해 보인다. */
+  line-height: 1.15;
   transition: background-color 0.12s ease, border-color 0.12s ease;
 }
 
@@ -233,4 +247,29 @@ body.fm-active #title-bar {
   .tbar-drive {
     padding: 7px 10px;
   }
+}
+
+/* 로고 옆에 제목(1행)과 메뉴(2행)를 쌓는다 — 구글 독스와 같은 배치다.
+ *
+ * 한 줄에 나란히 놓아 봤더니 "새 문서 ......... 파일 편집 보기" 가 되어, 제목과 메뉴가
+ * 아무 관계 없는 두 물건처럼 멀어졌다. 쌓으면 둘이 한 덩어리로 읽히고, 두 줄의 높이는
+ * 로고가 감당하므로 세로 자리가 따로 들지 않는다. */
+.tbar-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  min-width: 0;
+  /* 늘어나지 않는다. flex:1 을 주면 이 덩어리가 남는 공간을 다 먹어 배명훈 모드와
+     드라이브 연결 단추가 화면 오른쪽 끝까지 밀려난다 — .tbar-spacer 주석이 적어 둔,
+     이미 한 번 물린 자리다. 단추는 제목 바로 옆에 있어야 눈에 걸린다. */
+  flex: 0 1 auto;
+}
+
+.tbar-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
 }
