@@ -38,11 +38,20 @@ without stopping, the louder it gets.
 
 ## Where do documents go
 
-**There is no server.** Documents are processed inside the browser, and saving goes only
-to the user's own Google Drive — never through the author's machine. The Drive scope is
-`drive.file` alone, which cannot see files the app did not create.
+**There is no server.** Opening and editing both happen inside the browser, and saving goes
+to the user's own machine or their own Google Drive. **There is no path by which document
+contents reach the author.**
 
-[Privacy policy](https://hwwp.kr/privacy) · [Terms of service](https://hwwp.kr/terms)
+The only Drive scope requested is `drive.file`. It reaches **files HWWP created, plus files
+the user picked themselves in the file picker** — nothing else. HWWP cannot browse the
+user's Drive.
+
+Being a word processor, it opens any HWP document the user chooses — including documents
+written by someone else, or stored in Drive. What matters is that **whatever is opened never
+leaves the browser.**
+
+See the [privacy policy](https://hwwp.kr/privacy) and
+[terms of service](https://hwwp.kr/terms) for details.
 
 ## About this repository
 

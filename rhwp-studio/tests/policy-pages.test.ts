@@ -101,3 +101,33 @@ test('만든 사람 표기는 앱과 정책 문서에서 같다', () => {
     assert.match(text, /류지원/, `${path} 에 이름이 없다`);
   }
 });
+
+test('드라이브 권한 설명이 실제 범위와 어긋나지 않는다', () => {
+  /*
+   * `drive.file` 은 "앱이 만든 파일만" 이 아니다. 사용자가 피커로 직접 고른 파일에도
+   * 그 한 건에 한해 접근이 열린다 — 밖에서 올린 hwp 를 여는 길이 바로 이것이다.
+   *
+   * "앱이 만든 파일만 본다" 고 적으면 실제보다 좁게 말하는 것이 되고, 그건 지킬 수 없는
+   * 약속이 아니라 **하지 않은 약속을 한 것처럼 보이게 하는 거짓 안심**이다. 방침 문서에서
+   * 특히 위험하다.
+   */
+  const claims = [
+    ['privacy.html', privacy],
+    ['README.md', readFileSync(new URL('../../README.md', import.meta.url), 'utf8')],
+    ['README_EN.md', readFileSync(new URL('../../README_EN.md', import.meta.url), 'utf8')],
+  ] as const;
+
+  for (const [name, text] of claims) {
+    if (!text.includes('drive.file')) continue;
+    const picker = /피커|파일 선택 창|file picker|picked themselves/.test(text);
+    assert.ok(picker, `${name} 이 drive.file 을 말하면서 사용자가 고른 파일을 빠뜨렸다`);
+  }
+
+  // 코드도 같은 사실을 적고 있어야 한다.
+  const config = readFileSync(
+    new URL('../src/storage/drive-config.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(config, /사용자가 피커로 고른 파일/);
+  assert.match(config, /auth\/drive\.file/);
+});
