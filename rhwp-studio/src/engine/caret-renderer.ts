@@ -1,6 +1,22 @@
 import type { CursorRect } from '@/core/types';
 import { VirtualScroll } from '@/view/virtual-scroll';
 
+/** pt → 문서 좌표 px (문서 좌표는 96dpi 기준이다) */
+const PX_PER_PT = 96 / 72;
+
+/**
+ * 조합 오버레이의 글자 크기(문서 좌표 px).
+ *
+ * 실제 글자 크기를 알면 그것을 쓴다 — 그래야 아래 canvas 글자와 정확히 겹친다.
+ * 못 읽었을 때만 줄 높이에서 어림한다.
+ */
+function compositionFontSize(lineHeight: number, fontSizePt?: number): number {
+  if (typeof fontSizePt === 'number' && Number.isFinite(fontSizePt) && fontSizePt > 0) {
+    return fontSizePt * PX_PER_PT;
+  }
+  return lineHeight * 0.85;
+}
+
 /** Canvas 위에 깜박이는 캐럿을 렌더링한다 */
 export class CaretRenderer {
   private caretEl: HTMLDivElement;
@@ -99,8 +115,20 @@ export class CaretRenderer {
     }
   }
 
-  /** IME 조합 오버레이를 표시한다 */
-  showComposition(startRect: CursorRect, charWidth: number, zoom: number, text: string, fontFamily: string): void {
+  /**
+   * IME 조합 오버레이를 표시한다.
+   *
+   * `fontSizePt` 는 조합 중인 자리의 실제 글자 크기다(pt). 넘어오지 않으면 줄 높이에서
+   * 어림한다 — 어림값은 실제보다 크게 나오므로 아래 canvas 글자와 어긋난다.
+   */
+  showComposition(
+    startRect: CursorRect,
+    charWidth: number,
+    zoom: number,
+    text: string,
+    fontFamily: string,
+    fontSizePt?: number,
+  ): void {
     this.ensureAttached();
     this.isCompMode = true;
 
@@ -122,14 +150,23 @@ export class CaretRenderer {
     this.compEl.style.top = `${top}px`;
     this.compEl.style.width = `${w}px`;
     this.compEl.style.height = `${h}px`;
-    this.compEl.style.fontSize = `${box.h * 0.85 * zoom}px`;
+    // 조합 글자는 아래 canvas 에도 같은 글자가 그려져 있다(조합 텍스트를 문서에 바로
+    // 넣어 배치를 보여 주기 때문이다). 두 글자의 크기가 다르면 오버레이가 사라질 때마다
+    // 크기가 튄다. 줄 높이(box.h)는 글자 크기보다 크므로 어림값으로 쓰면 반드시 어긋난다.
+    this.compEl.style.fontSize = `${compositionFontSize(box.h, fontSizePt) * zoom}px`;
     this.compEl.style.fontFamily = fontFamily || 'sans-serif';
     this.compEl.style.lineHeight = `${h}px`;
     this.compEl.textContent = text;
     this.compEl.style.display = 'block';
     this.compEl.style.opacity = '1';
     this.visible = true;
-    this.startBlink();
+    // 조합 중인 글자는 캐럿이 아니다.
+    //
+    // 예전에는 여기서 깜빡임 타이머를 걸었다. 그러면 오버레이가 0.5초마다 사라졌다
+    // 나타나면서 아래 canvas 글자와 번갈아 보이고, 두 글자의 크기가 달라 글자가
+    // 심장박동처럼 커졌다 작아졌다 했다. 깜빡여야 하는 것은 "여기에 쓸 수 있다"는
+    // 신호이지 이미 쓰고 있는 글자가 아니다.
+    this.stopBlink();
   }
 
   /** IME 조합 오버레이를 숨기고 일반 캐럿으로 복귀한다 */
@@ -137,6 +174,13 @@ export class CaretRenderer {
     if (!this.isCompMode) return;
     this.isCompMode = false;
     this.compEl.style.display = 'none';
+    // 조합이 끝나면 깜빡이는 캐럿으로 돌아온다. showComposition 이 캐럿을 숨기고
+    // 타이머도 멈춰 두므로, 여기서 되살리지 않으면 다음 update 가 올 때까지 캐럿이
+    // 없는 순간이 생긴다.
+    if (this.currentRect) {
+      this.caretEl.style.display = 'block';
+      this.startBlink();
+    }
   }
 
   /** 셀 bbox가 있는 캐럿은 DOM 선 폭까지 셀 안에 남도록 보정한다. */
@@ -197,14 +241,14 @@ export class CaretRenderer {
     }
   }
 
+  /** 깜빡이는 것은 캐럿뿐이다 — 조합 오버레이는 대상이 아니다. */
   private startBlink(): void {
     this.stopBlink();
     this.visible = true;
-    const target = this.isCompMode ? this.compEl : this.caretEl;
-    target.style.opacity = '1';
+    this.caretEl.style.opacity = '1';
     this.blinkTimer = window.setInterval(() => {
       this.visible = !this.visible;
-      target.style.opacity = this.visible ? '1' : '0';
+      this.caretEl.style.opacity = this.visible ? '1' : '0';
     }, 500);
   }
 

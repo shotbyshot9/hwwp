@@ -3073,13 +3073,16 @@ export class InputHandler {
           }
           const charWidth = rect.x - startRect.x;
           const text = this.textarea.value || '';
-          // 현재 커서 위치의 글꼴 정보
+          // 현재 커서 위치의 글꼴 정보. 크기까지 읽어 넘겨야 오버레이 글자가 아래
+          // canvas 글자와 같은 크기로 겹친다(fontSize 는 HWPUNIT, 1pt = 100).
           let fontFamily = 'sans-serif';
+          let fontSizePt: number | undefined;
           try {
             const props = this.getCharPropertiesAtCursor();
             if (props.fontFamily) fontFamily = props.fontFamily;
+            if (props.fontSize && props.fontSize > 0) fontSizePt = props.fontSize / 100;
           } catch { /* fallback */ }
-          this.caret.showComposition(startRect, charWidth, zoom, text, fontFamily);
+          this.caret.showComposition(startRect, charWidth, zoom, text, fontFamily, fontSizePt);
         } catch {
           // getCursorRect 실패 시 일반 캐럿
           this.caret.hideComposition();
