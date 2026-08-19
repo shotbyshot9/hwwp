@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  DOCUMENT_COLOR_PRESETS,
   HIGHLIGHT_COLOR_PRESETS,
   TEXT_COLOR_PRESETS,
   parseColorInput,
@@ -23,23 +24,54 @@ test('글자색은 색상환이 아니라 프리셋으로 연다', () => {
 
 test('프리셋은 훑을 수 있는 개수로 둔다', () => {
   // 한 줄에 여섯이면 두 줄로 끝난다. 마흔둘은 "이 중에 뭘" 을 묻게 만든다.
-  assert.equal(TEXT_COLOR_PRESETS.length, 12);
-  assert.equal(HIGHLIGHT_COLOR_PRESETS.length, 6);
+  assert.equal(DOCUMENT_COLOR_PRESETS.length, 12);
   // 색만으로 알리지 않는다 — 이름이 있어야 title·aria-label 을 붙일 수 있다.
-  for (const p of [...TEXT_COLOR_PRESETS, ...HIGHLIGHT_COLOR_PRESETS]) {
+  for (const p of DOCUMENT_COLOR_PRESETS) {
     assert.match(p.value, /^#[0-9a-f]{6}$/, `${p.label} 의 값이 #rrggbb 가 아니다`);
     assert.ok(p.label.length > 0);
   }
 });
 
-test('형광펜 프리셋에 어두운 색을 넣지 않는다', () => {
-  // 형광펜은 글자를 덮는 색이라 어두우면 글자가 읽히지 않는다. 예전 마흔두 색에는
-  // #000000 도 있었다.
-  for (const p of HIGHLIGHT_COLOR_PRESETS) {
-    const [r, g, b] = [1, 3, 5].map((i) => parseInt(p.value.slice(i, i + 2), 16));
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    assert.ok(luminance > 0.5, `${p.label}(${p.value}) 은 형광펜으로 쓰기에 어둡다`);
+test('글자색과 배경색은 같은 한 벌을 쓴다', () => {
+  // 오피스가 「글꼴 색」과 「음영」에 같은 색판을 내미는 방식이다. 배경만 따로 밝은 색
+  // 여섯을 갖고 있던 시절에는 어두운 배경이 하나도 없어서, "배경을 깔고 흰 글자를
+  // 얹는" 흔한 짜임을 아예 만들 수 없었다.
+  assert.equal(TEXT_COLOR_PRESETS, DOCUMENT_COLOR_PRESETS);
+  assert.equal(HIGHLIGHT_COLOR_PRESETS, DOCUMENT_COLOR_PRESETS);
+});
+
+/** 두 색의 명암 대비. WCAG 계산식 그대로다. */
+function contrast(a: string, b: string): number {
+  const channel = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  const luminance = (hex: string) => {
+    const [r, g, b2] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+    return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b2);
+  };
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+test('배경으로 쓰는 모든 색에 검정이든 흰색이든 한쪽은 읽힌다', () => {
+  /*
+   * 예전 규칙은 "형광펜은 밝아야 한다" 였다. 그건 검은 글자를 전제한 것이라 흰 글자를
+   * 쓰는 순간 틀린다. 지금 규칙은 밝기가 아니라 **짝** 이다 — 어떤 배경이든 위에 얹을
+   * 글자색이 하나는 있어야 한다.
+   */
+  for (const p of DOCUMENT_COLOR_PRESETS) {
+    const onBlack = contrast(p.value, '#000000');
+    const onWhite = contrast(p.value, '#ffffff');
+    assert.ok(
+      onBlack >= 4.5 || onWhite >= 4.5,
+      `${p.label}(${p.value}) 배경에는 검은 글자도 흰 글자도 읽히지 않는다 `
+        + `(검정 ${onBlack.toFixed(1)}, 흰색 ${onWhite.toFixed(1)})`,
+    );
   }
+});
+
+test('어두운 배경이 적어도 셋은 있다', () => {
+  // 「배경 + 흰 글자」 를 만들려면 흰 글자가 읽히는 어두운 배경이 있어야 한다.
+  const dark = DOCUMENT_COLOR_PRESETS.filter((p) => contrast(p.value, '#ffffff') >= 4.5);
+  assert.ok(dark.length >= 3, `어두운 배경이 ${dark.length}개뿐이다`);
 });
 
 test('직접 입력은 사람이 적는 여러 꼴을 받는다', () => {

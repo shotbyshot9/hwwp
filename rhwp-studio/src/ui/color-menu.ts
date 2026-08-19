@@ -17,13 +17,21 @@ export interface ColorPreset {
 }
 
 /**
- * 글자 색 프리셋.
+ * 문서 색 프리셋 — 글자색과 배경색이 같은 열두 개를 나눠 쓴다.
  *
- * 첫 줄은 무채색, 둘째 줄은 원고 교정에서 실제로 쓰는 색이다 — 빨강은 고칠 곳,
- * 파랑은 더할 곳, 초록은 확인한 곳. 한국 문서 편집에서 굳어진 쓰임이라 이름도 그대로
- * 둔다. 무지개를 다 늘어놓지 않는 것이 요점이다.
+ * 오피스가 「글꼴 색」과 「음영」에 같은 색판을 내미는 방식이다. 값도 오피스의 표준
+ * 색 띠에서 왔다. 첫 줄은 무채색, 둘째 줄은 원고 교정에서 실제로 쓰는 색이다 —
+ * 빨강은 고칠 곳, 파랑은 더할 곳, 초록은 확인한 곳.
+ *
+ * **한 벌을 두 역할에 쓰는 것이 요점이다.** 예전에는 배경색만 따로 밝은 색 여섯을
+ * 갖고 있었는데, 그러면 어두운 배경이 하나도 없어 "배경을 깔고 흰 글자를 얹는" 짜임을
+ * 아예 만들 수 없었다. 열둘을 그대로 배경으로 열면 어두운 다섯(검정·진회색·진빨강·
+ * 파랑·보라)이 생기고, 외울 색은 늘지 않는다.
+ *
+ * 열둘 모두 검은 글자든 흰 글자든 한쪽과는 대비 4.5:1 이상으로 짝이 맞는다 —
+ * 어긋나는 조합이 없다는 것을 tests/color-menu.test.ts 가 지킨다.
  */
-export const TEXT_COLOR_PRESETS: readonly ColorPreset[] = [
+export const DOCUMENT_COLOR_PRESETS: readonly ColorPreset[] = [
   { value: '#000000', label: '검정' },
   { value: '#404040', label: '진회색' },
   { value: '#808080', label: '회색' },
@@ -39,19 +47,16 @@ export const TEXT_COLOR_PRESETS: readonly ColorPreset[] = [
 ];
 
 /**
- * 형광펜 프리셋.
+ * 배경(음영) 색 프리셋 — 글자색과 같은 열두 개다.
  *
- * 형광펜은 글자를 덮는 색이라 밝은 것만 쓸모가 있다. 어두운 색으로 칠하면 글자가
- * 읽히지 않는다 — 마흔두 색에는 `#000000` 도 들어 있었다.
+ * "형광펜은 밝아야 한다" 는 규칙을 두고 밝은 색 여섯만 두었던 적이 있다. 그 규칙은
+ * **검은 글자를 전제**한 것이라, 흰 글자를 쓰는 순간 틀린다. 그래서 어두운 배경이
+ * 하나도 없었고 「배경을 깔고 흰 글자」 라는 흔한 짜임을 만들 수 없었다.
  */
-export const HIGHLIGHT_COLOR_PRESETS: readonly ColorPreset[] = [
-  { value: '#ffff00', label: '노랑' },
-  { value: '#00ff00', label: '연두' },
-  { value: '#00ffff', label: '하늘' },
-  { value: '#ff80ff', label: '분홍' },
-  { value: '#ff8000', label: '주황' },
-  { value: '#c0c0c0', label: '회색' },
-];
+export const HIGHLIGHT_COLOR_PRESETS = DOCUMENT_COLOR_PRESETS;
+
+/** 예전 이름. 글자색과 배경색이 같은 표를 쓴다는 것을 이름으로도 남겨 둔다. */
+export const TEXT_COLOR_PRESETS = DOCUMENT_COLOR_PRESETS;
 
 /** `#RGB`·`#RRGGBB`·`12,34,56` 을 `#rrggbb` 로 바꾼다. 못 읽으면 null. */
 export function parseColorInput(raw: string): string | null {
