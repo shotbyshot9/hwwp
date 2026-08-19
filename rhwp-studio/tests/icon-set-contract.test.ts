@@ -28,7 +28,7 @@ test('한컴 SVG 스프라이트는 저장소에서 사라졌다', () => {
 
 test('CSS 가 가리키는 아이콘 파일이 모두 실제로 있다', () => {
   const referenced = [...allCss.matchAll(/\/icons\/ui\/([a-z0-9-]+\.svg)/g)].map((m) => m[1]);
-  assert.ok(referenced.length >= 22, `아이콘 참조가 너무 적다: ${referenced.length}`);
+  assert.ok(referenced.length >= 24, `아이콘 참조가 너무 적다: ${referenced.length}`);
   for (const name of new Set(referenced)) {
     assert.ok(
       existsSync(new URL(`../public/icons/ui/${name}`, import.meta.url)),
@@ -64,17 +64,20 @@ test('--icon-url 이 없는 칸은 비워진다', () => {
   assert.match(toolbarCss, /mask: var\(--icon-url, linear-gradient\(transparent, transparent\)\)/);
 });
 
-test('글자로 그리는 조판·문단 부호는 마스크를 끈다', () => {
-  // 마스크는 ::before 까지 가린다. 이 둘은 SVG 가 아니라 ¶·↵ 글자로 그리므로 마스크를
-  // 꺼야 글자가 보인다.
-  for (const cls of ['icon-ctrl-mark', 'icon-para-mark']) {
-    const rule = toolbarCss.slice(
-      toolbarCss.indexOf(`.${cls} {`),
-      toolbarCss.indexOf(`.${cls}::before`),
-    );
-    assert.match(rule, /mask: none;/, `.${cls} 는 마스크를 꺼야 한다`);
-    assert.match(rule, /background-color: transparent;/, `.${cls} 는 배경을 비워야 한다`);
-  }
+test('조판·문단 부호도 같은 아이콘 체계를 쓰되 색만 표시색으로 둔다', () => {
+  // 이 둘만 글꼴 글자(¶·↵)로 그리고 있었다. 획 굵기가 나머지와 달랐고 serif 가
+  // OS 마다 다른 글꼴로 잡혀 모양이 기기마다 달라졌다. Lucide 의 pilcrow·
+  // corner-down-left 로 옮겨 같은 방식·같은 획으로 맞췄다.
+  assert.doesNotMatch(toolbarCss, /content: '¶'/, '글자로 그리던 방식이 남아 있다');
+  assert.doesNotMatch(toolbarCss, /content: '↵'/);
+  assert.match(toolbarCss, /\.icon-ctrl-mark \{ --icon-url: url\("\/icons\/ui\/ctrl-mark\.svg"\); \}/);
+  assert.match(toolbarCss, /\.icon-para-mark \{ --icon-url: url\("\/icons\/ui\/para-mark\.svg"\); \}/);
+  // 색은 예외다. 나머지는 글자색을 따라가지만 이 둘은 렌더러가 용지에 그리는 색과
+  // 같아야 "켜면 무엇이 나오는지" 를 미리 보여준다.
+  assert.match(
+    toolbarCss,
+    /\.icon-ctrl-mark,\s*\n\.icon-para-mark \{\s*\n\s*background-color: var\(--mark-color\);/,
+  );
 });
 
 test('상태 바 줌 아이콘도 같은 체계를 쓴다', () => {
@@ -94,7 +97,7 @@ test('아이콘 획은 UI 선 굵기와 한 가족이다', () => {
   // 낮추면 1.31·1.17px — 같은 계열로 읽힌다.
   const dir = new URL('../public/icons/ui/', import.meta.url);
   const svgs = readdirSync(dir).filter((f) => f.endsWith('.svg'));
-  assert.ok(svgs.length >= 22);
+  assert.ok(svgs.length >= 24);
   for (const f of svgs) {
     const body = readFileSync(new URL(f, dir), 'utf8');
     assert.match(body, /stroke-width="1\.75"/, `${f} 의 획 굵기가 다르다`);

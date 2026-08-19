@@ -81,7 +81,7 @@
  *
  * 예전에는 한컴 SVG 스프라이트 한 장(밝은판 470KB + 어두운판 454KB)에서 좌표로 잘라
  * 썼다. 남의 미술저작물을 배포하는 것이었고, 아이콘은 형식 호환이라는 명분이 닿지
- * 않는 자산이다. Lucide 로 갈아 끼웠다 — 22개 33KB.
+ * 않는 자산이다. Lucide 로 갈아 끼웠다 — 24개 35KB.
  *
  * 아이콘은 도구 상자와 상태 표시줄에만 쓴다. 메뉴 드롭다운에서는 뺐다(menu-bar.css 참고)
  * — 244행 중 41행만 채워진 아이콘 칸은 규칙이 아니라 미완성으로 읽혔다.
@@ -107,46 +107,25 @@
 .icon-copy          { --icon-url: url("/icons/ui/copy.svg"); }
 .icon-paste         { --icon-url: url("/icons/ui/paste.svg"); }
 .icon-format-copy   { --icon-url: url("/icons/ui/format-copy.svg"); }
-/* 조판부호·문단부호는 Lucide 에 대응이 없어 글자(¶·↵)로 그린다.
-
-   색은 렌더러가 용지에 그리는 표시색과 같게 맞춘다(--mark-color). 그러면 아이콘이
-   "이걸 켜면 무엇이 나오는지" 를 미리 보여준다. 예전에는 강조색(갈색)이었는데, 그건
-   화면에 나오는 것과 아무 관계가 없는 색이었다. */
-.icon-ctrl-mark {
-  position: relative;
-  background-color: transparent;
-  -webkit-mask: none;
-  mask: none;
-}
-.icon-ctrl-mark::before {
-  content: '¶';
-  position: absolute;
-  top: 0; left: 0;
-  width: 18px; height: 18px;
-  font-size: var(--font-size-lg);
-  line-height: 18px;
-  text-align: center;
-  color: var(--mark-color);
-  font-family: serif;
-}
-
+/* 조판부호·문단부호.
+ *
+ * 이 둘만 글꼴 글자(¶·↵)로 그리고 있었다. rhwp 초기 커밋부터 그랬고, 스프라이트를
+ * 쓰던 시절에도 배경을 끄고 글자를 얹는 방식이었다. 그래서 획 굵기가 나머지와 달랐고,
+ * `font-family: serif` 가 OS 마다 다른 글꼴로 잡혀 모양이 기기마다 달라졌다.
+ *
+ * Lucide 에 그대로 맞는 그림이 있다 — pilcrow 가 ¶, corner-down-left 가 ↵ 다. 나머지
+ * 스물둘과 같은 방식·같은 획 굵기로 옮겼다.
+ *
+ * 색만 예외로 둔다. 나머지는 글자색을 따라가지만 이 둘은 렌더러가 용지에 그리는
+ * 표시색(--mark-color)에 맞춘다. 그러면 아이콘이 "이걸 켜면 화면에 무엇이 나오는지" 를
+ * 미리 보여준다. 예전에는 강조색(갈색)이었는데, 화면에 나오는 것과 아무 관계가 없는
+ * 색이었다. */
+.icon-ctrl-mark,
 .icon-para-mark {
-  position: relative;
-  background-color: transparent;
-  -webkit-mask: none;
-  mask: none;
+  background-color: var(--mark-color);
 }
-.icon-para-mark::before {
-  content: '↵';
-  position: absolute;
-  top: 0; left: 0;
-  width: 18px; height: 18px;
-  font-size: var(--font-size-lg);
-  line-height: 18px;
-  text-align: center;
-  color: var(--mark-color);
-  font-family: sans-serif;
-}
+.icon-ctrl-mark { --icon-url: url("/icons/ui/ctrl-mark.svg"); }
+.icon-para-mark { --icon-url: url("/icons/ui/para-mark.svg"); }
 .icon-grid          { --icon-url: url("/icons/ui/grid.svg"); }
 .icon-char-shape    { --icon-url: url("/icons/ui/char-shape.svg"); }
 .icon-para-shape    { --icon-url: url("/icons/ui/para-shape.svg"); }

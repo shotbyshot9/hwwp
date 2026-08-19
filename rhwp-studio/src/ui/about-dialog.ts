@@ -180,7 +180,7 @@ export class AboutDialog extends ModalDialog {
     body.appendChild(fonts);
 
     // 아이콘 고지. ISC 도 MIT 와 마찬가지로 사본에 고지를 남길 것을 요구한다. 사본은
-    // 배포물에 들어간 SVG 22개이고, 웹앱 사용자는 LICENSE 파일을 열어 보지 않으므로
+    // 배포물에 들어간 SVG 24개이고, 웹앱 사용자는 LICENSE 파일을 열어 보지 않으므로
     // 글꼴과 같은 자리에 둔다. 원문은 /icons/LICENSE.txt 로 함께 배포한다.
     const icons = document.createElement('div');
     icons.className = 'about-copyright';
