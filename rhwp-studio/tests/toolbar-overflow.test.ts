@@ -123,3 +123,16 @@ test('제목은 메뉴 위에, 로고는 둘의 왼쪽에 선다', () => {
   // 두 줄의 높이를 로고가 감당한다.
   assert.match(titleBarCss, /\.tbar-brand \{[^}]*width: 40px;/s);
 });
+
+test('제목 덩어리가 연결 단추를 오른쪽 끝으로 밀지 않는다', () => {
+  const titleBarCss = readFileSync(
+    new URL('../src/styles/title-bar.css', import.meta.url),
+    'utf8',
+  );
+  // .tbar-spacer 주석이 적어 둔 결정이다 — flex:1 로 단추를 화면 끝까지 밀면 시선이
+  // 닿지 않아 못 찾는다. 제목과 메뉴를 쌓으면서 그 덩어리에 flex:1 을 주면 같은 일이
+  // 다시 벌어진다.
+  assert.match(titleBarCss, /\.tbar-stack \{[^}]*flex: 0 1 auto;/s);
+  assert.doesNotMatch(titleBarCss, /\.tbar-stack \{[^}]*flex: 1 1 auto;/s);
+  assert.match(titleBarCss, /\.tbar-spacer \{[^}]*flex: 0 0 28px;/s);
+});
