@@ -3,7 +3,9 @@
    ================================================================ */
 #icon-toolbar {
   display: flex;
-  flex-wrap: wrap;
+  /* 접지 않는다. 넘치면 » 로 보낸다(view/toolbar-overflow.ts). 접히는 순간 도구
+     상자 높이가 두 배가 되고, 하필 세로가 짧은 화면에서 접힌다. */
+  flex-wrap: nowrap;
   align-items: stretch;
   align-content: flex-start;
   padding: 2px 8px;
@@ -267,4 +269,45 @@
   color: var(--resize-handle);
   font-size: 28px;
   line-height: 18px;
+}
+
+/* 넘침 메뉴 — 자리가 모자라면 줄을 늘리지 않고 뒤쪽을 여기로 보낸다.
+   자세한 사정은 view/toolbar-overflow.ts 주석에 있다. */
+.tb-overflow {
+  position: relative;
+  display: none;
+  align-items: stretch;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.tb-overflow.tb-overflow-active {
+  display: flex;
+}
+
+.tb-overflow-btn {
+  min-width: 30px;
+  font-size: var(--font-size-xl);
+  line-height: 1;
+  color: var(--color-text-secondary);
+}
+
+.tb-overflow-panel {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  flex-wrap: wrap;
+  align-items: stretch;
+  max-width: min(90vw, 720px);
+  padding: 4px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--ui-border-light);
+  border-radius: var(--radius-container);
+  box-shadow: var(--shadow-dropdown);
+  z-index: 9000;
+}
+
+.tb-overflow.open > .tb-overflow-panel {
+  display: flex;
 }

@@ -3,8 +3,9 @@
    ================================================================ */
 #style-bar {
   display: flex;
-  flex-wrap: wrap;
-  min-height: 68px;
+  /* 도구 상자와 같은 규칙 — 접지 않고 넘치면 » 로 보낸다. 접히면 높이가 두 배다. */
+  flex-wrap: nowrap;
+  min-height: 44px;
   align-items: stretch;
   align-content: stretch;
   gap: 0;
@@ -46,7 +47,6 @@
 
 .sb-ribbon-group {
   display: flex;
-  min-height: 68px;
   box-sizing: border-box;
   flex-direction: column;
   align-items: stretch;
@@ -55,16 +55,9 @@
   border-right: 1px solid var(--ui-border);
 }
 
-.sb-ribbon-label {
-  display: block;
-  min-height: 15px;
-  box-sizing: border-box;
-  padding: 1px 4px 2px;
-  color: var(--color-text-secondary);
-  font-size: 10px;
-  line-height: 12px;
-  text-align: center;
-}
+/* 리본 그룹 캡션(글꼴 및 간격·글자 모양·색·문단)은 걷어냈다.
+   바로 아래 상자에 "바탕글"·"함초롬바탕" 이라고 이미 적혀 있는데 그 위에 그룹 이름을
+   또 붙이는 것이었고, 접힌 줄마다 19px 를 먹었다. 구글 독스에는 이 층이 아예 없다. */
 
 .sb-field-ribbon-group .sb-field {
   min-width: 0;
@@ -73,11 +66,18 @@
   gap: 3px;
 }
 
+/* 스타일·언어·글꼴·크기·줄 간격 캡션은 화면에서만 감춘다.
+   상자 안의 값이 이미 무엇인지 말한다 — "대표", "함초롬바탕", "10.0 pt". 다만
+   label 을 지워 버리면 화면 낭독기가 상자의 이름을 잃으므로 마크업은 남긴다. */
 .sb-field-ribbon-group .sb-field-label {
-  margin-left: 1px;
-  color: var(--color-text-secondary);
-  font-size: 10px;
-  line-height: 1;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* 구분선 */

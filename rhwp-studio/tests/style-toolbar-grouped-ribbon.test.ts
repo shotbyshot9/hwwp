@@ -37,19 +37,23 @@ test('style toolbar shows its default before a document is loaded', () => {
   );
 });
 
-test('desktop formatting surface exposes visible ribbon hierarchy', () => {
+test('desktop formatting surface keeps its group structure', () => {
+  // 묶음 자체는 그대로다 — 함께 쓰이는 것들이 붙어 있어야 손이 한 자리에서 끝난다.
   assert.match(html, /class="sb-ribbon-group sb-field-ribbon-group"/);
   assert.match(html, /class="sb-ribbon-group sb-character-ribbon-group"/);
   assert.match(html, /class="sb-ribbon-group sb-color-ribbon-group"/);
   assert.match(html, /class="sb-ribbon-group sb-paragraph-ribbon-group"/);
 
+  // 다만 묶음마다 붙어 있던 캡션(글꼴 및 간격·글자 모양·색·문단)은 걷어냈다. 바로
+  // 아래 상자가 이미 "바탕글"·"함초롬바탕" 이라고 말하고 있었고, 접힌 줄마다 19px 를
+  // 먹었다. 1280×720 에서 크롬이 화면의 63% 를 차지하던 원인의 한 갈래다.
   for (const label of ['글꼴 및 간격', '글자 모양', '색', '문단']) {
-    assert.match(html, new RegExp(`<span class="sb-ribbon-label">${label}<\\/span>`));
+    assert.doesNotMatch(html, new RegExp(`<span class="sb-ribbon-label">${label}<\\/span>`));
   }
+  assert.doesNotMatch(styles, /\.sb-ribbon-label\s*\{/);
 
-  assert.match(styles, /#style-bar\s*\{[^}]*min-height:\s*68px;[^}]*align-items:\s*stretch;/s);
+  assert.match(styles, /#style-bar\s*\{[^}]*align-items:\s*stretch;/s);
   assert.match(styles, /\.sb-ribbon-group\s*\{[^}]*flex-direction:\s*column;/s);
-  assert.match(styles, /\.sb-ribbon-label\s*\{[^}]*display:\s*block;/s);
   assert.match(
     styles,
     /\.sb-field-ribbon-group \.sb-field\s*\{[^}]*flex-direction:\s*column;/s,

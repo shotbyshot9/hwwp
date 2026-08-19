@@ -72,6 +72,7 @@ import {
 import { calculateFitPageZoom, calculateFitWidthZoom } from '@/view/zoom-fit';
 import { installEmbedRuntime } from '@/embed/runtime';
 import type { EmbedRendererRuntimeRequestV1 } from '@/embed/rpc-router';
+import { installToolbarOverflow } from '@/view/toolbar-overflow';
 
 const wasm = new WasmBridge();
 const eventBus = new EventBus();
@@ -1082,6 +1083,11 @@ function setupEventListeners(): void {
       rotateGroup.style.display = (selected as boolean) && !noteToolbarActive ? '' : 'none';
     });
   }
+
+  // 도구 상자는 접히지 않는다 — 넘치는 그룹은 » 안으로 보낸다. 모드 전환으로 그룹이
+  // 감춰지고 드러나는 것까지 스스로 따라간다(view/toolbar-overflow.ts).
+  installToolbarOverflow('#icon-toolbar');
+  installToolbarOverflow('#style-bar');
 
   // 머리말/꼬리말 편집 모드 시 도구상자 전환 + 본문 dimming
   const hfGroup = document.querySelector('.tb-headerfooter-group') as HTMLElement | null;
