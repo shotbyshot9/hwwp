@@ -188,7 +188,9 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,png,svg,ico,woff,woff2,ttf,otf}'],
         // 폰트는 같은 이유로 뺀다 — 36벌 22MB 를 통째로 미리 받으면 서비스 워커
         // 설치가 첫 방문을 붙잡는다. 문서가 실제로 쓰는 글꼴만 그때 받으면 된다.
-        globIgnores: ['fonts/**'],
+        // 서드파티 고지 전문(380KB) 도 뺀다. 눌러서 읽는 문서지 앱이 도는 데 필요한
+        // 파일이 아니다 — 미리 받을 이유가 없다.
+        globIgnores: ['fonts/**', 'THIRD_PARTY_NOTICES.txt'],
         maximumFileSizeToCacheInBytes: 20 * 1024 * 1024,
         runtimeCaching: [
           {

@@ -504,29 +504,6 @@
   text-align: left;
 }
 
-.about-license-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--font-size-sm);
-  margin-bottom: 16px;
-}
-
-.about-license-table td {
-  padding: 3px 8px;
-  border-bottom: 1px solid var(--ui-border-subtle);
-  color: var(--color-text-secondary);
-}
-
-.about-license-table td:first-child {
-  font-family: monospace;
-  color: var(--color-text);
-}
-
-.about-license-table td:last-child {
-  text-align: right;
-  color: var(--color-text-hint);
-}
-
 .about-license-note {
   margin-top: 8px;
   font-size: var(--font-size-sm);

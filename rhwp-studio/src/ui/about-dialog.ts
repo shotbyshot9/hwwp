@@ -1,40 +1,14 @@
 /**
  * 제품 정보 / 라이센스 다이얼로그
  *
- * 제품의 출발점(배명훈 〈홈, 어웨이〉)과 원본 rhwp 고지, 외부 크레이트의 오픈소스
- * 라이선스 목록을 표시한다.
+ * 제품의 출발점(배명훈 〈홈, 어웨이〉)과 원본 rhwp 고지, 그리고 저작권 고지 전문으로
+ * 가는 길을 보여 준다.
  *
  * 주의 — 원래 이 자리에 있던 "한글과컴퓨터의 한글 문서 파일(.hwp) 공개 문서를
  * 참고하여 개발하였습니다" 문구는 HWP 공개 스펙의 고지 조항 때문에 있던 것이다.
  * 제품 소유자의 결정으로 뺐다. 배포 형태에 따라 그 조항을 다시 살펴야 할 수 있다.
  */
 import { ModalDialog } from './dialog';
-
-/**
- * 외부 크레이트 라이선스 정보.
- *
- * WASM 번들에 실제 포함되는 핵심 Rust 크레이트만 표시한다.
- * native-skia(skia-safe/resvg/usvg) 등 optional feature 전용 크레이트는 WASM 빌드에
- * 포함되지 않으므로 제외한다. 전체 목록은 저장소 루트 THIRD_PARTY_LICENSES.md 참조.
- */
-const THIRD_PARTY_LICENSES = [
-  { name: 'wasm-bindgen', license: 'MIT / Apache-2.0' },
-  { name: 'web-sys', license: 'MIT / Apache-2.0' },
-  { name: 'js-sys', license: 'MIT / Apache-2.0' },
-  { name: 'quick-xml', license: 'MIT' },
-  { name: 'cfb', license: 'MIT' },
-  { name: 'zip', license: 'MIT' },
-  { name: 'flate2', license: 'MIT / Apache-2.0' },
-  { name: 'encoding_rs', license: '(Apache-2.0 / MIT) AND BSD-3-Clause' },
-  { name: 'image', license: 'MIT / Apache-2.0' },
-  { name: 'serde / serde_json', license: 'MIT / Apache-2.0' },
-  { name: 'unicode-segmentation', license: 'MIT / Apache-2.0' },
-  { name: 'ttf-parser', license: 'MIT / Apache-2.0' },
-  { name: 'subsetter', license: 'MIT / Apache-2.0' },
-  { name: 'byteorder', license: 'MIT / Unlicense' },
-  { name: 'base64', license: 'MIT / Apache-2.0' },
-  { name: 'console_error_panic_hook', license: 'MIT / Apache-2.0' },
-];
 
 /** 배포본에 함께 실린 라이선스 전문으로 가는 링크 */
 function makeLicenseLink(file: string, label: string): HTMLAnchorElement {
@@ -139,37 +113,35 @@ export class AboutDialog extends ModalDialog {
       + '독립 프로젝트입니다.';
     body.appendChild(disclaimer);
 
-    // 오픈소스 라이선스
+    // 오픈소스 라이선스.
+    //
+    // 예전에는 여기에 크레이트 16개를 표로 늘어놓았다. 두 가지가 문제였다.
+    //
+    // 하나 — 실제로 싣는 것은 119개인데 16개만 보였다. "핵심만 표시합니다" 라고 적어
+    // 두긴 했지만, 목록이란 다 있을 때 목록이다. 절반도 안 되는 표는 정보가 아니라
+    // 분위기다.
+    //
+    // 둘 — "quick-xml, MIT" 같은 줄은 고지가 아니다. MIT 가 사본에 남기라고 요구하는
+    // 것은 저작권자의 이름과 허가 문구지 라이선스의 이름이 아니다. 표를 아무리 길게
+    // 늘여도 그 요구는 이행되지 않는다.
+    //
+    // 그래서 표를 걷고, 요구를 실제로 이행하는 파일로 보낸다. 그 파일은 의존성 목록에서
+    // 기계가 만든다(scripts/gen-notices.mjs) — 손으로 관리하면 반드시 어긋난다.
     const licenseTitle = document.createElement('div');
     licenseTitle.className = 'about-license-title';
     licenseTitle.textContent = '오픈소스 라이선스';
     body.appendChild(licenseTitle);
 
-    const licenseTable = document.createElement('table');
-    licenseTable.className = 'about-license-table';
-    for (const lib of THIRD_PARTY_LICENSES) {
-      const tr = document.createElement('tr');
-      const tdName = document.createElement('td');
-      tdName.textContent = lib.name;
-      const tdLicense = document.createElement('td');
-      tdLicense.textContent = lib.license;
-      tr.appendChild(tdName);
-      tr.appendChild(tdLicense);
-      licenseTable.appendChild(tr);
-    }
-    body.appendChild(licenseTable);
-
-    // 전체 라이선스 목록 안내. 배포본에는 전문이 함께 실리므로(vite 의
-    // prune-and-license 플러그인) 파일 이름만 알려 주지 말고 바로 열어 준다 —
-    // 웹앱 사용자는 저장소를 받지 않아 그 파일에 닿을 다른 길이 없다.
     const licenseNote = document.createElement('div');
     licenseNote.className = 'about-license-note';
     licenseNote.append(
-      'WASM 번들에 포함되는 핵심 크레이트만 표시합니다. 전문은 ',
-      makeLicenseLink('LICENSE.txt', 'MIT 라이선스'),
-      '와 ',
-      makeLicenseLink('THIRD_PARTY_LICENSES.txt', '서드파티 라이선스 전체 목록'),
-      '에 있습니다.',
+      'hwwp 는 Rust 크레이트 119개와 npm 패키지 4개 위에서 동작합니다. 저작권 고지 전문은 ',
+      makeLicenseLink('THIRD_PARTY_NOTICES.txt', '서드파티 고지'),
+      '에, 어떤 소프트웨어를 왜 쓰는지는 ',
+      makeLicenseLink('THIRD_PARTY_LICENSES.txt', '서드파티 목록'),
+      '에 있습니다. hwwp 자체의 라이선스는 ',
+      makeLicenseLink('LICENSE.txt', 'MIT'),
+      ' 입니다.',
     );
     body.appendChild(licenseNote);
 

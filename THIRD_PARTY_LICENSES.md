@@ -305,6 +305,23 @@ Apache-2.0 라이선스 고지 의무는 본 문서, 관련 기술 문서, 그�
 
 ---
 
+## 저작권 고지 전문
+
+이 문서는 "무엇을 왜 쓰는가" 를 사람에게 설명하는 표다. 라이선스가 사본에 남기라고
+요구하는 것은 표가 아니라 **저작권자의 이름과 허가 문구 그 자체**이고, 그것은
+`rhwp-studio/public/THIRD_PARTY_NOTICES.txt` 에 있다. 배포물에 함께 실려 앱의 제품
+정보에서 바로 열린다.
+
+그 파일은 손으로 쓰지 않는다. 실제 의존성 목록(`cargo tree --target wasm32-unknown-unknown
+-e normal` 과 `package.json` 의 dependencies)에서 만든다:
+
+```bash
+cd rhwp-studio && npm run notices
+```
+
+Rust 툴체인이 필요하므로 Cloudflare 빌드에서는 돌지 않는다 — `pkg/` 와 같은 사정이라
+결과물을 저장소에 넣어 둔다. **의존성을 바꿨으면 다시 돌려 커밋한다.**
+
 ## 라이선스 호환성
 
 rhwp는 **MIT 라이선스**로 배포된다.
