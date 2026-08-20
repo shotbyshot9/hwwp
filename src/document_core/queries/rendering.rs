@@ -3499,19 +3499,25 @@ impl DocumentCore {
             self.measured_sections[section_idx].shift_for_insert(para_idx);
         }
         // dirty_paragraphs: 삽입된 문단과 분할 원본만 dirty 표시
+        //
+        // `None` 은 "이 구역 전체를 다시 재야 한다" 는 뜻이다. 예전에는 여기서
+        // `get_or_insert_with` 로 새 비트맵(전부 false)을 깔아 버려, 그 뜻이 조용히
+        // **"삽입한 문단 말고는 전부 깨끗하다"** 로 뒤집혔다. 아직 한 번도 재지 않은
+        // 문단들이 재지 않은 채로 굳어, 높이 0 인 문단이 쌓이고 쪽이 늘지 않았다.
+        // 전체 dirty 는 전체 dirty 로 둔다.
         if section_idx < self.dirty_paragraphs.len() {
             let para_count = self.document.sections[section_idx].paragraphs.len();
-            let bits =
-                self.dirty_paragraphs[section_idx].get_or_insert_with(|| vec![false; para_count]);
-            // 기존 비트맵에 삽입 위치 추가 (후속 인덱스 shift)
-            if para_idx <= bits.len() {
-                bits.insert(para_idx, true);
-            }
-            // 비트맵 길이를 문단 수에 맞춤
-            bits.resize(para_count, false);
-            // 분할 원본 문단도 dirty
-            if para_idx > 0 {
-                bits[para_idx - 1] = true;
+            if let Some(bits) = self.dirty_paragraphs[section_idx].as_mut() {
+                // 기존 비트맵에 삽입 위치 추가 (후속 인덱스 shift)
+                if para_idx <= bits.len() {
+                    bits.insert(para_idx, true);
+                }
+                // 비트맵 길이를 문단 수에 맞춤
+                bits.resize(para_count, false);
+                // 분할 원본 문단도 dirty
+                if para_idx > 0 {
+                    bits[para_idx - 1] = true;
+                }
             }
         }
         // para_offset 누적 (수렴 감지용)
