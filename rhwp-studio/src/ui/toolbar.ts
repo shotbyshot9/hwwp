@@ -34,6 +34,14 @@ export class Toolbar {
   private styleName: HTMLSelectElement;
   private fontName: HTMLSelectElement;
   private fontSize: HTMLInputElement;
+  /**
+   * 크기 칸이 마지막으로 보여 준 값(pt).
+   *
+   * 확정할 때 "정말 바뀌었는가" 를 가리고, 못 읽을 값을 되돌릴 자리를 준다. 커서를 옮겨
+   * 문서에서 크기를 다시 읽을 때도 같이 맞춘다 — 안 맞추면 옛 값이 기준으로 남아, 옮겨 간
+   * 자리의 크기를 그대로 다시 적었을 때 바뀐 것으로 잘못 보고 서식을 예약해 버린다.
+   */
+  private lastFontSizePt = 10;
   private btnBold: HTMLButtonElement;
   private btnItalic: HTMLButtonElement;
   private btnUnderline: HTMLButtonElement;
@@ -315,35 +323,71 @@ export class Toolbar {
       this.updateFontNameByLang();
     });
 
-    // 크기 입력 (Enter 키로 확정)
+    /*
+     * 크기 입력 확정.
+     *
+     * Enter 만 받아서는 안 된다. 크기를 적고 그대로 본문을 눌러 글을 쓰는 것이 보통인데,
+     * 그러면 적은 값이 아무 일도 못 하고 사라졌다 — 상자는 잠시 새 값을 보여 주다가 커서
+     * 자리의 서식을 다시 읽는 순간 옛 값으로 돌아가서, 사용자 눈에는 "크기를 바꿨는데
+     * 치려고 보면 기본값으로 되돌아가 있다" 로 보였다.
+     *
+     * 그래서 포커스를 잃을 때도 확정한다. 한글·워드의 크기 칸도 이렇게 동작한다.
+     */
     this.fontSize.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        const pt = parseFloat(this.fontSize.value);
-        if (!isNaN(pt) && pt > 0) {
-          const clampedPt = Math.min(4096, Math.max(1, pt));
-          this.fontSize.value = String(clampedPt);
-          this.eventBus.emit('format-char', { fontSize: Math.round(clampedPt * 100) } as CharProperties);
-        }
+        this.commitFontSizeInput();
+        return;
+      }
+      if (e.key === 'Escape') {
+        // 적던 것을 버리고 원래 값으로 되돌린다 — 확정하지 않는다.
+        e.preventDefault();
+        this.fontSize.value = this.lastFontSizePt.toFixed(1);
+        this.fontSize.blur();
       }
     });
+    this.fontSize.addEventListener('blur', () => this.commitFontSizeInput());
+    // 눌러 들어오면 곧바로 새 값을 적을 수 있게 한다 — 지우고 적는 수고를 없앤다.
+    this.fontSize.addEventListener('focus', () => this.fontSize.select());
 
     // 크기 증감 버튼 (char-shape-dialog.ts의 fontSize 범위 100~409600과 동일한 1~4096pt로 clamp)
     this.btnSizeUp.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      const pt = parseFloat(this.fontSize.value) || 10;
-      const newPt = Math.min(4096, pt + 1);
-      this.fontSize.value = String(newPt);
-      this.eventBus.emit('format-char', { fontSize: Math.round(newPt * 100) } as CharProperties);
+      this.applyFontSizePt((parseFloat(this.fontSize.value) || 10) + 1);
     });
 
     this.btnSizeDown.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      const pt = parseFloat(this.fontSize.value) || 10;
-      const newPt = Math.max(1, pt - 1);
-      this.fontSize.value = String(newPt);
-      this.eventBus.emit('format-char', { fontSize: Math.round(newPt * 100) } as CharProperties);
+      this.applyFontSizePt((parseFloat(this.fontSize.value) || 10) - 1);
     });
+  }
+
+  /**
+   * 크기 칸에 적힌 값을 확정한다. 읽을 수 없으면 마지막 값으로 되돌린다.
+   *
+   * 값이 그대로면 아무 일도 하지 않는다 — 칸을 눌렀다 그냥 나가는 것만으로 서식이
+   * 걸리면, 선택 없이 나갔을 때 다음 입력에 엉뚱한 예약이 남는다.
+   */
+  private commitFontSizeInput(): void {
+    const pt = parseFloat(this.fontSize.value);
+    if (isNaN(pt) || pt <= 0) {
+      this.fontSize.value = this.lastFontSizePt.toFixed(1);
+      return;
+    }
+    const clamped = Math.min(4096, Math.max(1, pt));
+    if (clamped === this.lastFontSizePt) {
+      this.fontSize.value = clamped.toFixed(1);
+      return;
+    }
+    this.applyFontSizePt(clamped);
+  }
+
+  /** 크기를 칸에 반영하고 선택 범위(없으면 다음 입력)에 적용한다. */
+  private applyFontSizePt(pt: number): void {
+    const clamped = Math.min(4096, Math.max(1, pt));
+    this.fontSize.value = clamped.toFixed(1);
+    this.lastFontSizePt = clamped;
+    this.eventBus.emit('format-char', { fontSize: Math.round(clamped * 100) } as CharProperties);
   }
 
   /**
@@ -628,6 +672,7 @@ export class Toolbar {
     if (props.fontSize !== undefined) {
       const pt = props.fontSize / 100;
       this.fontSize.value = pt.toFixed(1);
+      this.lastFontSizePt = pt;
     }
 
     // 글자색. 예전에는 숨은 <input type=color> 에도 값을 되짚어 넣었는데, 그 입력칸은
