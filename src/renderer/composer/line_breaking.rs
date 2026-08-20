@@ -568,71 +568,7 @@ fn tokenize_paragraph_with_split_cell_space_metric(
         }
     }
 
-    merge_line_start_forbidden_tokens(&mut tokens, text_chars);
     tokens
-}
-
-/// 줄 머리 금칙 문자가 토큰을 혼자 시작하지 못하게 앞 토큰에 붙인다.
-///
-/// 토큰 하나가 곧 줄바꿈 단위다. 마침표가 제 토큰을 가지면 줄 앞에 홀로 설 수 있고,
-/// 실제로 그렇게 됐다 — "…같이 걸어갔다" / "." 로 갈려 마침표만 다음 줄에 남았다.
-/// 한글 2024 는 "…걸어갔" / "다." 로 갈라 마침표를 혼자 두지 않는다.
-///
-/// 어절 모드에는 만들 때 흡수하는 자리가 이미 있다. 글자 모드와 기호·CJK 갈래에는 없고,
-/// 갈래마다 손보면 새 갈래가 생길 때 또 빠진다. 그래서 다 만든 뒤 한 번에 훑는다 —
-/// **어떤 갈래로 만들어졌든** 금칙 문자로 시작하는 토큰은 남지 않는다.
-///
-/// 공백 뒤는 붙이지 않는다. 공백은 줄을 바꿔도 되는 자리라 앞말을 끌고 내려올 이유가 없고,
-/// 끌어오면 앞 어절이 통째로 따라 내려온다.
-fn merge_line_start_forbidden_tokens(tokens: &mut Vec<BreakToken>, text_chars: &[char]) {
-    let mut i = 1;
-    while i < tokens.len() {
-        let (cur_start, cur_end, cur_width, cur_fs) = match &tokens[i] {
-            BreakToken::Text {
-                start_idx,
-                end_idx,
-                width,
-                max_font_size,
-                ..
-            } => (*start_idx, *end_idx, *width, *max_font_size),
-            _ => {
-                i += 1;
-                continue;
-            }
-        };
-        let starts_forbidden = text_chars
-            .get(cur_start)
-            .copied()
-            .is_some_and(is_line_start_forbidden);
-        if !starts_forbidden {
-            i += 1;
-            continue;
-        }
-        // 바로 앞 토큰이 맞닿은 텍스트일 때만 붙인다(공백·탭·줄바꿈 뒤는 그대로 둔다).
-        let merged = match &mut tokens[i - 1] {
-            BreakToken::Text {
-                end_idx,
-                width,
-                max_font_size,
-                char_widths,
-                ..
-            } if *end_idx == cur_start => {
-                *end_idx = cur_end;
-                *width += cur_width;
-                *max_font_size = max_font_size.max(cur_fs);
-                // 글자별 폭은 글자 단위 재분할이 쓴다. 한쪽만 갖고 있으면 짝이 맞지
-                // 않으므로, 합쳐서 온전해지지 않으면 아예 비운다.
-                char_widths.clear();
-                true
-            }
-            _ => false,
-        };
-        if merged {
-            tokens.remove(i);
-        } else {
-            i += 1;
-        }
-    }
 }
 
 /// 토큰 텍스트의 폭을 글자별 언어 인식 측정으로 합산한다.
@@ -1086,9 +1022,9 @@ fn char_level_break_hwp(
         normal_w
     };
 
-    let width_at = |ci: usize| -> i32 {
+    for ci in token_start..token_end {
         let rel_idx = ci - token_start;
-        if rel_idx < char_widths_hwp.len() {
+        let char_w = if rel_idx < char_widths_hwp.len() {
             char_widths_hwp[rel_idx]
         } else {
             let ch = text_chars[ci];
@@ -1098,44 +1034,17 @@ fn char_level_break_hwp(
                 line_max_fs.max(12.0) * 0.5
             };
             to_hwp(char_w_px)
-        }
-    };
-
-    for ci in token_start..token_end {
-        let char_w = width_at(ci);
+        };
 
         if lw + char_w > current_w && ci > *line_start_idx {
-            /*
-             * 줄 머리 금칙: 새 줄이 마침표·닫는 괄호 같은 문자로 시작하면 안 된다.
-             *
-             * 여기가 줄을 실제로 자르는 자리다. 글자가 안 들어가면 그 앞에서 끊는데, 안
-             * 들어간 글자가 마침표면 그 마침표가 다음 줄의 첫 글자가 된다 — 신고된
-             * "…걸어갔다" / "." 가 이렇게 생겼다. 한 글자 앞에서 끊어 앞 글자를 함께
-             * 내려보내면 "…걸어갔" / "다." 가 된다(한글 2024 와 같다).
-             *
-             * 앞 글자를 내릴 수 없는 경우에는 그대로 끊는다 — 줄에 그 한 글자밖에 없거나,
-             * 앞이 공백이거나(줄을 바꿔도 되는 자리라 끌고 갈 이유가 없다), 앞도 금칙
-             * 문자일 때다.
-             */
-            let mut cut = ci;
-            if is_line_start_forbidden(text_chars[ci]) {
-                let prev = ci - 1;
-                if prev > *line_start_idx
-                    && text_chars[prev] != ' '
-                    && !is_line_start_forbidden(text_chars[prev])
-                {
-                    cut = prev;
-                }
-            }
             results.push(LineBreakResult {
                 start_idx: *line_start_idx,
-                end_idx: cut,
+                end_idx: ci,
                 max_font_size: line_max_fs,
                 has_line_break: false,
             });
-            *line_start_idx = cut;
-            // 새 줄에는 물린 글자까지 함께 올라간다.
-            lw = (cut..=ci).map(width_at).sum();
+            *line_start_idx = ci;
+            lw = char_w;
             is_first_line = false;
             current_w = normal_w;
         } else {
