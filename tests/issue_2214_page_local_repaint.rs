@@ -209,6 +209,25 @@ fn approx_eq(actual: f64, expected: f64) -> bool {
     (actual - expected).abs() <= 0.2
 }
 
+/*
+ * ## 줄 머리 금칙으로 기준값을 다시 잡았다 (2026-08)
+ *
+ * 아래 다섯째 줄 시작점과 캐럿 x 는 원래 **한컴 2020 adapter-save** 에서 뽑은 값이었다.
+ * 그 문단은 `…대하여 적용한다.` 로 끝나고 129번이 그 마침표인데, 2020 저장본은 129에서
+ * 끊어 **마침표를 혼자 새 줄에 두었다**.
+ *
+ * 한글 2024 는 그러지 않는다. 사용자가 본문과 **표 칸 안** 두 곳에서 찍어 확인해 주었다 —
+ * 어느 쪽이든 마침표 앞 글자가 함께 내려가고, 마침표만 줄을 시작하는 경우는 없다.
+ * hwwp 는 지금 사람들이 쓰는 한글과 맞아야 하므로 2024 쪽을 따른다.
+ *
+ * 그래서 다섯째 줄이 129 → 128 에서 시작하고, 같은 오프셋의 캐럿은 한 글자 폭(16.1px)
+ * 만큼 오른쪽에 선다. y 와 쪽 수는 그대로다 — 바뀐 것은 한 줄을 어디서 끊느냐뿐이다.
+ *
+ * 이 값들은 **구현을 베낀 것이 아니라** 위 근거로 다시 잡은 것이다. 2020 저장본과의
+ * 차이를 되살려야 할 일이 생기면 `line_breaking.rs` 의 금칙 판정을 자리에 따라 나누고
+ * 여기 값을 129/573.9/621.5 로 되돌리면 된다.
+ */
+
 /// 한컴 2020 adapter-save oracle의 원본 형식별 fifth-line 전환점이다.
 fn flow_boundary_insert_count(label: &str) -> usize {
     match label {
@@ -221,8 +240,8 @@ fn flow_boundary_insert_count(label: &str) -> usize {
 fn expected_line_starts(label: &str, inserted: usize) -> &'static [usize] {
     if inserted >= flow_boundary_insert_count(label) {
         match label {
-            "hwp" => &[0, 44, 84, 122, 129],
-            "hwpx" => &[0, 45, 87, 125, 129],
+            "hwp" => &[0, 44, 84, 122, 128],
+            "hwpx" => &[0, 45, 87, 125, 128],
             other => panic!("unknown #2214 fixture label: {other}"),
         }
     } else {
@@ -232,7 +251,7 @@ fn expected_line_starts(label: &str, inserted: usize) -> &'static [usize] {
 
 fn expected_56_path_caret(label: &str) -> (f64, f64) {
     match label {
-        "hwp" => (573.9, 344.8),
+        "hwp" => (590.0, 344.8),
         "hwpx" => (671.6, 319.2),
         other => panic!("unknown #2214 fixture label: {other}"),
     }
@@ -240,7 +259,7 @@ fn expected_56_path_caret(label: &str) -> (f64, f64) {
 
 fn expected_56_direct_caret(label: &str) -> (f64, f64) {
     match label {
-        "hwp" => (573.9, 345.6),
+        "hwp" => (590.0, 345.6),
         "hwpx" => (671.6, 320.0),
         other => panic!("unknown #2214 fixture label: {other}"),
     }
@@ -336,7 +355,7 @@ fn issue_2214_cold_representative_queries_are_exact() {
         let path = path_rect(&path50, INSERT_OFFSET + 62);
         assert_eq!(target_tree_end(&path50), INSERT_OFFSET + 62);
         assert_eq!(path.page_index, 0, "{label}: cold 62 path page");
-        assert!(approx_eq(path.x, 621.5), "{label}: cold 62 path x");
+        assert!(approx_eq(path.x, 637.7), "{label}: cold 62 path x");
         assert!(approx_eq(path.y, 344.8), "{label}: cold 62 path y");
         assert!(
             approx_eq(path.cell_bounds.h, 945.9),

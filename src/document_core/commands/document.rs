@@ -9,7 +9,7 @@ use crate::model::control::Control;
 use crate::model::document::Document;
 use crate::model::paragraph::{LineSeg, Paragraph};
 use crate::model::shape::{Caption, DrawingObjAttr, ShapeObject};
-use crate::renderer::composer::{compose_section, reflow_line_segs, reflow_line_segs_in_cell};
+use crate::renderer::composer::{compose_section, reflow_line_segs};
 use crate::renderer::layout::LayoutEngine;
 use crate::renderer::page_layout::PageLayoutInfo;
 use crate::renderer::style_resolver::{resolve_styles, ResolvedStyleSet};
@@ -467,7 +467,7 @@ impl DocumentCore {
                                         && cell_para.controls.is_empty()
                                         && !cell_diagonal);
                                 if Self::needs_line_seg_reflow(cell_para, inc) {
-                                    reflow_line_segs_in_cell(cell_para, cell_inner_width, styles, dpi);
+                                    reflow_line_segs(cell_para, cell_inner_width, styles, dpi);
                                 }
                             }
                             if include_empty && is_rowbreak_table {
@@ -1067,7 +1067,7 @@ impl DocumentCore {
                             let cell_inner_width = (cell_w_px - pad_left - pad_right).max(1.0);
                             for cell_para in &mut cell.paragraphs {
                                 if Self::needs_reflow_broadly(cell_para) {
-                                    reflow_line_segs_in_cell(cell_para, cell_inner_width, &styles, dpi);
+                                    reflow_line_segs(cell_para, cell_inner_width, &styles, dpi);
                                     reflowed += 1;
                                 }
                             }

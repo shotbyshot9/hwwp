@@ -1765,19 +1765,12 @@ fn issue4149_memo_invalidated_by_mutation_paths() {
 /// `getCursorRect` 가 읽는 줄 정보는 이 함수가 쓴다. 신고된 화면("…걸어갔다" / "." 로
 /// 갈려 마침표만 다음 줄에 남는다)은 이 경로로 만들어진다.
 ///
-/// 이 규칙은 **본문에서만** 켠다.
+/// 이 규칙은 **자리를 가리지 않는다** — 본문이든 표 칸이든 같다.
 ///
-/// 한 번 모든 자리에 적용했다가 한컴 저장 오라클과 부딪혔다.
-/// `tests/issue_2214_page_local_repaint.rs` 는 한컴 2020 이 저장한 줄 나눔을 기대값으로
-/// 박아 두었는데(`[0, 44, 84, 122, 129]`), 그 문단은 `…대하여 적용한다.` 로 끝나고
-/// **129번이 바로 그 마침표다** — 곧 한컴은 거기서 마침표를 혼자 새 줄에 두었다.
-/// 그 문단은 **표 칸 안**에 있다.
-///
-/// 본문에서는 반대다. 한글 2024 는 "…걸어갔" / "다." 로 마침표를 혼자 두지 않는다.
-///
-/// 그래서 자리를 나눴다 — 본문은 `reflow_line_segs`, 표 칸은 `reflow_line_segs_in_cell`.
-/// 둘 다 오라클과 신고 화면을 동시에 만족한다. 한글 2024 가 칸 안에서도 앞 글자와
-/// 붙인다는 것이 확인되면 갈래를 없애고 #2214 기대값을 128 로 고치면 된다.
+/// 한때 자리를 나눴었다. 한컴 2020 저장 오라클(#2214)이 표 칸 안 문단 끝 마침표를 혼자
+/// 새 줄에 두고 있었기 때문이다. 그런데 사용자가 한글 2024 로 본문과 표 칸 두 곳을 찍어
+/// 확인해 주었다 — **어느 쪽이든 마침표 앞 글자가 함께 내려간다.** 2020 저장본이 낡은
+/// 것이었고, 갈래를 없애고 오라클 기대값을 다시 잡았다(사정은 그 시험 파일 주석에).
 #[test]
 fn test_reflow_line_segs_keeps_line_start_forbidden_attached() {
     // 줄나눔 기준·글자 크기를 실제 문서 값까지 넓혀 본다(10pt = 13.333px).
@@ -1822,4 +1815,52 @@ fn test_reflow_line_segs_keeps_line_start_forbidden_attached() {
         offenders.first()
     );
     }
+}
+
+/// 브라우저에서 잰 것과 같은 문단 — 마침표 **뒤에 글이 더 있는** 경우.
+///
+/// 앞의 시험은 마침표가 문단 끝인 경우만 봤다. 실제 문서에서는 마침표 뒤에 다른 글이
+/// 이어지는 쪽이 더 흔하고, 그때 줄이 갈리는 자리도 다르다.
+#[test]
+fn test_reflow_kinsoku_when_text_follows_the_period() {
+    let text = "가가가가가가가가가가가가가 2시 반 다 되어서 카페를 나와 교보빌딩 사거리까지 \
+같이 걸어갔다.hwwp — Homeground of Writer Word Processor";
+    let chars: Vec<char> = text.chars().collect();
+    let mut offenders: Vec<(u8, u32, Vec<String>)> = Vec::new();
+    for kbu in [0u8, 1u8] {
+        let mut styles = make_styles_with_font_size(13.333);
+        styles.para_styles[0].korean_break_unit = kbu;
+        for w in 100..=760u32 {
+            let mut para = issue4149_guard_para(text);
+            reflow_line_segs(&mut para, w as f64, &styles, 96.0);
+            let starts: Vec<usize> = para
+                .line_segs
+                .iter()
+                .map(|s| s.text_start as usize)
+                .collect();
+            let lines: Vec<String> = starts
+                .iter()
+                .enumerate()
+                .map(|(k, &st)| {
+                    let end = starts.get(k + 1).copied().unwrap_or(chars.len());
+                    chars[st.min(chars.len())..end.min(chars.len())]
+                        .iter()
+                        .collect()
+                })
+                .collect();
+            if lines
+                .iter()
+                .skip(1)
+                .any(|t| t.chars().next().is_some_and(is_line_start_forbidden))
+            {
+                offenders.push((kbu, w, lines));
+            }
+        }
+    }
+    assert!(
+        offenders.is_empty(),
+        "금칙 문자로 시작하는 줄이 생긴 경우 {}개, 첫 사례: {:?}",
+        offenders.len(),
+        offenders.first()
+    );
 }

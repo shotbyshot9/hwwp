@@ -14,7 +14,7 @@ use crate::model::page::ColumnDef;
 use crate::model::paragraph::{LineSeg, ParaMeta, Paragraph};
 use crate::model::shape::{ShapeObject, TextWrap, VertRelTo};
 use crate::model::style::Alignment;
-use crate::renderer::composer::{compose_paragraph, reflow_line_segs, reflow_line_segs_in_cell, ComposedParagraph};
+use crate::renderer::composer::{compose_paragraph, reflow_line_segs, ComposedParagraph};
 use crate::renderer::page_layout::PageLayoutInfo;
 use crate::renderer::pagination::PageItem;
 use crate::renderer::style_resolver::{resolve_styles, ResolvedStyleSet};
@@ -2413,7 +2413,7 @@ impl DocumentCore {
                             && (hwpx_line_count_changed || hwpx_tail_text_start_only_changed)
                         {
                             if let Some(mut candidate) = hwpx_full_reflow_candidate.take() {
-                                reflow_line_segs_in_cell(&mut candidate, final_width, &styles, self.dpi);
+                                reflow_line_segs(&mut candidate, final_width, &styles, self.dpi);
                                 if candidate.line_segs.len() != stored_line_count {
                                     cell_para.line_segs = candidate.line_segs;
                                 } else {
@@ -2430,7 +2430,7 @@ impl DocumentCore {
                                 self.dpi,
                             );
                         } else {
-                            reflow_line_segs_in_cell(cell_para, final_width, &styles, self.dpi);
+                            reflow_line_segs(cell_para, final_width, &styles, self.dpi);
                         }
                     }
                 }
@@ -2438,14 +2438,14 @@ impl DocumentCore {
             Some(Control::Shape(shape)) => {
                 if let Some(tb) = super::super::helpers::get_textbox_from_shape_mut(shape) {
                     if let Some(cell_para) = tb.paragraphs.get_mut(cell_para_idx) {
-                        reflow_line_segs_in_cell(cell_para, final_width, &styles, self.dpi);
+                        reflow_line_segs(cell_para, final_width, &styles, self.dpi);
                     }
                 }
             }
             Some(Control::Picture(pic)) => {
                 if let Some(ref mut cap) = pic.caption {
                     if let Some(cell_para) = cap.paragraphs.get_mut(cell_para_idx) {
-                        reflow_line_segs_in_cell(cell_para, final_width, &styles, self.dpi);
+                        reflow_line_segs(cell_para, final_width, &styles, self.dpi);
                     }
                 }
             }
@@ -2655,7 +2655,7 @@ impl DocumentCore {
         let margin_left = para_style.map(|s| s.margin_left).unwrap_or(0.0);
         let margin_right = para_style.map(|s| s.margin_right).unwrap_or(0.0);
         let final_width = (available_width - margin_left - margin_right).max(0.0);
-        reflow_line_segs_in_cell(cell_para, final_width, &styles, dpi);
+        reflow_line_segs(cell_para, final_width, &styles, dpi);
     }
 
     /// [#2755] path 기반 셀 문단 vpos 재계산 (깊이 ≥ 2 중첩 표 지원).
