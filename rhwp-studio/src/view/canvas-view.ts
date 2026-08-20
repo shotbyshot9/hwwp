@@ -710,6 +710,7 @@ export class CanvasView {
 
     // 페이지 정보 재수집 (페이지 수/크기가 변경될 수 있음)
     const pageCount = this.wasm.pageCount;
+    const previousPageCount = this.pages.length;
     this.pages = [];
     for (let i = 0; i < pageCount; i++) {
       try {
@@ -720,6 +721,20 @@ export class CanvasView {
     }
 
     this.recalcLayout();
+
+    /*
+     * 쪽 수가 바뀌었으면 알린다.
+     *
+     * 쪽 목록 갱신은 비동기다. 편집 직후에는 캐럿이 이미 새 쪽에 있어도 화면은 그 쪽을
+     * 모르므로 스크롤을 미룬다(`scrollCaretIntoView` 가 모르는 쪽에는 움직이지 않는다).
+     * 미룬 것을 이어받을 자리가 바로 여기다 — 여기서 알리지 않으면 아무도 따라가지 않아,
+     * 쪽 마지막 줄에서 엔터를 쳤을 때 새 쪽이 생겨도 화면은 보던 자리에 남는다.
+     *
+     * `document-view-changed` 는 확대·축소 같은 보기 명령에서만 나오므로 쓸 수 없었다.
+     */
+    if (this.pages.length !== previousPageCount) {
+      this.eventBus.emit('document-page-count-changed', this.pages.length);
+    }
 
     // 보이는 페이지 재렌더링
     this.cancelPendingTextEditRefresh();

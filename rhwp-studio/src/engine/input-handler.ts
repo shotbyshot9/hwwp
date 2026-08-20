@@ -691,6 +691,24 @@ export class InputHandler {
       }
     });
 
+    /*
+     * 쪽 수가 바뀌어 화면이 쪽 목록을 다시 만든 뒤다.
+     *
+     * 편집 직후에는 화면이 새 쪽을 아직 몰라 스크롤을 미룬다. 그것을 이어받는 자리다 —
+     * 여기서 따라가지 않으면 쪽 마지막 줄에서 엔터를 쳤을 때 새 쪽이 생겨도 화면은 보던
+     * 자리에 남는다. 붙여넣기가 쪽을 넘길 때도 마찬가지다.
+     *
+     * `scrollCaretIntoView` 는 캐럿이 화면 밖일 때만 움직이므로, 쪽 수가 줄어드는 경우나
+     * 캐럿이 이미 보이는 경우에는 아무 일도 하지 않는다.
+     */
+    eventBus.on('document-page-count-changed', () => {
+      if (!this.active) return;
+      requestAnimationFrame(() => {
+        this.cursor.updateRect();
+        this.updateCaret();
+      });
+    });
+
     eventBus.on('document-view-changed', () => {
       if (!this.active) return;
       requestAnimationFrame(() => {

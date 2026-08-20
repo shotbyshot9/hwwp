@@ -134,3 +134,46 @@ test('화면이 쪽을 다 만든 뒤에는 캐럿을 따라간다', () => {
   assert.match(handler, /this\.updateCaret\(\);/, '스크롤을 건너뛰면 화면이 안 따라간다');
   assert.doesNotMatch(handler, /this\.updateCaret\(true\)/);
 });
+
+const canvasView = readFileSync(
+  new URL('../src/view/canvas-view.ts', import.meta.url),
+  'utf8',
+).replace(/\r\n/g, '\n');
+
+/**
+ * 쪽 수가 바뀌었을 때 화면이 캐럿을 따라가게 하는 신호.
+ *
+ * 처음에는 `document-view-changed` 에 얹었는데, 그 신호는 **확대·축소 같은 보기 명령에서만
+ * 나온다.** 편집으로 쪽이 늘어날 때는 아무도 보내지 않아 처리기가 아예 안 불렸다 — 그래서
+ * 고쳤다고 했는데도 화면이 새 쪽을 따라가지 않았다.
+ *
+ * 쪽 목록을 실제로 다시 만드는 자리(`refreshPages`)에서 쪽 수가 달라졌을 때만 알린다.
+ */
+test('쪽 수가 바뀌면 화면이 알린다', () => {
+  const refresh = canvasView.slice(
+    canvasView.indexOf('refreshPages(): void {'),
+    canvasView.indexOf('/** 텍스트 입력처럼 좁은 변경은'),
+  );
+  assert.ok(refresh.length > 0, 'refreshPages 를 찾지 못했다');
+  assert.match(refresh, /const previousPageCount = this\.pages\.length;/);
+  assert.match(
+    refresh,
+    /if \(this\.pages\.length !== previousPageCount\) \{\n\s*this\.eventBus\.emit\('document-page-count-changed', this\.pages\.length\);/,
+    '쪽 수가 그대로면 알리지 않는다 — 매 입력마다 스크롤이 움직이면 안 된다',
+  );
+  // 쪽 자리를 다시 계산한 뒤에 알려야 받는 쪽이 새 자리를 볼 수 있다.
+  assert.ok(
+    refresh.indexOf('this.recalcLayout();') < refresh.indexOf('document-page-count-changed'),
+  );
+});
+
+test('그 신호를 받아 캐럿을 화면에 들인다', () => {
+  const handler = inputHandler.slice(
+    inputHandler.indexOf("eventBus.on('document-page-count-changed'"),
+    inputHandler.indexOf("eventBus.on('document-view-changed'"),
+  );
+  assert.ok(handler.length > 0, 'document-page-count-changed 처리기가 없다');
+  assert.match(handler, /this\.cursor\.updateRect\(\);/, '캐럿 좌표를 다시 계산해야 한다');
+  assert.match(handler, /this\.updateCaret\(\);/, '스크롤을 건너뛰면 화면이 안 따라간다');
+  assert.doesNotMatch(handler, /this\.updateCaret\(true\)/);
+});
