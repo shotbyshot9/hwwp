@@ -1432,6 +1432,139 @@ fn test_kbu1_line_start_forbidden_retraction() {
     );
 }
 
+/// [#2244 후속] 금칙 문자가 **문단의 마지막 글자**일 때도 같은 규칙이 서야 한다.
+///
+/// 신고: "…같이 걸어갔다." 가 "…같이 걸어갔다" / "." 로 갈려 마침표 하나만 다음 줄에
+/// 남았다. 한글 2024 는 "…걸어갔" / "다." 로 갈라 마침표를 혼자 두지 않는다.
+#[test]
+fn test_kbu1_line_start_forbidden_retraction_at_paragraph_end() {
+    let styles = make_styles_with_font_size(16.0);
+    let line = ComposedLine {
+        runs: vec![ComposedTextRun {
+            text: "적용한다.".to_string(),
+            char_style_id: 0,
+            lang_index: 0,
+            char_overlap: None,
+            footnote_marker: None,
+            display_text: None,
+        }],
+        line_height: 400,
+        baseline_distance: 320,
+        segment_width: 0,
+        column_start: 0,
+        line_spacing: 0,
+        has_line_break: false,
+        char_start: 0,
+    };
+    let frags = split_composed_line_by_width(&line, 68.0, 68.0, &styles, true, 0.0);
+    let texts: Vec<String> = frags
+        .iter()
+        .map(|f| f.runs.iter().map(|r| r.text.as_str()).collect())
+        .collect();
+    assert!(
+        frags.len() >= 2,
+        "이 시험의 전제는 두 줄로 갈리는 것이다: {texts:?}"
+    );
+    assert!(
+        !texts[1].starts_with('.'),
+        "마침표가 문단 끝이어도 혼자 새 줄을 시작하면 안 된다: {texts:?}"
+    );
+}
+
+/// [#2244 후속] 금칙 문자가 **앞 글자와 다른 run 에 있을 때**도 규칙이 서야 한다.
+///
+/// 한 문단이 한 run 인 경우는 드물다. 숫자·한글·기호가 섞이면 언어가 갈리면서 run 이
+/// 나뉘고, 마침표가 새 run 의 첫 글자가 되는 일이 흔하다. 그때 직전 글자는 이미 flush 된
+/// 앞 run 에 있어, 현재 run 만 들여다보는 retraction 은 아무것도 못 찾는다.
+#[test]
+fn test_kbu1_line_start_forbidden_retraction_across_runs() {
+    let styles = make_styles_with_font_size(16.0);
+    let mk = |text: &str, lang_index: usize| ComposedTextRun {
+        text: text.to_string(),
+        char_style_id: 0,
+        lang_index,
+        char_overlap: None,
+        footnote_marker: None,
+        display_text: None,
+    };
+    let line = ComposedLine {
+        // 마침표만 다른 run 에 있다 — 위 시험과 글자열은 같다.
+        runs: vec![mk("적용한다", 0), mk(".", 1)],
+        line_height: 400,
+        baseline_distance: 320,
+        segment_width: 0,
+        column_start: 0,
+        line_spacing: 0,
+        has_line_break: false,
+        char_start: 0,
+    };
+    let frags = split_composed_line_by_width(&line, 68.0, 68.0, &styles, true, 0.0);
+    let texts: Vec<String> = frags
+        .iter()
+        .map(|f| f.runs.iter().map(|r| r.text.as_str()).collect())
+        .collect();
+    assert!(
+        frags.len() >= 2,
+        "이 시험의 전제는 두 줄로 갈리는 것이다: {texts:?}"
+    );
+    assert!(
+        !texts[1].starts_with('.'),
+        "run 이 갈려도 마침표가 혼자 새 줄을 시작하면 안 된다: {texts:?}"
+    );
+}
+
+/// 신고 문장 그대로 — 어떤 폭에서 잘라도 금칙 문자가 줄 앞에 서면 안 된다.
+///
+/// 폭을 하나만 골라 시험하면 그 폭에서만 맞는 고침을 짜게 된다. 줄이 갈릴 수 있는 폭을
+/// 전부 훑어 한 번이라도 어기면 잡는다.
+#[test]
+fn test_kbu1_line_start_forbidden_sweep_all_widths() {
+    let styles = make_styles_with_font_size(16.0);
+    let text = "2시 반 다 되어서 카페를 나와 교보빌딩 사거리까지 같이 걸어갔다.";
+    let line = ComposedLine {
+        runs: vec![ComposedTextRun {
+            text: text.to_string(),
+            char_style_id: 0,
+            lang_index: 0,
+            char_overlap: None,
+            footnote_marker: None,
+            display_text: None,
+        }],
+        line_height: 400,
+        baseline_distance: 320,
+        segment_width: 0,
+        column_start: 0,
+        line_spacing: 0,
+        has_line_break: false,
+        char_start: 0,
+    };
+    // 줄나눔 기준은 문단마다 다르다. 한쪽만 시험하면 다른 쪽이 뚫린 줄 모른다.
+    let mut offenders: Vec<(&str, u32, Vec<String>)> = Vec::new();
+    for (mode, char_break) in [("글자", true), ("어절", false)] {
+        for w in 60..=620u32 {
+            let frags =
+                split_composed_line_by_width(&line, w as f64, w as f64, &styles, char_break, 0.0);
+            let texts: Vec<String> = frags
+                .iter()
+                .map(|f| f.runs.iter().map(|r| r.text.as_str()).collect())
+                .collect();
+            if texts
+                .iter()
+                .skip(1)
+                .any(|t| t.chars().next().is_some_and(is_line_start_forbidden))
+            {
+                offenders.push((mode, w, texts));
+            }
+        }
+    }
+    assert!(
+        offenders.is_empty(),
+        "금칙 문자로 시작하는 줄이 생긴 경우 {}건, 첫 사례: {:?}",
+        offenders.len(),
+        offenders.first()
+    );
+}
+
 // ───────────────────── [#4149] 셀 단일줄 과밀 판정 memo ─────────────────────
 
 /// 가드 전제(저장 단일 lineseg, 비합성 tag)를 만족하는 문단.
@@ -1625,4 +1758,54 @@ fn issue4149_memo_invalidated_by_mutation_paths() {
         para.single_line_overflow_memo.is_unjudged(),
         "merge_from 후 미판정"
     );
+}
+
+/// 실제 배치 경로(`reflow_line_segs`)에서 줄 머리 금칙을 지키는가.
+///
+/// `getCursorRect` 가 읽는 줄 정보는 이 함수가 쓴다. 앞의 시험들은 화면 분할기만 봤는데,
+/// 신고된 화면은 이 경로로 만들어진다 — 여기서 서지 않으면 고친 것이 아니다.
+#[test]
+fn test_reflow_line_segs_keeps_line_start_forbidden_attached() {
+    // 줄나눔 기준·글자 크기를 실제 문서 값까지 넓혀 본다(10pt = 13.333px).
+    for fs in [13.333_f64, 16.0_f64] {
+    let mut styles = make_styles_with_font_size(fs);
+    let text = "2시 반 다 되어서 카페를 나와 교보빌딩 사거리까지 같이 걸어갔다.";
+    let chars: Vec<char> = text.chars().collect();
+    let mut offenders: Vec<(u8, u32, Vec<String>)> = Vec::new();
+    for kbu in [0u8, 1u8] {
+    styles.para_styles[0].korean_break_unit = kbu;
+    for w in 80..=760u32 {
+        let mut para = issue4149_guard_para(text);
+        reflow_line_segs(&mut para, w as f64, &styles, 96.0);
+        let starts: Vec<usize> = para
+            .line_segs
+            .iter()
+            .map(|s| s.text_start as usize)
+            .collect();
+        let lines: Vec<String> = starts
+            .iter()
+            .enumerate()
+            .map(|(k, &st)| {
+                let end = starts.get(k + 1).copied().unwrap_or(chars.len());
+                chars[st.min(chars.len())..end.min(chars.len())]
+                    .iter()
+                    .collect()
+            })
+            .collect();
+        if lines
+            .iter()
+            .skip(1)
+            .any(|t| t.chars().next().is_some_and(is_line_start_forbidden))
+        {
+            offenders.push((kbu, w, lines));
+        }
+    }
+    }
+    assert!(
+        offenders.is_empty(),
+        "금칙 문자로 시작하는 줄이 생긴 경우 {}개, 첫 사례: {:?}",
+        offenders.len(),
+        offenders.first()
+    );
+    }
 }

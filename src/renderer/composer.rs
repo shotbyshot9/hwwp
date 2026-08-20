@@ -2222,6 +2222,22 @@ fn is_hwp3_hwp5_missing_lineseg_legacy_bullet(
 ///
 /// 분할 단위: 공백 단어 경계 우선, 단일 단어가 너비 초과 시 글자 단위 break.
 /// 각 분할 줄의 메타데이터 (line_height/baseline/segment_width 등) 는 원본 보존.
+/// 낱말을 글자로 쪼갤 때 쓰는 덩어리. 글자 하나에, 뒤따르는 줄 머리 금칙 문자를 붙인다.
+///
+/// 낱말 하나가 줄보다 길면 글자 단위로 잘라 채우는데, 그때 마침표·닫는 괄호 같은 문자가
+/// 잘리는 자리에 걸리면 홀로 다음 줄에 떨어졌다. 앞 글자와 한 덩어리로 다루면 둘이 함께
+/// 움직인다.
+fn char_clusters(word: &str) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for ch in word.chars() {
+        match out.last_mut() {
+            Some(last) if is_line_start_forbidden(ch) => last.push(ch),
+            _ => out.push(std::iter::once(ch).collect()),
+        }
+    }
+    out
+}
+
 fn split_composed_line_by_width(
     src: &ComposedLine,
     first_width_px: f64,
@@ -2358,6 +2374,67 @@ fn split_composed_line_by_width(
                     } else {
                         None
                     };
+                    // 위 회수는 금칙 문자와 직전 글자가 **같은 run** 일 때만 된다.
+                    // 한 문단이 한 run 인 경우는 드물다 — 숫자·한글·기호가 섞이면
+                    // 언어가 갈리며 run 이 나뉘고, 마침표가 새 run 의 첫 글자가 되는
+                    // 일이 흔하다. 그때 current_run_text 는 비어 있어 위에서 아무것도
+                    // 못 찾고, 마침표만 홀로 다음 줄로 떨어졌다 ("…걸어갔다" / ".").
+                    //
+                    // 직전 글자는 이미 flush 되어 이 줄의 마지막 run 안에 있다.
+                    // 거기서 회수하되, 글자를 현재 run 에 섞지 않고 **자기 run 째로**
+                    // 다음 줄에 옮긴다 — 섞으면 마침표의 글꼴·언어로 그려진다.
+                    let carried_run: Option<(ComposedTextRun, f64)> = if carried.is_none()
+                        && is_line_start_forbidden(ch)
+                        && chars_in_line > 1
+                        && current_run_text.is_empty()
+                    {
+                        current_runs
+                            .last_mut()
+                            .filter(|prev| {
+                                prev.text
+                                    .chars()
+                                    .last()
+                                    .is_some_and(|p| p != ' ' && !is_line_start_forbidden(p))
+                            })
+                            .and_then(|prev| {
+                                let prev_ts = resolved_to_text_style(
+                                    styles,
+                                    prev.char_style_id,
+                                    prev.lang_index,
+                                );
+                                prev.text.pop().map(|pch| {
+                                    let pch_str: String = std::iter::once(pch).collect();
+                                    let pw =
+                                        crate::renderer::layout::estimate_text_width_unrounded(
+                                            &pch_str, &prev_ts,
+                                        );
+                                    (
+                                        ComposedTextRun {
+                                            text: pch_str,
+                                            char_style_id: prev.char_style_id,
+                                            lang_index: prev.lang_index,
+                                            char_overlap: prev.char_overlap.clone(),
+                                            footnote_marker: prev.footnote_marker,
+                                            display_text: None,
+                                        },
+                                        pw,
+                                    )
+                                })
+                            })
+                            .inspect(|(_, pw)| {
+                                current_width -= pw;
+                                chars_in_line -= 1;
+                            })
+                    } else {
+                        None
+                    };
+                    // 비워진 run 은 남기지 않는다 — 빈 run 은 이후 폭 계산에도 저장에도
+                    // 군더더기다.
+                    if carried_run.is_some()
+                        && current_runs.last().is_some_and(|r| r.text.is_empty())
+                    {
+                        current_runs.pop();
+                    }
                     flush_run(
                         &mut current_runs,
                         &mut current_run_text,
@@ -2372,6 +2449,11 @@ fn split_composed_line_by_width(
                     );
                     space_w = 0.0;
                     hung = false;
+                    if let Some((run, pw)) = carried_run {
+                        current_runs.push(run);
+                        current_width += pw;
+                        chars_in_line += 1;
+                    }
                     if let Some((pch, pw)) = carried {
                         current_run_text.push(pch);
                         current_width += pw;
@@ -2416,8 +2498,9 @@ fn split_composed_line_by_width(
                 }
                 // 단어 자체가 max_width 초과 시 글자 단위 break
                 if word_width > limit(&result) && current_width == 0.0 {
-                    for wch in word.chars() {
-                        let wch_str: String = std::iter::once(wch).collect();
+                    // 글자로 쪼개되 줄 머리 금칙 문자는 앞 글자에 붙여 한 덩어리로 둔다 —
+                    // 그래야 마침표가 홀로 다음 줄에 떨어지지 않는다.
+                    for wch_str in char_clusters(&word) {
                         let wch_width =
                             crate::renderer::layout::estimate_text_width_unrounded(&wch_str, &ts);
                         if current_width - space_w * space_condense + wch_width > limit(&result)
@@ -2438,9 +2521,9 @@ fn split_composed_line_by_width(
                             space_w = 0.0;
                             hung = false;
                         }
-                        current_run_text.push(wch);
+                        chars_in_line += wch_str.chars().count();
+                        current_run_text.push_str(&wch_str);
                         current_width += wch_width;
-                        chars_in_line += 1;
                     }
                 } else {
                     current_run_text.push_str(&word);
@@ -2475,8 +2558,8 @@ fn split_composed_line_by_width(
             }
             // 단어 자체가 max_width 초과 시 글자 단위 break
             if word_width > limit(&result) && current_width == 0.0 {
-                for wch in word.chars() {
-                    let wch_str: String = std::iter::once(wch).collect();
+                // 위와 같은 이유로 금칙 문자는 앞 글자에 붙여 한 덩어리로 다룬다.
+                for wch_str in char_clusters(&word) {
                     let wch_width =
                         crate::renderer::layout::estimate_text_width_unrounded(&wch_str, &ts);
                     if current_width - space_w * space_condense + wch_width > limit(&result)
@@ -2497,9 +2580,9 @@ fn split_composed_line_by_width(
                         space_w = 0.0;
                         hung = false;
                     }
-                    current_run_text.push(wch);
+                    chars_in_line += wch_str.chars().count();
+                    current_run_text.push_str(&wch_str);
                     current_width += wch_width;
-                    chars_in_line += 1;
                 }
             } else {
                 current_run_text.push_str(&word);
