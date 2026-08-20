@@ -694,12 +694,23 @@ export class InputHandler {
     eventBus.on('document-view-changed', () => {
       if (!this.active) return;
       requestAnimationFrame(() => {
-        // 화면이 쪽을 다시 만든 뒤다. 여기서도 좌표를 다시 계산해야 한다 —
-        // `cursor.getRect()` 는 캐시라, 쪽이 늘거나 줄었으면 그 값은 이미 없는 배치를
-        // 가리킨다. 편집 직후(afterEdit)에는 화면이 아직 새 쪽을 모르므로, 캐럿이 제
-        // 자리를 찾는 것은 실질적으로 이 시점이다.
+        /*
+         * 화면이 쪽을 다시 만든 뒤다. 여기서 좌표를 다시 계산하고 **화면도 따라가게**
+         * 한다.
+         *
+         * `cursor.getRect()` 는 캐시라, 쪽이 늘거나 줄었으면 그 값은 이미 없는 배치를
+         * 가리킨다. 그리고 편집 직후(`afterEdit`)에는 화면이 아직 새 쪽을 몰라
+         * 스크롤을 미뤄 둔다 — 그래서 캐럿을 화면에 들이는 것은 실질적으로 이 시점이다.
+         *
+         * 미뤄 두기만 하고 여기서 따라가지 않으면, 쪽 마지막 줄에서 엔터를 쳤을 때 새
+         * 쪽은 생겼는데 보던 자리에 그대로 머문다 — 사용자에게는 아무 일도 안 일어난
+         * 것으로 보인다. 붙여넣기가 쪽을 넘길 때도 붙인 자리가 화면 밖에 남았다.
+         *
+         * `scrollCaretIntoView` 는 캐럿이 화면 밖일 때만 움직인다. 그래서 확대·축소처럼
+         * 캐럿이 이미 보이는 화면 변화에서는 아무 일도 하지 않는다.
+         */
         this.cursor.updateRect();
-        this.updateCaret(true);
+        this.updateCaret();
       });
     });
 
@@ -3656,6 +3667,18 @@ export class InputHandler {
   /** 캐럿이 화면 밖이면 스크롤을 조정한다 */
   private scrollCaretIntoView(rect: import('@/core/types').CursorRect): void {
     const zoom = this.viewportManager.getZoom();
+    /*
+     * 화면이 아직 모르는 쪽이면 스크롤하지 않는다.
+     *
+     * 쪽 목록 갱신은 비동기다. 쪽 마지막 줄에서 엔터를 치면 캐럿은 곧바로 새 쪽으로
+     * 가는데, 화면은 그 쪽을 아직 모른다. 그때 `getPageOffset` 은 0 을 돌려주므로
+     * "캐럿이 문서 맨 위에 있다" 로 읽혀 **화면이 맨 위로 튀었다.** 새 쪽을 보여 주기는
+     * 커녕 보던 자리에서도 벗어난다.
+     *
+     * 여기서 그냥 두면 화면이 쪽을 다 만든 뒤(`document-view-changed`) 다시 불려
+     * 제대로 따라간다.
+     */
+    if (!this.virtualScroll.hasPageOffset(rect.pageIndex)) return;
     const pageOffset = this.virtualScroll.getPageOffset(rect.pageIndex);
     const caretDocY = pageOffset + rect.y * zoom;
     const caretHeight = rect.height * zoom;

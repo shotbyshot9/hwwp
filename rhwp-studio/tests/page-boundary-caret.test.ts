@@ -76,3 +76,61 @@ test('화면이 쪽을 다시 만든 뒤에도 좌표를 다시 계산한다', (
     'updateRect 는 updateCaret 보다 먼저여야 한다',
   );
 });
+
+const virtualScroll = readFileSync(
+  new URL('../src/view/virtual-scroll.ts', import.meta.url),
+  'utf8',
+).replace(/\r\n/g, '\n');
+
+/**
+ * 쪽이 넘어갈 때 화면이 그 쪽을 보여 주지 않던 결함을 막는다.
+ *
+ * 신고: 쪽 마지막 줄에서 엔터를 치면 다음 쪽이 생기기는 하는데 **화면이 문서 맨 위로
+ * 올라간다.** 거기서 글자를 치면 그제야 새 쪽이 보인다. 붙여넣기가 쪽을 넘길 때도
+ * 붙인 자리가 화면 밖에 남는다.
+ *
+ * 쪽 목록 갱신은 비동기다. 편집 직후 캐럿은 이미 새 쪽에 있지만 화면은 그 쪽을 모르고,
+ * `getPageOffset` 은 모르는 쪽에 **0** 을 돌려준다. 그 0 이 "캐럿이 문서 맨 위" 로 읽혀
+ * 화면이 맨 위로 튀었다.
+ */
+test('모르는 쪽으로는 스크롤하지 않는다', () => {
+  const scroll = inputHandler.slice(
+    inputHandler.indexOf('private scrollCaretIntoView('),
+    inputHandler.indexOf('/** 문서 로딩 후 저장된 캐럿 위치에'),
+  );
+  assert.ok(scroll.length > 0, 'scrollCaretIntoView 를 찾지 못했다');
+  assert.match(
+    scroll,
+    /if \(!this\.virtualScroll\.hasPageOffset\(rect\.pageIndex\)\) return;/,
+    '모르는 쪽의 0 을 문서 맨 위로 읽으면 화면이 튄다',
+  );
+  // 판정은 실제 조회보다 앞서야 한다(주석이 아니라 코드 순서로 본다).
+  assert.ok(
+    scroll.indexOf("hasPageOffset(rect.pageIndex)) return;")
+      < scroll.indexOf("const pageOffset = this.virtualScroll.getPageOffset("),
+    "가드가 조회보다 뒤에 있으면 0 을 그대로 쓴다",
+  );
+});
+
+test('모른다는 것을 물을 수 있어야 한다', () => {
+  // getPageOffset 은 모르는 쪽에도 0 을 준다. 그 값만으로는 "맨 위" 와 구별할 수 없다.
+  assert.match(virtualScroll, /getPageOffset\(pageIdx: number\): number \{\n\s*return this\.pageOffsets\[pageIdx\] \?\? 0;/);
+  assert.match(virtualScroll, /hasPageOffset\(pageIdx: number\): boolean \{\n\s*return this\.pageOffsets\[pageIdx\] !== undefined;/);
+});
+
+test('화면이 쪽을 다 만든 뒤에는 캐럿을 따라간다', () => {
+  /*
+   * 편집 직후에는 스크롤을 미룬다(화면이 새 쪽을 모르므로). 그러니 여기서 따라가지
+   * 않으면 아무도 따라가지 않는다 — 새 쪽은 생겼는데 보던 자리에 머문다.
+   *
+   * `scrollCaretIntoView` 는 캐럿이 화면 밖일 때만 움직이므로, 확대·축소처럼 캐럿이
+   * 이미 보이는 화면 변화에서는 아무 일도 하지 않는다.
+   */
+  const handler = inputHandler.slice(
+    inputHandler.indexOf("eventBus.on('document-view-changed'"),
+    inputHandler.indexOf("eventBus.on('table-object-selection-changed'"),
+  );
+  assert.ok(handler.length > 0, 'document-view-changed 처리기를 찾지 못했다');
+  assert.match(handler, /this\.updateCaret\(\);/, '스크롤을 건너뛰면 화면이 안 따라간다');
+  assert.doesNotMatch(handler, /this\.updateCaret\(true\)/);
+});

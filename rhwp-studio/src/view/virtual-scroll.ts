@@ -251,6 +251,16 @@ export class VirtualScroll {
     return this.pageOffsets[pageIdx] ?? 0;
   }
 
+  /**
+   * 그 쪽의 자리를 알고 있는가.
+   *
+   * `getPageOffset` 은 모르는 쪽에 0 을 돌려준다. 그 값을 "문서 맨 위" 로 읽으면 안 되는
+   * 자리가 있어서(스크롤) 모른다는 것을 따로 물을 수 있게 둔다.
+   */
+  hasPageOffset(pageIdx: number): boolean {
+    return this.pageOffsets[pageIdx] !== undefined;
+  }
+
   getPageHeight(pageIdx: number): number {
     return this.pageHeights[pageIdx] ?? 0;
   }
