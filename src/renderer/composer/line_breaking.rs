@@ -571,6 +571,7 @@ fn tokenize_paragraph_with_split_cell_space_metric(
     tokens
 }
 
+
 /// 토큰 텍스트의 폭을 글자별 언어 인식 측정으로 합산한다.
 fn measure_token_width(
     text: &str,
@@ -672,6 +673,12 @@ fn fill_lines(
     indent_px: f64,
     default_tab_width: f64,
     korean_break_unit: u8,
+    // 줄 머리 금칙(마침표 따위가 줄 앞에 서지 못하게 하는 규칙)을 적용할지.
+    //
+    // 본문에서만 켠다. 표 칸은 한컴이 저장해 둔 줄 나눔을 되살려야 하는데, 실측 오라클
+    // (#2214)에서 한컴은 칸 안 문단 끝 마침표를 혼자 새 줄에 두었다. 본문에서는 반대로
+    // 앞 글자를 함께 내린다(한글 2024 화면 확인). 규칙이 다르므로 자리를 나눈다.
+    apply_line_start_kinsoku: bool,
     condense_min_space: u8,
     initial_start_idx: usize,
     initial_is_first_line: bool,
@@ -829,6 +836,20 @@ fn fill_lines(
                     } else {
                         is_cjk_ideograph(c)
                     };
+                    /*
+                     * 줄 머리 금칙: 여기서 끊으면 **다음 글자가 줄 앞에 선다.** 그 글자가
+                     * 마침표·쉼표·닫는 괄호 따위면 끊을 자리로 삼지 않는다. 그러면 한 글자
+                     * 앞에서 끊겨 "…걸어갔" / "다." 가 된다 — 한글 2024 와 같다.
+                     *
+                     * 끊을 자리 판정만 손댄다. 토큰을 미리 합쳐 두는 방법도 써 봤지만 그건
+                     * 토큰 크기를 바꿔 문단 전체의 줄 나누기를 흔들었다.
+                     */
+                    let allow_break = allow_break
+                        && !(apply_line_start_kinsoku
+                            && text_chars
+                                .get(*end_idx)
+                                .copied()
+                                .is_some_and(is_line_start_forbidden));
                     let candidate_w = lw + w_hwp;
                     // 이 글자가 줄에 들어가는 경우에만 break point 갱신
                     if allow_break
@@ -910,6 +931,7 @@ fn fill_lines(
                         eff_w(false),
                         is_first_line,
                         &cw_hwp,
+                        apply_line_start_kinsoku,
                     );
                     for r in results_part {
                         results.push(r);
@@ -1014,6 +1036,7 @@ fn char_level_break_hwp(
     normal_w: i32,
     mut is_first_line: bool,
     char_widths_hwp: &[i32], // 토큰 내 글자별 HWPUNIT 폭
+    apply_line_start_kinsoku: bool,
 ) -> (Vec<LineBreakResult>, i32, f64) {
     let mut results = Vec::new();
     let mut current_w = if is_first_line {
@@ -1022,9 +1045,9 @@ fn char_level_break_hwp(
         normal_w
     };
 
-    for ci in token_start..token_end {
+    let width_at = |ci: usize| -> i32 {
         let rel_idx = ci - token_start;
-        let char_w = if rel_idx < char_widths_hwp.len() {
+        if rel_idx < char_widths_hwp.len() {
             char_widths_hwp[rel_idx]
         } else {
             let ch = text_chars[ci];
@@ -1034,17 +1057,44 @@ fn char_level_break_hwp(
                 line_max_fs.max(12.0) * 0.5
             };
             to_hwp(char_w_px)
-        };
+        }
+    };
+
+    for ci in token_start..token_end {
+        let char_w = width_at(ci);
 
         if lw + char_w > current_w && ci > *line_start_idx {
+            /*
+             * 줄 머리 금칙: 새 줄이 마침표·닫는 괄호 같은 문자로 시작하면 안 된다.
+             *
+             * 여기가 줄을 실제로 자르는 자리다. 글자가 안 들어가면 그 앞에서 끊는데, 안
+             * 들어간 글자가 마침표면 그 마침표가 다음 줄의 첫 글자가 된다 — 신고된
+             * "…걸어갔다" / "." 가 이렇게 생겼다. 한 글자 앞에서 끊어 앞 글자를 함께
+             * 내려보내면 "…걸어갔" / "다." 가 된다(한글 2024 와 같다).
+             *
+             * 앞 글자를 내릴 수 없는 경우에는 그대로 끊는다 — 줄에 그 한 글자밖에 없거나,
+             * 앞이 공백이거나(줄을 바꿔도 되는 자리라 끌고 갈 이유가 없다), 앞도 금칙
+             * 문자일 때다.
+             */
+            let mut cut = ci;
+            if apply_line_start_kinsoku && is_line_start_forbidden(text_chars[ci]) {
+                let prev = ci - 1;
+                if prev > *line_start_idx
+                    && text_chars[prev] != ' '
+                    && !is_line_start_forbidden(text_chars[prev])
+                {
+                    cut = prev;
+                }
+            }
             results.push(LineBreakResult {
                 start_idx: *line_start_idx,
-                end_idx: ci,
+                end_idx: cut,
                 max_font_size: line_max_fs,
                 has_line_break: false,
             });
-            *line_start_idx = ci;
-            lw = char_w;
+            *line_start_idx = cut;
+            // 새 줄에는 물린 글자까지 함께 올라간다.
+            lw = (cut..=ci).map(width_at).sum();
             is_first_line = false;
             current_w = normal_w;
         } else {
@@ -1218,7 +1268,25 @@ pub(crate) fn reflow_line_segs(
     styles: &ResolvedStyleSet,
     dpi: f64,
 ) {
-    let _ = reflow_line_segs_impl(para, available_width_px, styles, dpi, None, false);
+    let _ = reflow_line_segs_impl(para, available_width_px, styles, dpi, None, false, true);
+}
+
+/// 표 칸 안 문단의 `reflow_line_segs`.
+///
+/// 줄 머리 금칙(마침표 따위가 줄 앞에 서지 못하게 하는 규칙)만 다르다. 본문은 마침표를
+/// 앞 글자와 함께 내리는데(한글 2024 화면 확인), 표 칸에서는 한컴이 저장한 줄 나눔이
+/// 그렇지 않다 — 실측 오라클(#2214, `issue1949_giant_cell_nested_tables_perf.hwp`)에서
+/// 칸 안 문단 끝 마침표가 혼자 새 줄에 선다. 저장본을 되살려야 하는 자리이므로 그대로 둔다.
+///
+/// 한글 2024 가 칸 안에서도 앞 글자와 붙인다는 것이 확인되면 이 갈래를 없애고 오라클을
+/// 고치면 된다.
+pub(crate) fn reflow_line_segs_in_cell(
+    para: &mut Paragraph,
+    available_width_px: f64,
+    styles: &ResolvedStyleSet,
+    dpi: f64,
+) {
+    let _ = reflow_line_segs_impl(para, available_width_px, styles, dpi, None, false, false);
 }
 
 /// 셀 분할로 저장 폭이 stale해진 문단을 다시 조판한다.
@@ -1233,7 +1301,7 @@ pub(crate) fn reflow_line_segs_after_cell_split(
     styles: &ResolvedStyleSet,
     dpi: f64,
 ) {
-    let _ = reflow_line_segs_impl(para, available_width_px, styles, dpi, None, true);
+    let _ = reflow_line_segs_impl(para, available_width_px, styles, dpi, None, true, false);
 }
 
 /// 저장 LINE_SEG가 유효한 셀 텍스트 편집은 수정된 줄 이전의 경계를 그대로 둔다.
@@ -1256,6 +1324,7 @@ pub(crate) fn reflow_line_segs_after_cell_text_edit(
         dpi,
         Some(edit_char_offset),
         false,
+        false,
     )
 }
 
@@ -1266,6 +1335,8 @@ fn reflow_line_segs_impl(
     dpi: f64,
     preserve_prefix_for_edit: Option<usize>,
     split_stale_cell_reflow: bool,
+    // 줄 머리 금칙을 적용할지 — 본문만 true. 자세한 사정은 reflow_line_segs_in_cell 주석.
+    apply_line_start_kinsoku: bool,
 ) -> bool {
     // [#4149] 셀 편집의 단일 관문(reflow_cell_paragraph[_by_path])과 서식 적용
     // (formatting.rs) 이 모두 여기로 수렴한다 — 단일줄 과밀 memo 무효화.
@@ -1496,6 +1567,7 @@ fn reflow_line_segs_impl(
         indent_px,
         tab_width,
         korean_break_unit,
+        apply_line_start_kinsoku,
         condense_min_space,
         reflow_start_idx,
         reflow_is_first_line,
