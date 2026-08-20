@@ -77,3 +77,44 @@ test('문서에서 크기를 다시 읽을 때 기준값도 같이 맞춘다', (
   assert.match(refresh, /this\.fontSize\.value = pt\.toFixed\(1\)/);
   assert.match(refresh, /this\.lastFontSizePt = pt/);
 });
+
+const inputHandler = readFileSync(
+  new URL('../src/engine/input-handler.ts', import.meta.url),
+  'utf8',
+).replace(/\r\n/g, '\n');
+
+/**
+ * 툴바가 예약된 서식을 그대로 보여 준다.
+ *
+ * 크기를 바꿔 놓고 아직 아무것도 치지 않은 사이, 툴바는 **문서에 이미 있는 크기**(=바꾸기
+ * 전 값)를 보여 주고 있었다. 다음에 칠 글자는 바뀐 크기로 나가는데도 칸에는 옛 값이 떠
+ * 있으니, 사용자는 "바꾼 게 안 먹었다" 고 읽는다 — 동작은 맞고 표시만 틀린, 그래서 더
+ * 헷갈리는 경우다.
+ */
+test('예약한 서식이 있으면 툴바에 그것을 보여 준다', () => {
+  const emit = inputHandler.slice(
+    inputHandler.indexOf('private emitCursorFormatState(): void {'),
+    inputHandler.indexOf("this.eventBus.emit('cursor-para-changed'"),
+  );
+  assert.ok(emit.length > 0, 'emitCursorFormatState 를 찾지 못했다');
+  assert.match(emit, /const pending = this\.getPendingCharShape\(\);/);
+  assert.match(
+    emit,
+    /emit\('cursor-format-changed', pending \? \{ \.\.\.props, \.\.\.pending \} : props\)/,
+    '문서 값 위에 예약 값을 덮어 보내야 한다',
+  );
+});
+
+test('예약이 없으면 문서 값을 그대로 보여 준다', () => {
+  /*
+   * 덮어쓰기가 예약이 살아 있을 때만 일어나야 한다. getPendingCharShape() 는 캐럿이
+   * 예약 자리에서 벗어났으면 예약을 버리고 undefined 를 돌려주므로, 커서를 옮기면
+   * 그 자리의 진짜 서식이 보인다. 이 갈래가 없어지면 이번엔 낡은 값이 계속 남는다.
+   */
+  const emit = inputHandler.slice(
+    inputHandler.indexOf('private emitCursorFormatState(): void {'),
+    inputHandler.indexOf("this.eventBus.emit('cursor-para-changed'"),
+  );
+  assert.match(emit, /pending \?/, '예약 유무를 가리지 않고 덮으면 안 된다');
+  assert.match(emit, /: props\)/);
+});

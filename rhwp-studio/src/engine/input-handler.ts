@@ -2466,7 +2466,21 @@ export class InputHandler {
     if (!this.active) return;
     try {
       const props = this.getCharPropertiesAtCursor();
-      this.eventBus.emit('cursor-format-changed', props);
+      /*
+       * 예약해 둔 서식이 있으면 그것을 덮어 보낸다.
+       *
+       * 툴바는 이 값을 그대로 그린다. 문서 값만 보내면, 크기를 바꿔 놓고 아직 아무것도
+       * 치지 않은 사이에 툴바가 **문서에 이미 있는 크기**(=바꾸기 전 값)를 보여 준다.
+       * 다음에 칠 글자는 바뀐 크기로 나가는데도 칸에는 옛 값이 떠 있으니, 사용자는
+       * "바꾼 게 안 먹었다" 고 읽고 다시 바꾸게 된다 — 동작은 맞고 표시만 틀린,
+       * 그래서 더 헷갈리는 경우다.
+       *
+       * getPendingCharShape() 는 캐럿이 예약 자리에서 벗어났으면 예약을 버리고
+       * undefined 를 돌려준다. 그러니 이 덮어쓰기는 예약이 실제로 살아 있는 동안에만
+       * 일어난다 — 커서를 옮기면 그 자리의 진짜 서식이 그대로 보인다.
+       */
+      const pending = this.getPendingCharShape();
+      this.eventBus.emit('cursor-format-changed', pending ? { ...props, ...pending } : props);
     } catch {
       // 문서 없거나 위치 초과 시 무시
     }
