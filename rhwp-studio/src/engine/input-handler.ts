@@ -51,6 +51,8 @@ const DRAG_SCROLL_MIN_STEP_PX = 2;
 const DRAG_SCROLL_MAX_STEP_PX = 20;
 const PX_TO_RAW_2X = 150;
 const PX_TO_HWPUNIT = 75;
+/** pt → 문서 좌표 px. 문서 좌표는 96dpi 기준이다. */
+const PX_PER_PT = 96 / 72;
 const DOCUMENT_PAGINATION_IDLE_FLUSH_DELAY_MS = 120;
 // 최초 입력의 paint 기회를 확보하고 반복 입력이 이 추가 예약 지연을 연장하지 않게 한다.
 const DOCUMENT_PAGINATION_INITIAL_START_DELAY_MS = 100;
@@ -3077,6 +3079,30 @@ export class InputHandler {
   }
 
   /**
+   * 예약한 글자 크기를 캐럿 높이에 미리 반영한다.
+   *
+   * 크기를 바꿔 놓고 아직 아무것도 치지 않았을 때, 캐럿은 문서에 남아 있는 옛 크기 그대로
+   * 서 있었다. 숫자 칸만 바뀌고 화면은 그대로니, 정말 바뀐 것인지 다음 글자를 쳐 봐야만 알
+   * 수 있었다.
+   *
+   * 캐럿이 커지고 작아지는 것이 곧 대답이다 — 숫자를 읽고 믿는 대신 눈으로 확인한다.
+   *
+   * 높이는 엔진이 쓰는 규칙 그대로다: 글자 크기(pt) × 96/72. 실제로 재 보면 10pt 는 13.3,
+   * 20pt 는 26.7 이다. 위쪽 y 는 건드리지 않는다 — 크기를 키워도 줄의 윗변은 거의 그대로
+   * 있고 아래로 자라기 때문이다(재 보면 132.9 → 133.6).
+   */
+  private applyPendingCaretHeight(rect: CursorRect): CursorRect {
+    const pending = this.getPendingCharShape();
+    if (pending?.fontSize === undefined) return rect;
+    // fontSize 는 HWPUNIT 이다(1pt = 100).
+    const pt = pending.fontSize / 100;
+    if (!Number.isFinite(pt) || pt <= 0) return rect;
+    const height = pt * PX_PER_PT;
+    if (Math.abs(height - rect.height) < 0.01) return rect;
+    return { ...rect, height };
+  }
+
+  /**
    * 캐럿 위치를 갱신한다.
    *
    * @param skipScroll true 시 `scrollCaretIntoView` 호출 skip — cursor 변경 trigger 가 동반되지 않은
@@ -3087,7 +3113,7 @@ export class InputHandler {
     const rect = this.cursor.getRect();
     if (rect) {
       const zoom = this.viewportManager.getZoom();
-      const caretRect = this.adjustExitedFieldEndCaretRect(rect);
+      const caretRect = this.applyPendingCaretHeight(this.adjustExitedFieldEndCaretRect(rect));
 
       // IME 조합 중: 블랙박스 캐럿 표시
       if (this.isComposing && this.compositionAnchor && this.compositionLength > 0) {

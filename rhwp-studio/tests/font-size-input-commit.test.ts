@@ -118,3 +118,38 @@ test('예약이 없으면 문서 값을 그대로 보여 준다', () => {
   assert.match(emit, /pending \?/, '예약 유무를 가리지 않고 덮으면 안 된다');
   assert.match(emit, /: props\)/);
 });
+
+/**
+ * 예약한 크기를 캐럿 높이로도 보여 준다.
+ *
+ * 숫자 칸만 바뀌고 화면이 그대로면, 정말 바뀐 것인지 다음 글자를 쳐 봐야만 알 수 있다.
+ * 캐럿이 커지고 작아지는 것이 곧 대답이다 — 읽고 믿는 대신 눈으로 확인한다.
+ */
+test('예약한 글자 크기가 캐럿 높이에 미리 반영된다', () => {
+  assert.match(
+    inputHandler,
+    /private applyPendingCaretHeight\(rect: CursorRect\): CursorRect/,
+    '캐럿 높이 보정이 없다',
+  );
+  // 캐럿을 그리는 자리와 화면으로 끌어오는 자리가 같은 값을 써야 한다. 한쪽만 보정하면
+  // 큰 캐럿의 아래가 잘린 채 스크롤이 멈춘다.
+  assert.match(
+    inputHandler,
+    /const caretRect = this\.applyPendingCaretHeight\(this\.adjustExitedFieldEndCaretRect\(rect\)\);/,
+  );
+});
+
+test('캐럿 높이는 엔진과 같은 환산을 쓴다', () => {
+  // 엔진이 그리는 높이는 글자 크기(pt) × 96/72 다. 다른 값을 쓰면 실제로 치는 순간
+  // 캐럿 높이가 튄다 — 미리 보여 준 것이 거짓이 된다.
+  assert.match(inputHandler, /const PX_PER_PT = 96 \/ 72;/);
+  const fn = inputHandler.slice(
+    inputHandler.indexOf('private applyPendingCaretHeight'),
+    inputHandler.indexOf('   * 캐럿 위치를 갱신한다.'),
+  );
+  assert.ok(fn.length > 0, 'applyPendingCaretHeight 본문을 찾지 못했다');
+  assert.match(fn, /const pt = pending\.fontSize \/ 100;/, 'fontSize 는 HWPUNIT 이라 100 으로 나눈다');
+  assert.match(fn, /const height = pt \* PX_PER_PT;/);
+  // 예약이 없으면 엔진이 준 높이를 그대로 쓴다.
+  assert.match(fn, /if \(pending\?\.fontSize === undefined\) return rect;/);
+});
