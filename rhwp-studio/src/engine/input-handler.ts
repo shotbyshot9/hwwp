@@ -693,7 +693,14 @@ export class InputHandler {
 
     eventBus.on('document-view-changed', () => {
       if (!this.active) return;
-      requestAnimationFrame(() => this.updateCaret(true));
+      requestAnimationFrame(() => {
+        // 화면이 쪽을 다시 만든 뒤다. 여기서도 좌표를 다시 계산해야 한다 —
+        // `cursor.getRect()` 는 캐시라, 쪽이 늘거나 줄었으면 그 값은 이미 없는 배치를
+        // 가리킨다. 편집 직후(afterEdit)에는 화면이 아직 새 쪽을 모르므로, 캐럿이 제
+        // 자리를 찾는 것은 실질적으로 이 시점이다.
+        this.cursor.updateRect();
+        this.updateCaret(true);
+      });
     });
 
     // 표 객체 선택 변경 시 렌더링
@@ -2831,6 +2838,19 @@ export class InputHandler {
     this.clearTableResizeRuntimeCache();
     this.eventBus.emit('document-mutated', 'input-handler-edit');
     this.eventBus.emit('document-changed');
+    /*
+     * 캐럿 좌표를 다시 계산한 뒤에 그린다.
+     *
+     * `cursor.getRect()` 는 캐시를 돌려준다. 여기까지 오는 편집(엔터로 문단 나누기,
+     * Backspace 로 문단 합치기 등)은 쪽이 늘거나 줄 수 있는 것들인데, 캐시를 그대로 쓰면
+     * 방금 사라진 배치의 좌표로 캐럿을 그린다.
+     *
+     * 그래서 이런 일이 있었다 — 쪽 마지막 줄에서 엔터를 치면 새 쪽은 생기는데 캐럿이 앞
+     * 쪽 아래에 그대로 남아, 화면이 따라가지 않으니 아무 일도 안 일어난 것처럼 보였다.
+     * 글자를 하나 치면 그때 다른 경로가 좌표를 다시 잡아 "뿅" 하고 나타났다. 지우면서
+     * 앞 쪽으로 돌아올 때는 반대로, 쪽은 사라졌는데 캐럿만 그 아래에 남았다.
+     */
+    this.cursor.updateRect();
     this.updateCaret();
   }
 
