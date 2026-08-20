@@ -296,4 +296,55 @@ assert.ok(para >= 0, '10글자 이상인 본문 문단이 있어야 한다');
   cmd.undo(wasm);
 }
 
+// ── 10. 한글 조합은 같은 자리를 여러 번 고쳐 깐다 — 그때마다 예약이 살아 있어야 한다 ──
+// 신고: 새 문서에서 아무것도 쓰기 전에 글자 크기를 바꾸고 글을 치면 기본값(10pt)으로
+// 되돌아간다.
+//
+// IME 조합은 한 글자를 여러 번 갱신한다(ㄱ → 가 → 각). 갱신마다 같은 범위를 지우고 다시
+// 깔므로 `anchor` 는 조합 시작에 못 박혀 있고, 예약 자리는 앞 갱신에서 이미 조합 끝으로
+// 옮겨져 있다. 옛 구현은 이 둘을 advancePendingCharShapeAnchor 로 대조해서, 둘째 갱신부터
+// "낡은 예약" 으로 보고 버렸다 — 그래서 세 번째 자모에서 서식이 풀렸다.
+{
+  const at = 0;
+  const handler = newHandler();
+
+  handler.cursor.moveTo(pos(para, at));
+  handler.applyCharFormat({ bold: true }); // 아무것도 쓰기 전에 예약만 한다
+
+  // 조합 갱신 세 번. anchor 는 조합 시작에 고정이고(실제 구현과 같다), 캐럿은 매번
+  // 조합 끝으로 옮겨간다.
+  const compositionAnchor = pos(para, at);
+  for (let i = 0; i < 3; i++) {
+    handler.applyPendingCharShapeToRange(compositionAnchor, 1);
+    handler.cursor.moveTo(pos(para, at + 1));
+    assert.ok(
+      handler.getPendingCharShape(),
+      `조합 ${i + 1}번째 갱신 뒤에도 예약이 살아 있어야 한다`,
+    );
+  }
+  assert.equal(props(para, at).bold, true, '조합을 여러 번 갱신해도 예약 서식이 남아 있어야 한다');
+
+  applyCharShapeModsToRange(wasm, pos(para, at), at, at + 1, { bold: false });
+}
+
+// ── 11. [adversarial] 그래도 진짜 이동은 예약을 버려야 한다 ─────────────────────────
+// 10번을 고치면서 예약 자리를 무조건 이어 붙이면, 이번엔 캐럿을 다른 데로 옮긴 뒤에도
+// 예약이 따라다니게 된다. 살아 있는 예약과 버려야 할 예약을 가르는 것은 여전히
+// getPendingCharShape() 의 캐럿 대조다.
+{
+  const handler = newHandler();
+
+  handler.cursor.moveTo(pos(para, 0));
+  handler.applyCharFormat({ bold: true });
+  handler.applyPendingCharShapeToRange(pos(para, 0), 1); // 조합 한 번
+  handler.cursor.moveTo(pos(para, 8)); // 진짜 이동
+
+  assert.equal(
+    handler.getPendingCharShape(), undefined,
+    '조합으로 예약 자리를 옮겼더라도, 캐럿이 진짜로 이동하면 예약은 버려야 한다',
+  );
+
+  applyCharShapeModsToRange(wasm, pos(para, 0), 0, 1, { bold: false });
+}
+
 console.log('PENDING_CHAR_SHAPE_OK');

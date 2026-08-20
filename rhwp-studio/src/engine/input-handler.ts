@@ -1961,7 +1961,23 @@ export class InputHandler {
     if (!props) return;
     const to = anchor.charOffset + count;
     applyCharShapeModsToRange(this.wasm, anchor, anchor.charOffset, to, props);
-    this.advancePendingCharShapeAnchor(anchor, { ...anchor, charOffset: to });
+    /*
+     * 예약 자리를 조합 끝으로 옮긴다.
+     *
+     * 여기서 advancePendingCharShapeAnchor(anchor, ...) 를 부르면 안 된다. 그 함수는
+     * "옛 자리" 가 예약 자리와 다르면 낡은 예약으로 보고 버리는데, 조합에서는 두 값이
+     * 처음부터 어긋난다 — 조합은 매 갱신마다 같은 범위(anchor..to)를 지우고 다시 깔아서
+     * `anchor` 가 조합 시작에 못 박혀 있는 반면, 예약 자리는 앞 갱신에서 이미 조합 끝으로
+     * 옮겨져 있기 때문이다.
+     *
+     * 그래서 두 번째 갱신에서 예약이 버려졌다. 한글은 한 글자가 여러 번 갱신되므로
+     * (ㄱ → 가 → 각) 세 번째 자모부터 서식이 풀려, 아무것도 쓰기 전에 고른 글자 크기가
+     * 기본값으로 되돌아갔다.
+     *
+     * 낡았는지는 바로 위 getPendingCharShape() 가 캐럿과 예약 자리를 대조해 이미
+     * 확인했다. 통과한 뒤이므로 여기서는 그대로 옮긴다.
+     */
+    this.pendingCharShapeAnchor = { ...anchor, charOffset: to };
   }
 
   /**

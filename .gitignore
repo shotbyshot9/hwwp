@@ -120,3 +120,6 @@ tmp/
 # 브라우저 전용 흐름에서는 client_secret 자체가 필요 없다.
 client_secret_*.json
 *.client_secret.json
+
+# 시험 전용 wasm 산출물 (pkg/ 와 달리 배포에 안 실린다)
+pkg-node/
