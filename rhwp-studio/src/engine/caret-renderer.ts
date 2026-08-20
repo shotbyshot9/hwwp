@@ -17,6 +17,58 @@ function compositionFontSize(lineHeight: number, fontSizePt?: number): number {
   return lineHeight * 0.85;
 }
 
+/**
+ * 캐럿 위에서 글자 기준선까지의 거리(글꼴 크기 대비).
+ *
+ * 엔진이 캐럿 위를 이 규칙으로 잡는다 — `캐럿 위 = 줄 위 + 기준선 - 글꼴크기 × 0.8`
+ * (`src/document_core/queries/cursor_rect.rs`). 뒤집으면 **기준선은 캐럿 위에서
+ * 글꼴크기 × 0.8 아래**다. 오버레이 글자를 canvas 글자와 겹치려면 이 값을 그대로 써야
+ * 한다. 이 상수가 엔진과 어긋나면 조합 중인 글자만 위아래로 어긋나 보인다.
+ */
+const CARET_TOP_TO_BASELINE = 0.8;
+
+/** 글꼴의 위·아래 폭(px). 브라우저가 실제로 그릴 자리를 재서 얻는다. */
+interface FontVerticalMetrics {
+  ascent: number;
+  descent: number;
+}
+
+const fontMetricsCache = new Map<string, FontVerticalMetrics>();
+let metricsCanvas: CanvasRenderingContext2D | null = null;
+
+/**
+ * 글꼴의 ascent/descent 를 잰다.
+ *
+ * CSS 는 줄 상자 안에서 글자를 제 나름대로 가운데 맞춤한다. 그 결과 기준선이 어디에
+ * 놓이는지는 글꼴마다 다르므로, 원하는 자리에 기준선을 놓으려면 실제 값을 알아야 한다.
+ * 어림값을 쓰면 글꼴을 바꿀 때마다 조금씩 어긋난다.
+ *
+ * 못 재는 환경(구형 브라우저)에서는 null 을 돌려주고 부르는 쪽이 옛 방식으로 물러난다.
+ */
+function measureFontVerticalMetrics(fontFamily: string, fontSizePx: number): FontVerticalMetrics | null {
+  if (!(fontSizePx > 0)) return null;
+  const key = `${fontSizePx}|${fontFamily}`;
+  const cached = fontMetricsCache.get(key);
+  if (cached) return cached;
+  try {
+    if (!metricsCanvas) {
+      metricsCanvas = document.createElement('canvas').getContext('2d');
+    }
+    if (!metricsCanvas) return null;
+    metricsCanvas.font = `${fontSizePx}px ${fontFamily}`;
+    // 한글 한 글자로 잰다 — 라틴 문자만으로는 한글 글꼴의 위아래 폭이 안 나온다.
+    const m = metricsCanvas.measureText('가');
+    const ascent = m.fontBoundingBoxAscent;
+    const descent = m.fontBoundingBoxDescent;
+    if (!Number.isFinite(ascent) || !Number.isFinite(descent) || ascent <= 0) return null;
+    const metrics = { ascent, descent };
+    fontMetricsCache.set(key, metrics);
+    return metrics;
+  } catch {
+    return null;
+  }
+}
+
 /** Canvas 위에 깜박이는 캐럿을 렌더링한다 */
 export class CaretRenderer {
   private caretEl: HTMLDivElement;
@@ -142,19 +194,40 @@ export class CaretRenderer {
 
     // 블랙박스 위치/크기
     const w = box.w * zoom;
-    const h = box.h * zoom;
     const left = pageLeft + box.x * zoom;
-    const top = pageOffset + box.y * zoom;
+    // 조합 글자는 아래 canvas 에도 같은 글자가 그려져 있다(조합 텍스트를 문서에 바로
+    // 넣어 배치를 보여 주기 때문이다). 두 글자의 크기가 다르면 오버레이가 사라질 때마다
+    // 크기가 튄다. 줄 높이(box.h)는 글자 크기보다 크므로 어림값으로 쓰면 반드시 어긋난다.
+    const fontPx = compositionFontSize(box.h, fontSizePt);
+    const family = fontFamily || 'sans-serif';
+    /*
+     * 기준선을 canvas 글자에 맞춘다.
+     *
+     * 예전에는 상자 높이를 그대로 줄 높이로 주고 CSS 에 가운데 맞춤을 맡겼다. 그러면
+     * 기준선이 글꼴 metrics 에 따라 제멋대로 놓여, 조합 중인 글자만 아래로 처져 보였다 —
+     * 다 치고 나면 canvas 글자로 바뀌면서 제자리로 올라갔다.
+     *
+     * 이제 기준선 자리를 직접 정한다. 상자 위에서 `글꼴크기 × 0.8` 아래가 기준선이고,
+     * 줄 높이를 글꼴의 실제 위아래 폭(ascent+descent)으로 주면 기준선이 정확히
+     * ascent 만큼 내려온 자리에 놓인다. 그래서 상자를 그만큼 위로 올려 잡는다.
+     *
+     * 상자 높이도 글꼴의 위아래 폭으로 맞춘다. 글꼴에 따라 ascent 가 0.8 을 넘는데,
+     * 옛 높이(글꼴 크기)를 그대로 두면 글자 윗부분이 상자 밖으로 나가 잘렸다
+     * (상자는 `overflow: hidden` 이다).
+     */
+    // metrics 는 **화면에 실제로 그려지는 크기**로 잰다. 브라우저는 이 값을 정수로
+    // 반올림하므로, 확대 전 크기로 재서 zoom 을 곱하면 그만큼 어긋난다.
+    const metrics = measureFontVerticalMetrics(family, fontPx * zoom);
+    const baselineY = pageOffset + (box.y + fontPx * CARET_TOP_TO_BASELINE) * zoom;
+    const h = metrics ? metrics.ascent + metrics.descent : box.h * zoom;
+    const top = metrics ? baselineY - metrics.ascent : pageOffset + box.y * zoom;
 
     this.compEl.style.left = `${left}px`;
     this.compEl.style.top = `${top}px`;
     this.compEl.style.width = `${w}px`;
     this.compEl.style.height = `${h}px`;
-    // 조합 글자는 아래 canvas 에도 같은 글자가 그려져 있다(조합 텍스트를 문서에 바로
-    // 넣어 배치를 보여 주기 때문이다). 두 글자의 크기가 다르면 오버레이가 사라질 때마다
-    // 크기가 튄다. 줄 높이(box.h)는 글자 크기보다 크므로 어림값으로 쓰면 반드시 어긋난다.
-    this.compEl.style.fontSize = `${compositionFontSize(box.h, fontSizePt) * zoom}px`;
-    this.compEl.style.fontFamily = fontFamily || 'sans-serif';
+    this.compEl.style.fontSize = `${fontPx * zoom}px`;
+    this.compEl.style.fontFamily = family;
     this.compEl.style.lineHeight = `${h}px`;
     this.compEl.textContent = text;
     this.compEl.style.display = 'block';

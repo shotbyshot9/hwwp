@@ -122,3 +122,49 @@ test('오버레이는 같은 줄일 때만 그린다', () => {
     'showComposition 이 줄바꿈 판정 뒤에 있지 않다',
   );
 });
+
+/**
+ * 조합 중인 글자가 옆 글자보다 아래로 처져 보이던 결함을 막는다.
+ *
+ * 조합 오버레이는 검은 상자에 흰 글자를 그린다. 예전에는 상자 높이를 그대로 줄 높이로
+ * 주고 글자 세로 자리를 CSS 의 가운데 맞춤에 맡겼다. 그러면 기준선이 글꼴 metrics 에 따라
+ * 정해져 canvas 글자의 기준선과 어긋난다 — 실측으로 5px 가량 아래였다. 다 치고 나면
+ * canvas 글자로 바뀌면서 제자리로 올라가, 치는 동안만 글자가 내려앉아 보였다.
+ *
+ * canvas 쪽은 멀쩡했다. 조합 중이든 확정 뒤든 글자는 같은 y 에 그려진다(실측 132.3).
+ * 어긋난 것은 오버레이뿐이다.
+ */
+test('조합 오버레이의 기준선은 엔진과 같은 규칙으로 잡는다', () => {
+  // 엔진: 캐럿 위 = 줄 위 + 기준선 - 글꼴크기 × 0.8 (cursor_rect.rs).
+  // 뒤집으면 기준선은 캐럿 위에서 글꼴크기 × 0.8 아래다. 이 상수가 어긋나면 글자만 뜬다.
+  assert.match(caretRenderer, /const CARET_TOP_TO_BASELINE = 0\.8;/);
+  assert.match(
+    caretRenderer,
+    /const baselineY = pageOffset \+ \(box\.y \+ fontPx \* CARET_TOP_TO_BASELINE\) \* zoom;/,
+  );
+  // 상자를 기준선에서 거꾸로 잡아야 글자가 원하는 자리에 온다.
+  assert.match(caretRenderer, /const top = metrics \? baselineY - metrics\.ascent : /);
+});
+
+test('글꼴 metrics 는 화면에 그려지는 크기로 잰다', () => {
+  // 브라우저는 이 값을 정수로 반올림한다. 확대 전 크기로 재서 zoom 을 곱하면 그만큼
+  // 어긋나므로, 실제로 그려지는 크기 그대로 재야 한다.
+  assert.match(caretRenderer, /measureFontVerticalMetrics\(family, fontPx \* zoom\)/);
+  assert.match(caretRenderer, /m\.fontBoundingBoxAscent/);
+  assert.match(caretRenderer, /m\.fontBoundingBoxDescent/);
+});
+
+test('상자 높이는 글꼴의 위아래 폭에 맞춘다', () => {
+  /*
+   * 글꼴에 따라 ascent 가 글꼴 크기의 0.8 을 넘는다. 상자를 옛 높이(글꼴 크기)로 두면
+   * 글자 윗부분이 상자 밖으로 나가는데, 상자는 `overflow: hidden` 이라 잘린다.
+   */
+  assert.match(caretRenderer, /const h = metrics \? metrics\.ascent \+ metrics\.descent : /);
+  assert.match(caretRenderer, /overflow:hidden/);
+});
+
+test('metrics 를 못 재면 옛 방식으로 물러난다', () => {
+  // 구형 브라우저에서 오버레이가 아예 사라지면 안 된다 — 어긋나더라도 보이는 편이 낫다.
+  assert.match(caretRenderer, /: box\.h \* zoom;/);
+  assert.match(caretRenderer, /: pageOffset \+ box\.y \* zoom;/);
+});
