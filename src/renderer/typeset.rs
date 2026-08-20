@@ -22461,6 +22461,28 @@ impl TypesetEngine {
         let Some(last_page) = pages.last() else {
             return;
         };
+        /*
+         * **앞 쪽이 표로 끝날 때만** 버린다.
+         *
+         * 이 보정이 있는 이유는 위 주석에 적힌 그대로다 — 큰 표의 마지막 조각 뒤에서
+         * 저장 vpos 가 다음 쪽을 가리켜, 빈 줄 하나짜리 없던 쪽이 생기는 것을 막는다.
+         * 표가 앞에 없으면 그 사정이 아니다.
+         *
+         * 가리지 않고 버리면 **사용자가 방금 만든 쪽까지 사라진다.** 쪽 마지막 줄에서
+         * 엔터를 치면 빈 문단만 있는 마지막 쪽이 만들어지는데, 그것이 곧바로 버려져
+         * 엔터를 쳐도 아무 일도 안 일어나는 것처럼 보였다. 글자를 하나 치면 그제야 쪽이
+         * 살아남아 "뿅" 하고 나타났다 — 신고된 그 증상이다.
+         */
+        let prev_page_ends_with_table = pages
+            .get(pages.len() - 2)
+            .and_then(|page| page.column_contents.last())
+            .and_then(|column| column.items.last())
+            .is_some_and(|item| {
+                matches!(item, PageItem::Table { .. } | PageItem::PartialTable { .. })
+            });
+        if !prev_page_ends_with_table {
+            return;
+        }
         let mut has_item = false;
         let blank_only = last_page.column_contents.iter().all(|column| {
             if !column.wrap_around_paras.is_empty() {
