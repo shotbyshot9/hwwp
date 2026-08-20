@@ -189,6 +189,26 @@ function pxToRaw(px: number): number {
   return Math.round(px * PX_TO_HWPUNIT);
 }
 
+/**
+ * IME 조합 글자가 줄 끝을 넘어가 다음 줄로 내려갔는가.
+ *
+ * 조합 오버레이는 `start`(조합 시작 자리)에 상자를 놓고 `end`(현재 커서) 까지를 글자
+ * 너비로 삼는다. 이 셈은 두 자리가 같은 줄에 있을 때만 성립한다. 줄을 넘어가면 시작
+ * 자리는 앞 줄 끝에 남고 글자는 새 줄 앞머리에 놓여, 너비가 음수가 되고 상자는 엉뚱한
+ * 줄에 그려진다.
+ *
+ * 넘어갔다고 보는 조건은 셋이다 — 쪽이 바뀌었거나, y 가 달라졌거나(줄이 바뀌었다),
+ * 끝이 시작보다 왼쪽이거나(같은 줄이면 있을 수 없다). y 비교에 여유를 두는 것은
+ * 좌표가 부동소수라 같은 줄에서도 끝자리가 미세하게 다를 수 있어서다.
+ */
+function compositionWrapped(start: CursorRect, end: CursorRect): boolean {
+  return (
+    start.pageIndex !== end.pageIndex
+    || Math.abs(start.y - end.y) > 0.5
+    || end.x < start.x
+  );
+}
+
 function availableDropWidthPx(pageInfo: PageInfo, pageX: number): number {
   const bodyWidth = Math.max(1, pageInfo.width - pageInfo.marginLeft - pageInfo.marginRight);
   const columns = pageInfo.columns?.filter((column) => column.width > 0) ?? [];
@@ -3072,17 +3092,34 @@ export class InputHandler {
             );
           }
           const charWidth = rect.x - startRect.x;
-          const text = this.textarea.value || '';
-          // 현재 커서 위치의 글꼴 정보. 크기까지 읽어 넘겨야 오버레이 글자가 아래
-          // canvas 글자와 같은 크기로 겹친다(fontSize 는 HWPUNIT, 1pt = 100).
-          let fontFamily = 'sans-serif';
-          let fontSizePt: number | undefined;
-          try {
-            const props = this.getCharPropertiesAtCursor();
-            if (props.fontFamily) fontFamily = props.fontFamily;
-            if (props.fontSize && props.fontSize > 0) fontSizePt = props.fontSize / 100;
-          } catch { /* fallback */ }
-          this.caret.showComposition(startRect, charWidth, zoom, text, fontFamily, fontSizePt);
+          if (compositionWrapped(startRect, rect)) {
+            // 조합 글자가 줄 끝을 넘어간 순간이다. 시작 자리는 앞 줄 끝에 남아 있고
+            // 글자는 이미 새 줄 앞머리에 놓였다. 그대로 상자를 그리면 앞 줄 끝에
+            // 한 번, canvas 가 그린 새 줄 앞머리에 한 번 — 같은 글자가 두 줄에
+            // 걸쳐 두 번 보인다. 사용자에게는 안 친 글자가 생긴 것처럼 보인다.
+            //
+            // 새 줄에서의 시작 x 는 엔진에 물을 방법이 없다. CursorRect 는 줄
+            // 정보를 주지 않고, 조합 시작 오프셋의 커서 자리는 줄바꿈 경계에서
+            // 앞 줄 끝으로 풀린다.
+            //
+            // 자리를 모르면 그리지 않는다. 조합 글자는 이미 canvas 에 제 자리에
+            // 제대로 그려져 있으므로, 검은 상자가 한 글자 동안 빠지는 쪽이 없는
+            // 글자가 보이는 쪽보다 낫다.
+            this.caret.hideComposition();
+            this.caret.update(caretRect, zoom);
+          } else {
+            const text = this.textarea.value || '';
+            // 현재 커서 위치의 글꼴 정보. 크기까지 읽어 넘겨야 오버레이 글자가 아래
+            // canvas 글자와 같은 크기로 겹친다(fontSize 는 HWPUNIT, 1pt = 100).
+            let fontFamily = 'sans-serif';
+            let fontSizePt: number | undefined;
+            try {
+              const props = this.getCharPropertiesAtCursor();
+              if (props.fontFamily) fontFamily = props.fontFamily;
+              if (props.fontSize && props.fontSize > 0) fontSizePt = props.fontSize / 100;
+            } catch { /* fallback */ }
+            this.caret.showComposition(startRect, charWidth, zoom, text, fontFamily, fontSizePt);
+          }
         } catch {
           // getCursorRect 실패 시 일반 캐럿
           this.caret.hideComposition();
