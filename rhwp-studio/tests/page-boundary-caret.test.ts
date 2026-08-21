@@ -177,3 +177,51 @@ test('그 신호를 받아 캐럿을 화면에 들인다', () => {
   assert.match(handler, /this\.updateCaret\(\);/, '스크롤을 건너뛰면 화면이 안 따라간다');
   assert.doesNotMatch(handler, /this\.updateCaret\(true\)/);
 });
+
+const selectionRenderer = readFileSync(
+  new URL('../src/engine/selection-renderer.ts', import.meta.url),
+  'utf8',
+).replace(/\r\n/g, '\n');
+
+/**
+ * 선택 영역에 진한 선이 생기던 것을 막는다.
+ *
+ * 상자마다 반투명으로 칠하면 상자가 겹치는 자리가 두 번 칠해져 진한 선이 생긴다. 줄과
+ * 줄이 맞닿는 자리, 한 줄이 여러 조각으로 나뉘는 자리 모두에서다. 좌표를 픽셀 격자에
+ * 맞춰 겹침을 없애 보았지만 화면 전체에 확대(`--ui-scale`)가 걸려 있어 맞춰 둔 정수
+ * 좌표가 다시 소수가 된다 — 좌표로는 막을 수 없다.
+ *
+ * 그래서 상자는 **불투명**하게 칠하고 투명도는 겹에 한 번만 준다. 겹쳐도 같은 색이라
+ * 진해지지 않고, 합성할 때 한 번 투명해지므로 농도는 그대로다.
+ */
+test('선택 상자는 불투명하게 칠하고 투명도는 겹에 준다', () => {
+  // 색은 앱의 글자색을 옅게 깐 따뜻한 중성색이다. 파랑이 아닌 이유는 그 파일 주석에.
+  assert.match(selectionRenderer, /const SELECTION_FILL = 'rgb\(87,80,74\)';/);
+  assert.match(selectionRenderer, /const SELECTION_OPACITY = '0\.22';/);
+  // 상자 색에 알파가 있으면 겹치는 자리가 다시 진해진다.
+  assert.doesNotMatch(selectionRenderer, /background:rgba\(/);
+  assert.match(selectionRenderer, /background:\$\{SELECTION_FILL\}/);
+  assert.match(selectionRenderer, /opacity:\$\{SELECTION_OPACITY\};/);
+});
+
+const keyboard = readFileSync(
+  new URL('../src/engine/input-handler-keyboard.ts', import.meta.url),
+  'utf8',
+).replace(/\r\n/g, '\n');
+
+/**
+ * 모두 선택(Ctrl+A)은 화면을 옮기지 않는다.
+ *
+ * 모두 선택은 캐럿을 문서 끝으로 보낸다. 캐럿을 따라가면 보던 자리를 잃고 문서 맨 아래로
+ * 끌려간다 — 복사하려고 눌렀을 뿐인데 읽던 자리가 사라진다. 다른 워드프로세서도 이때는
+ * 화면을 옮기지 않는다.
+ */
+test('모두 선택은 화면을 그대로 둔다', () => {
+  const fn = keyboard.slice(
+    keyboard.indexOf('export function handleSelectAll'),
+    keyboard.indexOf('export function onCopy'),
+  );
+  assert.ok(fn.length > 0, 'handleSelectAll 을 찾지 못했다');
+  assert.match(fn, /this\.updateCaret\(true\);/, '스크롤을 건너뛰어야 한다');
+  assert.doesNotMatch(fn, /this\.updateCaret\(\);/);
+});

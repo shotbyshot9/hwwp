@@ -105,11 +105,15 @@ fn assert_single_rect_near(
         Some(expected_page),
         "{file_name}: {label} page"
     );
+    // 높이는 **줄 높이**다(줄 간격 포함). 예전에는 글자 상자 높이(16.0)였는데, 그러면
+    // 여러 줄을 선택했을 때 줄 사이에 흰 띠가 남아 줄무늬로 보였다. 한글도 구글 독스도
+    // 선택이 한 덩어리로 이어진다. 이 시험의 주제는 쪽 범위이고 높이는 곁다리라,
+    // 그 변경을 여기 반영해 둔다 — 계약은 `tests/selection_fills_line_height.rs` 에 있다.
     for (field, expected) in [
         ("x", expected_x),
         ("y", expected_y),
         ("width", expected_width),
-        ("height", 16.0),
+        ("height", 25.6),
     ] {
         let actual = rect[field].as_f64().expect("rect number");
         assert!(

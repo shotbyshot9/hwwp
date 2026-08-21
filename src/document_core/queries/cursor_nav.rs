@@ -2309,12 +2309,39 @@ impl DocumentCore {
                         (0.0, 0.0)
                     };
 
+                    /*
+                     * 선택 상자는 **줄 높이**를 채운다.
+                     *
+                     * `lh.h` 는 글자 상자 높이(글꼴 크기)다. 그것만 칠하면 줄 사이에 줄
+                     * 간격만큼 흰 띠가 남아, 여러 줄을 잡았을 때 선택이 줄무늬로 보인다
+                     * (10pt·줄간격 160%에서 21.3px 중 13.3px 만 칠해져 8px 이 빈다).
+                     * 한글도 구글 독스도 줄이 서로 맞닿아 한 덩어리로 보인다.
+                     *
+                     * 줄과 줄의 간격은 `line_height + line_spacing` 이다. 글자 상자 위에서
+                     * 그만큼 내려 채우면 다음 줄 상자와 정확히 맞닿는다 — 글자 상자 위끼리
+                     * 딱 그 간격만큼 떨어져 있기 때문이다(실측 132.3 / 153.6 / 174.9).
+                     *
+                     * 글자 상자보다 작아지지는 않게 둔다. 줄 정보가 없거나 이상한 문서에서
+                     * 선택이 글자보다 얇아지면 안 된다.
+                     */
+                    let line_pitch_px = para
+                        .line_segs
+                        .get(line_idx)
+                        .map(|seg| {
+                            crate::renderer::hwpunit_to_px(
+                                seg.line_height + seg.line_spacing,
+                                self.dpi,
+                            )
+                        })
+                        .unwrap_or(0.0);
+                    let filled_h = line_pitch_px.max(lh.h);
+
                     // y/h는 항상 left_hit 기준 (right_hit가 다음 줄에 있을 수 있음)
                     let (page_idx, rect_x, rect_y, rect_h) =
                         if !partial_start && cell_target.is_none() {
-                            (lh.page, area_left, lh.y, lh.h)
+                            (lh.page, area_left, lh.y, filled_h)
                         } else {
-                            (lh.page, lh.x, lh.y, lh.h)
+                            (lh.page, lh.x, lh.y, filled_h)
                         };
 
                     let width = if selection_continues {
