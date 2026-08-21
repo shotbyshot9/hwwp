@@ -210,7 +210,17 @@ function defaultSettings(): AppSettings {
       // 글이 편하게 읽히는 정도. 200% 는 A4 가 창을 넘어 가로 스크롤을 부른다.
       zoomPercent: 130,
       cheerLevel: 'normal',
-      cheerRate: 1,
+      /*
+       * 처음 오는 사람에게는 MAX 로 보여 준다.
+       *
+       * x1 은 문장부호를 찍을 때 — 대략 60타에 한 번이다. 이 모드를 처음 켠 사람에게는
+       * 한참 쳐도 아무 일이 없는 것처럼 느껴진다. 배명훈 모드가 무엇인지 한 번은 제대로
+       * 겪어 봐야 남길지 말지 고를 수 있다.
+       *
+       * 부담스러우면 배속 단추 한 번으로 내린다(그 값은 저장된다). 이미 쓰던 사람의
+       * 설정은 그대로다 — 여기 값은 저장된 설정이 없을 때만 쓰인다.
+       */
+      cheerRate: 'max',
       confetti: true,
       sound: true,
       praise: true,

@@ -88,3 +88,38 @@ test('축포는 한 문장에 한 번만 터진다', () => {
   const source = readFileSync(new URL('../src/focus/cheer-engine.ts', import.meta.url), 'utf8');
   assert.match(source, /charsSinceSentence > LONG_RUN_CHARS && !this\.longRunFired/);
 });
+
+/**
+ * 처음 오는 사람은 MAX 로 시작한다.
+ *
+ * x1 은 문장부호를 찍을 때 — 대략 60타에 한 번이다. 배명훈 모드를 처음 켠 사람에게는
+ * 한참 쳐도 아무 일이 없는 것처럼 느껴진다. 이 모드가 이 제품의 핵심이므로, 무엇인지
+ * 한 번은 제대로 겪어 본 뒤에 남길지 말지 고르게 한다. 부담스러우면 배속 단추 한 번으로
+ * 내리고 그 값은 저장된다.
+ */
+test('배명훈 모드 기본 배속은 MAX 다', () => {
+  const settings = readFileSync(
+    new URL('../src/core/user-settings.ts', import.meta.url),
+    'utf8',
+  ).replace(/\r\n/g, '\n');
+  const focus = settings.slice(
+    settings.indexOf('    focus: {'),
+    settings.indexOf('    autosave: {'),
+  );
+  assert.ok(focus.length > 0, '기본 설정의 focus 를 찾지 못했다');
+  assert.match(focus, /cheerRate: 'max',/);
+});
+
+test('저장된 배속이 있으면 기본값이 덮지 않는다', () => {
+  // 이미 쓰던 사람이 x1 로 내려 두었으면 그대로여야 한다. 기본값은 저장된 설정이
+  // 없을 때만 쓰인다.
+  const settings = readFileSync(
+    new URL('../src/core/user-settings.ts', import.meta.url),
+    'utf8',
+  ).replace(/\r\n/g, '\n');
+  assert.match(
+    settings,
+    /cheerRate: normalizeCheerRate\(focus\.cheerRate, defaults\.focus\.cheerRate\)/,
+    '저장값을 먼저 보고 없을 때만 기본값을 써야 한다',
+  );
+});
