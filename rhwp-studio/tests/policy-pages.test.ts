@@ -17,8 +17,21 @@ test('토큰을 저장하지 않는다는 주장이 코드와 맞다', () => {
   assert.doesNotMatch(driveAuth, /localStorage|sessionStorage/);
 });
 
-test('추적하지 않는다는 주장이 코드와 맞다', () => {
-  assert.match(privacy, /분석 도구, 광고 추적기, 오류 수집기를 일절 넣지 않았습니다/);
+/*
+ * 예전에는 "분석 도구를 일절 넣지 않았습니다" 라고 적혀 있었고 이 시험이 그 문장을 지켰다.
+ * 그런데 Cloudflare 대시보드에서 Web Analytics 를 켜자 **코드를 건드리지 않았는데도**
+ * 방문 집계 스크립트가 hwwp.kr 페이지에 자동으로 실렸다. 나흘 동안 방침이 거짓이었다.
+ *
+ * 그래서 지키는 대상을 바꾼다. "아무것도 안 센다" 가 아니라 **무엇을 세고 무엇은 안 하는지**를
+ * 지킨다 — 쿠키를 심지 않고, 사람을 식별하지 않고, 사이트를 넘나들며 따라다니지 않는다는 것.
+ * 이 세 가지가 사용자가 실제로 걱정하는 바다.
+ */
+test('무엇을 세는지 밝히고, 하지 않는 것을 못 박는다', () => {
+  assert.match(privacy, /Cloudflare Web Analytics/, '집계 도구를 밝히지 않았다');
+  assert.match(privacy, /쿠키를 심지 않고, 여러분을 식별하지 않으며, 여러 사이트에 걸쳐 따라다니지 않습니다/);
+  assert.match(privacy, /광고 추적기·오류 수집기.*넣지 않았습니다/);
+  // 문서 내용은 집계에 들어가지 않는다 — 이 제품에서 가장 중요한 약속이다.
+  assert.match(privacy, /쓰신 글이나 연 파일은 이 집계에 들어가지 않습니다/);
 });
 
 test('drive.file 범위만 쓴다는 주장이 코드와 맞다', () => {
@@ -35,7 +48,16 @@ test('브라우저에 저장하는 것을 빠짐없이 밝힌다', () => {
 });
 
 test('외부로 나가는 곳을 빠짐없이 밝힌다', () => {
-  for (const host of ['accounts.google.com', 'apis.google.com', 'googleapis.com', 'cdn.jsdelivr.net']) {
+  const hosts = [
+    'accounts.google.com',
+    'apis.google.com',
+    'googleapis.com',
+    'cdn.jsdelivr.net',
+    // 브라우저가 실제로 받아오는 집계 스크립트. Cloudflare 가 자동으로 끼워 넣으므로
+    // 저장소 코드만 봐서는 드러나지 않는다 — 그래서 여기 적어 둔다.
+    'static.cloudflareinsights.com',
+  ];
+  for (const host of hosts) {
     assert.match(privacy, new RegExp(host.replace(/\./g, '\\.')), `${host} 가 방침에 없다`);
   }
   assert.match(privacy, /Cloudflare/);
@@ -81,9 +103,9 @@ test('제품 정보에 함초롬체 권리자를 밝힌다', () => {
   assert.match(about, /비상업적 이용 조건으로 사용/);
 });
 
-test('만든 사람 표기는 앱과 정책 문서에서 같다', () => {
-  // 제품 정보에서는 한글 이름 옆에 트위터를 붙이고, 정책 문서에서는 메일을 붙인다.
-  // 이름 자체는 세 곳에서 같아야 한다 — 다르면 같은 사람인지 알 수 없다.
+test('만든 사람 표기와 연락처가 앱과 정책 문서에서 같다', () => {
+  // 이름도 연락처도 세 곳에서 같아야 한다 — 다르면 같은 사람인지 알 수 없고, 어디로
+  // 연락해야 하는지도 헷갈린다. 예전에는 앱은 트위터, 정책 문서는 메일이라 갈렸다.
   const about = readFileSync(new URL('../src/ui/about-dialog.ts', import.meta.url), 'utf8');
   assert.match(about, /만든 사람: 류지원/);
   assert.match(about, /twitter\.com\/shotbyshot/);
@@ -92,6 +114,9 @@ test('만든 사람 표기는 앱과 정책 문서에서 같다', () => {
   for (const page of ['privacy.html', 'terms.html']) {
     const html = readFileSync(new URL(`../public/${page}`, import.meta.url), 'utf8');
     assert.match(html, /만든 사람 — 류지원/, `${page} 의 이름 표기가 다르다`);
+    assert.match(html, /twitter\.com\/shotbyshot/, `${page} 의 연락처가 앱과 다르다`);
+    // 메일 주소는 더 쓰지 않는다. 한 곳에만 남으면 어디로 연락할지 헷갈린다.
+    assert.doesNotMatch(html, /mailto:/, `${page} 에 옛 연락처가 남아 있다`);
   }
   // 저작권 고지와 패키지 메타데이터도 같은 이름을 쓴다. LICENSE 는 영문 문서지만
   // 저작권자 이름은 표기 언어를 따라가지 않는다 — 사람이 하나면 이름도 하나다.
@@ -130,4 +155,29 @@ test('드라이브 권한 설명이 실제 범위와 어긋나지 않는다', ()
   );
   assert.match(config, /사용자가 피커로 고른 파일/);
   assert.match(config, /auth\/drive\.file/);
+});
+
+/**
+ * 방침이 저장소 코드만으로는 지켜지지 않는다 — 이번에 그것을 겪었다.
+ *
+ * Cloudflare 대시보드에서 Web Analytics 를 켜자 **코드를 한 줄도 안 고쳤는데** 집계
+ * 스크립트가 hwwp.kr 페이지에 자동으로 실렸다. 그동안 방침에는 "분석 도구를 일절 넣지
+ * 않았습니다" 가 그대로 있었다. 나흘 동안 거짓이었고, 저장소를 아무리 들여다봐도 알 수
+ * 없었다.
+ *
+ * 그래서 **배포된 사이트가 실제로 부르는 곳**을 방침이 담고 있는지 본다. 새 스크립트가
+ * 자동으로 끼워지면 이 시험이 아니라 사람이 알아채야 하므로, 최소한 알려진 것들은 여기
+ * 적어 두고 빠지면 걸리게 한다.
+ */
+test('배포본이 부르는 외부 스크립트가 방침에 다 있다', () => {
+  // 2026-08 hwwp.kr 실측: 페이지가 부른 외부 스크립트는 이 하나뿐이다.
+  // (나머지는 전부 hwwp.kr 자기 자신에서 온다.)
+  const externalScriptHosts = ['static.cloudflareinsights.com'];
+  for (const host of externalScriptHosts) {
+    assert.match(
+      privacy,
+      new RegExp(host.replace(/\./g, '\.')),
+      `${host} 가 방침에 없다 — 브라우저는 이미 부르고 있다`,
+    );
+  }
 });
