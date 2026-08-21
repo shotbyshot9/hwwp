@@ -36,6 +36,10 @@ that cheers and applauds when you finish a sentence. This is that editor.
 off confetti at the edges of the screen and a burst of applause. The longer you write
 without stopping, the louder it gets.
 
+The feature is called **배명훈 모드** — Bae Myung-hoon mode — and the name is used with the
+author's permission. That does not make this project affiliated with the author or his
+publisher, nor does it imply their endorsement or involvement.
+
 ## Where do documents go
 
 **There is no server.** Opening and editing both happen inside the browser, and saving goes
