@@ -1586,7 +1586,14 @@ export function handleSelectAll(this: any): void {
   this.cursor.moveTo({ sectionIndex: 0, paragraphIndex: 0, charOffset: 0 });
   this.cursor.setAnchor();
   this.cursor.moveToDocumentEnd();
-  this.updateCaret();
+  /*
+   * 화면은 그대로 둔다.
+   *
+   * 모두 선택은 캐럿을 문서 끝으로 보내지만, 사용자가 가려던 곳은 문서 끝이 아니다.
+   * 캐럿을 따라가면 보던 자리를 잃고 문서 맨 아래로 끌려간다 — 복사하려고 Ctrl+A 를
+   * 눌렀을 뿐인데 읽던 자리가 사라진다. 다른 워드프로세서도 이때는 화면을 옮기지 않는다.
+   */
+  this.updateCaret(true);
 }
 
 export function onCopy(this: any, e: ClipboardEvent): void {
