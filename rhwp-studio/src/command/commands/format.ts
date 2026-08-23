@@ -82,6 +82,7 @@ export const formatCommands: CommandDef[] = [
   {
     id: 'format:strikethrough',
     label: '취소선',
+    shortcutLabel: 'Ctrl+Shift+X',
     canExecute: (ctx) => ctx.hasDocument,
     execute(services) {
       services.getInputHandler()?.toggleFormat('strikethrough');
@@ -115,6 +116,7 @@ export const formatCommands: CommandDef[] = [
   {
     id: 'format:superscript',
     label: '위 첨자',
+    shortcutLabel: 'Alt+Shift+P',
     canExecute: (ctx) => ctx.hasDocument,
     execute(services) {
       services.getInputHandler()?.toggleFormat('superscript');
@@ -123,6 +125,7 @@ export const formatCommands: CommandDef[] = [
   {
     id: 'format:subscript',
     label: '아래 첨자',
+    shortcutLabel: 'Alt+Shift+B',
     canExecute: (ctx) => ctx.hasDocument,
     execute(services) {
       services.getInputHandler()?.toggleFormat('subscript');

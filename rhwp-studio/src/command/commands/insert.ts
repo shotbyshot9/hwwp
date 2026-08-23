@@ -254,6 +254,7 @@ export const insertCommands: CommandDef[] = [
   {
     id: 'insert:footnote',
     label: '각주',
+    shortcutLabel: 'Ctrl+Alt+F',
     icon: 'icon-footnote',
     canExecute: (ctx) => ctx.hasDocument,
     execute(services) {

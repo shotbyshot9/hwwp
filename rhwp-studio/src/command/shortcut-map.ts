@@ -40,9 +40,22 @@ export const defaultShortcuts: [ShortcutDef, string][] = [
   [{ key: 'p', ctrl: true }, 'file:print'],
 
   // 서식
-  [{ key: 'b', ctrl: true }, 'format:bold'],
-  [{ key: 'i', ctrl: true }, 'format:italic'],
-  [{ key: 'u', ctrl: true }, 'format:underline'],
+  //
+  // `code` 를 함께 준다. 자판이 한글일 때 `e.key` 는 'b' 가 아니라 'ㅠ' 로 오고, 그러면
+  // 글자 매칭만으로는 셋 다 아무 일도 하지 않는다 — 정작 글을 쓰는 도중에 안 듣는 셈이다.
+  // 물리 키 코드는 자판 배열을 타지 않으므로 자모를 하나씩 적어 두는 것보다 낫다
+  // (이 파일의 장평·자간 단축키가 이미 같은 방식이다).
+  [{ key: 'b', code: 'KeyB', ctrl: true }, 'format:bold'],
+  [{ key: 'i', code: 'KeyI', ctrl: true }, 'format:italic'],
+  [{ key: 'u', code: 'KeyU', ctrl: true }, 'format:underline'],
+  // 취소선 — 한컴에는 기본 단축키가 없어 구글 문서의 Ctrl+Shift+X 를 따른다.
+  [{ key: 'x', code: 'KeyX', ctrl: true, shift: true }, 'format:strikethrough'],
+  // 위/아래 첨자 — 한컴 호환(Alt+Shift+P / Alt+Shift+B).
+  // Ctrl+= 는 이 파일에서 이미 확대라 워드 쪽 배치는 쓸 수 없다.
+  [{ key: 'p', code: 'KeyP', alt: true, shift: true }, 'format:superscript'],
+  [{ key: 'ㅔ', alt: true, shift: true }, 'format:superscript'],
+  [{ key: 'b', code: 'KeyB', alt: true, shift: true }, 'format:subscript'],
+  [{ key: 'ㅠ', alt: true, shift: true }, 'format:subscript'],
   [{ key: 'l', alt: true }, 'format:char-shape'],
   [{ key: 'ㄹ', alt: true }, 'format:char-shape'],
   [{ key: 't', alt: true }, 'format:para-shape'],
@@ -81,6 +94,10 @@ export const defaultShortcuts: [ShortcutDef, string][] = [
 
   // 입력
   [{ key: 'f10', alt: true }, 'insert:symbols'],
+  // 각주 — 한컴은 Ctrl+N,N 두 벌 누르기라 이 표(한 벌)로는 담지 못한다.
+  // 워드·리브레오피스가 쓰는 Ctrl+Alt+F 를 따른다. Alt+Shift+F(배명훈 모드)와도,
+  // Ctrl+F(찾기)와도 겹치지 않는다.
+  [{ key: 'f', code: 'KeyF', ctrl: true, alt: true }, 'insert:footnote'],
 
   // 쪽
   [{ key: 'enter', ctrl: true }, 'page:break'],
