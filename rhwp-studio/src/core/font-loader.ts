@@ -13,6 +13,13 @@ interface FontEntry {
   format?: 'woff2' | 'woff';
   /** CSS unicode-range — 지정 시 해당 코드포인트만 매칭, 다운로드도 해당 영역 사용 시에만 발생 */
   unicodeRange?: string;
+  /**
+   * @font-face 의 `font-weight` 서술자. 없으면 400(normal) 이다.
+   *
+   * 굵은 짝(`BOLD_FONT_LIST`)만 700 을 쓴다. 이 서술자가 있어야 브라우저가
+   * `font: bold 14px "나눔명조"` 요청에 **진짜 굵은 파일**을 물린다.
+   */
+  weight?: '700';
 }
 
 export interface WebFontLoadOptions {
@@ -141,6 +148,78 @@ const FONT_LIST: FontEntry[] = [
   },
 ];
 
+/**
+ * 굵은 짝 — 같은 이름에 `font-weight: 700` 으로 얹는 굵은 글꼴 파일.
+ *
+ * 왜 필요한가. `FONT_LIST` 의 `@font-face` 는 모두 서술자가 없어 400(normal) 이다.
+ * 그래서 캔버스가 `font: bold 14px "나눔명조"` 를 요청하면 브라우저는 400 짝밖에
+ * 못 찾고 **가짜 볼드(faux bold)** 를 만든다 — 획을 프로그램이 부풀리는 것이라
+ * 속공간이 메워지고 가장자리가 번진다. 획이 빽빽한 한글에서 특히 심하다.
+ *
+ * 같은 이름으로 700 짝을 하나 더 등록하면 브라우저가 진짜 굵은 파일을 물고, 부풀리기
+ * 자체가 일어나지 않는다.
+ *
+ * 엔진은 이미 (이름, 굵기, 기울임)별 실측 폭을 갖고 있으므로(`font_metrics_data.rs`)
+ * 진짜 굵은 글꼴을 그리는 쪽이 배치와도 더 맞는다.
+ *
+ * 이름이 이미 굵은 글꼴인 것(HY견고딕·Pretendard Bold·해피니스 산스 볼드 등)과
+ * 굵은 파일을 안 싣는 것(고운돋움·SpoqaHanSans·수식 글꼴)은 여기 없다 — 없으면
+ * 지금처럼 브라우저 부풀리기로 떨어진다.
+ */
+const BOLD_FONT_LIST: FontEntry[] = [
+  // === 함초롬/한컴 (CDN) — 굵은 짝이 CDN 에 있다 ===
+  { name: '함초롬바탕', file: CDN_HAMCHOB_B, format: 'woff', weight: '700' },
+  { name: '함초롱바탕', file: CDN_HAMCHOB_B, format: 'woff', weight: '700' },
+  { name: '한컴바탕', file: CDN_HAMCHOB_B, format: 'woff', weight: '700' },
+  { name: '새바탕', file: CDN_HAMCHOB_B, format: 'woff', weight: '700' },
+  // === 한컴 HY → 오픈소스 대체 ===
+  { name: 'HY신명조', file: 'fonts/NotoSerifKR-Bold.woff2', weight: '700' },
+  { name: 'HY중고딕', file: 'fonts/NotoSansKR-Bold.woff2', weight: '700' },
+  { name: 'HY그래픽', file: 'fonts/NotoSansKR-Bold.woff2', weight: '700' },
+  { name: 'HY그래픽M', file: 'fonts/NotoSansKR-Bold.woff2', weight: '700' },
+  { name: 'HYGraphic-Medium', file: 'fonts/NotoSansKR-Bold.woff2', weight: '700' },
+  // === 한글 시스템 글꼴 → 오픈소스 대체 ===
+  { name: 'Malgun Gothic', file: 'fonts/Pretendard-Bold.woff2', weight: '700' },
+  { name: '맑은 고딕', file: 'fonts/Pretendard-Bold.woff2', weight: '700' },
+  { name: '돋움', file: 'fonts/NotoSansKR-Bold.woff2', weight: '700' },
+  { name: '돋움체', file: 'fonts/NotoSansKR-Bold.woff2', weight: '700' },
+  { name: '굴림', file: 'fonts/NotoSansKR-Bold.woff2', weight: '700' },
+  { name: '새굴림', file: 'fonts/NotoSansKR-Bold.woff2', weight: '700' },
+  { name: 'Haansoft Dotum', file: 'fonts/NotoSansKR-Bold.woff2', weight: '700' },
+  { name: '굴림체', file: 'fonts/D2Coding-Bold.woff2', weight: '700' },
+  { name: '바탕체', file: 'fonts/D2Coding-Bold.woff2', weight: '700' },
+  { name: '바탕', file: 'fonts/NotoSerifKR-Bold.woff2', weight: '700' },
+  { name: '궁서', file: 'fonts/GowunBatang-Bold.woff2', weight: '700' },
+  { name: '궁서체', file: 'fonts/GowunBatang-Bold.woff2', weight: '700' },
+  { name: '새궁서', file: 'fonts/GowunBatang-Bold.woff2', weight: '700' },
+  { name: 'Palatino Linotype', file: 'fonts/NotoSerifKR-Bold.woff2', weight: '700' },
+  // === 나눔 ===
+  { name: '나눔고딕', file: 'fonts/NanumGothic-Bold.woff2', weight: '700' },
+  { name: '나눔명조', file: 'fonts/NanumMyeongjo-Bold.woff2', weight: '700' },
+  { name: '나눔고딕코딩', file: 'fonts/NanumGothicCoding-Bold.woff2', weight: '700' },
+  // === Noto ===
+  { name: 'Noto Sans KR', file: 'fonts/NotoSansKR-Bold.woff2', weight: '700' },
+  { name: 'Noto Serif KR', file: 'fonts/NotoSerifKR-Bold.woff2', weight: '700' },
+  // === 그 밖 ===
+  { name: 'Pretendard', file: 'fonts/Pretendard-Bold.woff2', weight: '700' },
+  { name: 'D2Coding', file: 'fonts/D2Coding-Bold.woff2', weight: '700' },
+  { name: '고운바탕', file: 'fonts/GowunBatang-Bold.woff2', weight: '700' },
+  { name: '해피니스 산스 레귤러', file: 'fonts/Happiness-Sans-Bold.woff2', weight: '700' },
+  { name: 'Happiness Sans Regular', file: 'fonts/Happiness-Sans-Bold.woff2', weight: '700' },
+];
+
+/**
+ * CanvasKit 전용 굵은 짝 이름.
+ *
+ * CanvasKit 은 `font-weight` 서술자를 모르고 **이름 하나에 얼굴 하나**로만 typeface 를
+ * 찾는다(`canvaskit-renderer.ts` 의 `findPreparedTypeface`). 그래서 굵은 파일을 따로
+ * 부를 이름이 필요하다. 이 이름은 렌더러 안에서만 쓰이며 글꼴 고르기 목록에는 안 나온다.
+ */
+export function boldFamilyName(name: string): string {
+  return `${name}  #bold`;
+}
+
+
 /** @font-face에 등록된 폰트 이름 Set */
 export const REGISTERED_FONTS = new Set(FONT_LIST.map(f => f.name));
 
@@ -158,8 +237,11 @@ function isExternalFontFile(file: string): boolean {
 }
 
 function selectableFontList(options?: WebFontLoadOptions): FontEntry[] {
-  if (options?.disableExternalWebFonts !== true) return FONT_LIST;
-  return FONT_LIST.filter(f => !isExternalFontFile(f.file));
+  // 굵은 짝은 이름이 겹치므로 목록에서는 뒤에 온다 — 같은 family 에 400/700 두 얼굴이
+  // 붙는 형태다. 순서는 상관없지만 읽을 때 헷갈리지 않게 뒤에 둔다.
+  const all = [...FONT_LIST, ...BOLD_FONT_LIST];
+  if (options?.disableExternalWebFonts !== true) return all;
+  return all.filter(f => !isExternalFontFile(f.file));
 }
 
 function normalizeFontFamily(value: string): string {
@@ -228,6 +310,33 @@ export function resolveCanvasKitFontPlan(
     sourcesByUrl.set(url, aliases);
   }
 
+  // 굵은 짝을 함께 싣는다. CanvasKit 은 굵기 서술자를 모르므로 `boldFamilyName` 이 주는
+  // 별도 이름으로 등록하고, 렌더러가 진하게일 때 그 이름으로 찾아 쓴다.
+  //
+  // 굵은 짝이 없거나 이 배포 표면에 파일이 없으면 그냥 건너뛴다 — 문서를 못 여는 사유가
+  // 되면 안 된다. 그 경우는 지금까지처럼 부풀리기로 떨어진다.
+  const boldEntriesByNormalized = new Map<string, FontEntry>(
+    BOLD_FONT_LIST.map(entry => [normalizeFontFamily(entry.name), entry]),
+  );
+  for (const { entry, requested } of requiredEntries) {
+    const bold = boldEntriesByNormalized.get(normalizeFontFamily(entry.name));
+    if (!bold) continue;
+    const boldLocalFile = bold.file.startsWith('fonts/')
+      ? bold.file.slice('fonts/'.length)
+      : null;
+    if (options.disableExternalWebFonts === true && isExternalFontFile(bold.file)) continue;
+    if (boldLocalFile !== null
+      && options.availableLocalFiles !== undefined
+      && !options.availableLocalFiles.has(boldLocalFile)) continue;
+    const url = canvasKitFontUrl(bold.file, options.localFontBaseUrl);
+    const aliases = sourcesByUrl.get(url) ?? new Set<string>();
+    // 문서가 부른 이름과 정착한 엔트리 이름 둘 다 걸어 둔다. 대체 글꼴로 내려온 경우
+    // (휴먼명조 → HY신명조) 렌더러는 문서가 부른 이름으로 찾기 때문이다.
+    aliases.add(boldFamilyName(entry.name));
+    aliases.add(boldFamilyName(requested));
+    sourcesByUrl.set(url, aliases);
+  }
+
   return {
     sources: [...sourcesByUrl.entries()].map(([url, aliases]) => ({
       url,
@@ -253,7 +362,9 @@ function registerFontFaces(options?: WebFontLoadOptions): void {
   style.textContent = selectableFontList(options).map(f => {
     const fmt = f.format ?? 'woff2';
     const ur = f.unicodeRange ? ` unicode-range: ${f.unicodeRange};` : '';
-    return `@font-face { font-family: "${f.name}"; src: url("${f.file}") format("${fmt}"); font-display: swap;${ur} }`;
+    // 굵은 짝에만 700 을 적는다. 나머지는 서술자 없이 400 으로 남는다.
+    const wt = f.weight ? ` font-weight: ${f.weight};` : '';
+    return `@font-face { font-family: "${f.name}"; src: url("${f.file}") format("${fmt}"); font-display: swap;${wt}${ur} }`;
   }).join('\n');
   fontFaceRegistrationMode = mode;
 }
@@ -339,13 +450,17 @@ export async function loadWebFonts(
   const total = uniqueToLoad.length;
   console.log(`[FontLoader] 웹폰트 로드 시작: ${total}개 woff2 (이미 로드됨: ${loadedFiles.size}개)`);
 
-  // 같은 woff2 파일에 매핑된 모든 이름도 함께 등록
-  const fileToNames = new Map<string, string[]>();
+  // 같은 woff2 파일에 매핑된 모든 이름도 함께 등록.
+  //
+  // 이름이 아니라 엔트리를 모으는 이유: 한 파일이 어떤 이름에는 400 으로, 다른 이름에는
+  // 700 으로 붙을 수 있다(NotoSansKR-Bold 는 'HY견고딕' 의 400 이면서 '돋움' 의 700 이다).
+  // 이름만 모으면 굵기를 잃어 굵은 짝이 400 으로 등록되고, 그 순간 다시 가짜 볼드가 된다.
+  const fileToEntries = new Map<string, FontEntry[]>();
   for (const f of toLoad) {
     if (!loadedFiles.has(f.file)) {
-      const names = fileToNames.get(f.file) ?? [];
-      names.push(f.name);
-      fileToNames.set(f.file, names);
+      const entries = fileToEntries.get(f.file) ?? [];
+      entries.push(f);
+      fileToEntries.set(f.file, entries);
     }
   }
 
@@ -357,10 +472,14 @@ export async function loadWebFonts(
     const batch = uniqueToLoad.slice(i, i + BATCH);
     await Promise.all(batch.map(async (f) => {
       try {
-        const names = fileToNames.get(f.file) ?? [f.name];
+        const entries = fileToEntries.get(f.file) ?? [f];
         const fmt = f.format ?? 'woff2';
-        for (const name of names) {
-          const face = new FontFace(name, `url(${f.file}) format('${fmt}')`);
+        for (const entry of entries) {
+          const face = new FontFace(
+            entry.name,
+            `url(${entry.file}) format('${fmt}')`,
+            entry.weight ? { weight: entry.weight } : undefined,
+          );
           const result = await face.load();
           document.fonts.add(result);
         }

@@ -91,6 +91,7 @@ import {
 import { parseStaticSvgPathLayers, type StaticSvgPathLayer } from './static-svg-path-layers';
 import { loadLocalFontBytesFor, localFontFaceKey, resolveLocalFont, type LocalFontRecord } from '@/core/local-fonts';
 import type { CanvasKitBundledFontSource } from '@/core/font-loader';
+import { boldFamilyName } from '@/core/font-loader';
 import { readBoundedResponseArrayBuffer } from './canvaskit/bounded-response';
 
 type CanvasKitApi = CanvasKit;
@@ -1940,7 +1941,21 @@ export class CanvasKitLayerRenderer {
     const hasLayoutPositions = replayPositions?.length === codePoints.length + 1
       && replayPositions.every(Number.isFinite);
     const requestedFontFamily = primaryFontFamily(style.fontFamily);
-    const preparedTypeface = this.findPreparedTypeface(requestedFontFamily);
+    /*
+     * 진하게는 **진짜 굵은 글꼴 파일**로 그린다. 없을 때만 `setEmbolden` 으로 부풀린다.
+     *
+     * 부풀리기는 속공간을 메우고 가장자리를 번지게 해서, 획이 빽빽한 한글에서 흐릿하게
+     * 보인다. 굵은 짝은 `font-loader.ts` 의 `BOLD_FONT_LIST` 가 정하고
+     * `boldFamilyName` 이름으로 CanvasKit 에 등록된다 — CanvasKit 은 CSS 의 굵기
+     * 서술자를 모르므로 이름을 따로 줘야 한다.
+     *
+     * 폭이 어긋나지 않는가 — 엔진은 이미 (이름, 굵기, 기울임)별 실측 폭으로 배치한다
+     * (`font_metrics_data.rs`). 오히려 진짜 굵은 글꼴 쪽이 그 배치와 맞는다.
+     */
+    const boldTypeface = style.bold === true && requestedFontFamily
+      ? this.findPreparedTypeface(boldFamilyName(requestedFontFamily))
+      : null;
+    const preparedTypeface = boldTypeface ?? this.findPreparedTypeface(requestedFontFamily);
     if (requestedFontFamily && !preparedTypeface && this.requirePreparedFontFamilies) {
       throw new Error(`CanvasKit font family가 준비되지 않았습니다: ${requestedFontFamily}`);
     }
@@ -1976,18 +1991,24 @@ export class CanvasKitLayerRenderer {
       }
 
       {
-        const adjustFont = (target: Font) => {
+        /*
+         * `realBoldFace` — 이 얼굴이 이미 진짜 굵은 글꼴이면 부풀리지 않는다.
+         *
+         * 글리프가 없어 기본/기호 얼굴로 떨어지는 자리는 굵은 짝이 없으므로 그대로
+         * 부풀린다. 그러지 않으면 대체된 글자만 진하기를 잃는다.
+         */
+        const adjustFont = (target: Font, realBoldFace = false) => {
           const adjustable = target as Font & {
             setEmbolden?: (enabled: boolean) => void;
             setSkewX?: (skew: number) => void;
             setScaleX?: (scale: number) => void;
           };
-          adjustable.setEmbolden?.(style.bold === true);
+          adjustable.setEmbolden?.(style.bold === true && !realBoldFace);
           adjustable.setSkewX?.(style.italic === true ? -0.2 : 0);
           adjustable.setScaleX?.(ratio);
         };
         font = new this.canvasKit.Font(typeface, fontSize);
-        adjustFont(font);
+        adjustFont(font, boldTypeface !== null);
         const candidateFonts = [font];
         const candidateFontSources: CanvasKitFontSubstitutionDiagnostic['source'][] = [
           'unregisteredDefault',
