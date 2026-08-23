@@ -339,6 +339,8 @@
   }
   .stb-divider { display: none; }
   .stb-message { display: none; }
+  /* 분량 표시는 좁은 화면에서 접는다 — 줌 단추까지 밀려나면 손해가 더 크다. */
+  #sb-count { display: none; }
   /* 모바일 줌: 쪽맞춤 + 100% 토글만 표시 */
   #sb-zoom-fit-width { display: none; }
   #sb-zoom-out { display: none; }

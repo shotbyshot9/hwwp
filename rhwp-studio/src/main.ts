@@ -7,6 +7,7 @@ import { InputHandler } from '@/engine/input-handler';
 import { Toolbar } from '@/ui/toolbar';
 import { MenuBar } from '@/ui/menu-bar';
 import { loadWebFonts, resolveCanvasKitFontPlan } from '@/core/font-loader';
+import { countDocument } from '@/core/document-stats';
 import { withCanvasKitSurfaceBlockers } from '@/core/canvaskit-document-preflight';
 import { loadExtensionViewerSettings, type ExtensionViewerSettings } from '@/core/extension-settings';
 import { CommandRegistry } from '@/command/registry';
@@ -458,6 +459,37 @@ const sbMessage = () => document.getElementById('sb-message')!;
 const sbPage = () => document.getElementById('sb-page')!;
 const sbSection = () => document.getElementById('sb-section')!;
 const sbZoomVal = () => document.getElementById('sb-zoom-val')!;
+
+/*
+ * 상태 표시줄의 분량 표시.
+ *
+ * 배명훈 모드 바닥글에만 있던 것을 일반 편집 화면에도 둔다. 두 화면이 각자 다른 화면을
+ * 본떠 만들어지느라 갈렸을 뿐, 일반 화면에서는 감추자고 정한 적이 없다.
+ *
+ * 문서를 통째로 훑는 셈이라 글자마다 부르면 긴 원고에서 걸린다. 배명훈 모드와 같은
+ * 방식으로 뜸을 들인다 — 마지막 입력 뒤 잠시 조용해지면 그때 센다.
+ */
+const COUNT_DEBOUNCE_MS = 400;
+let countTimer: ReturnType<typeof setTimeout> | null = null;
+
+function renderDocumentCount(): void {
+  const el = document.getElementById('sb-count');
+  if (!el) return;
+  try {
+    const { words, chars } = countDocument(wasm);
+    el.textContent = `${words.toLocaleString('ko-KR')}단어 · ${chars.toLocaleString('ko-KR')}자`;
+  } catch {
+    // 문서가 아직 준비되지 않았으면 직전 값을 그대로 둔다 — 0 으로 깜빡이면 더 헷갈린다.
+  }
+}
+
+function scheduleDocumentCount(): void {
+  if (countTimer !== null) clearTimeout(countTimer);
+  countTimer = setTimeout(() => {
+    countTimer = null;
+    renderDocumentCount();
+  }, COUNT_DEBOUNCE_MS);
+}
 let autosaveStatusRestoreTimer: ReturnType<typeof setTimeout> | null = null;
 let autosavePreviousMessage: string | null = null;
 
@@ -1036,10 +1068,12 @@ function setupEventListeners(): void {
 
   eventBus.on('document-mutated', (reason) => {
     documentState.markDirty(typeof reason === 'string' ? reason : 'document-mutated');
+    scheduleDocumentCount();
   });
 
   eventBus.on('document-changed', (reason) => {
     documentState.markDirty(typeof reason === 'string' ? reason : 'document-changed');
+    scheduleDocumentCount();
   });
 
   eventBus.on('renderer-selection-changed', (payload) => {
@@ -1178,6 +1212,8 @@ async function initializeDocument(
     await updateLoadProgress(75, '문서 상태 적용 중...');
     totalSections = docInfo.sectionCount ?? 1;
     sbSection().textContent = `구역: 1 / ${totalSections}`;
+    // 문서를 연 직후 한 번은 바로 센다 — 아무것도 안 쳤는데 0자로 남아 있으면 안 된다.
+    renderDocumentCount();
     applySavedTextMarkSettings();
     console.log('[initDoc] 3. inputHandler deactivate');
     inputHandler?.deactivate();

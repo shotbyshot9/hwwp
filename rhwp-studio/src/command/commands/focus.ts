@@ -4,6 +4,7 @@ import { normalizeCheerRate, type FocusCheerRate } from '../../focus/cheer-rate'
 import { FocusMode } from '../../focus/focus-mode';
 import { calculateFitWidthZoom } from '../../view/zoom-fit';
 import { FocusSettingsDialog } from '../../ui/focus-settings-dialog';
+import { countDocument, type DocumentStats } from '../../core/document-stats';
 
 /**
  * 배명훈 모드 커맨드.
@@ -16,26 +17,11 @@ let focusMode: FocusMode | null = null;
 /**
  * 문서 전체의 단어수·글자수.
  *
- * 본문 문단만 센다 — 표 셀·머리말/꼬리말·각주는 제외한다. Writer's Homeground 의
- * 바닥글 집계를 옮긴 것이라 "지금 쓰고 있는 글의 분량"이 기준이다.
+ * 셈 자체는 `core/document-stats.ts` 에 있다 — 일반 편집 화면의 상태 표시줄도 같은
+ * 값을 보여야 하기 때문이다.
  */
-function documentStats(services: CommandServices): { words: number; chars: number } {
-  const wasm = services.wasm;
-  let chars = 0;
-  let words = 0;
-  const sections = wasm.getSectionCount();
-  for (let sec = 0; sec < sections; sec++) {
-    const paraCount = wasm.getParagraphCount(sec);
-    for (let para = 0; para < paraCount; para++) {
-      const len = wasm.getParagraphLength(sec, para);
-      if (len <= 0) continue;
-      const text = wasm.getTextRange(sec, para, 0, len);
-      chars += text.length;
-      const trimmed = text.trim();
-      if (trimmed) words += trimmed.split(/\s+/).length;
-    }
-  }
-  return { words, chars };
+function documentStats(services: CommandServices): DocumentStats {
+  return countDocument(services.wasm);
 }
 
 function getFocusMode(services: CommandServices): FocusMode {
