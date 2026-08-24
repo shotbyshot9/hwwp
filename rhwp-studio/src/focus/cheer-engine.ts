@@ -191,6 +191,28 @@ export class CheerEngine {
     }
   }
 
+  /**
+   * 목표를 채웠을 때.
+   *
+   * `celebrate` 와 갈라 둔다. 예전에는 목표 달성도 `celebrate` 를 그대로 썼는데,
+   * 그건 문장부호 없이 50자만 이어 써도 터지는 축포라 한 세션에 수십 번 나온다.
+   * 목표 달성은 많아야 하루 한 번이다. 같은 그림·같은 소리면 아무 일도 아닌 것이 된다.
+   *
+   * 그래서 폭죽은 분수를 더한 전용 그림으로, 소리는 한 음이 아니라 **올라가는 화음**으로
+   * 낸다. 끝났다는 느낌은 한 음으로는 안 난다.
+   */
+  celebrateGoal(): void {
+    const settings = userSettings.getFocusSettings();
+    const gain = LEVEL_GAIN[settings.cheerLevel];
+    if (settings.confetti && !prefersReducedMotion()) {
+      this.confetti.fireGoalCelebration();
+    }
+    if (settings.sound && gain.sound > 0) {
+      this.playCheer(1.0 * gain.sound, true);
+      this.playFanfare(1.0 * gain.sound);
+    }
+  }
+
   dispose(): void {
     this.confetti.dispose();
     if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
@@ -382,6 +404,36 @@ export class CheerEngine {
     env.connect(ctx.destination);
     osc.start(t0);
     osc.stop(t0 + 0.4);
+  }
+
+  /**
+   * 목표 달성 팡파르 — 도·미·솔·높은 도를 차례로 쌓는다.
+   *
+   * `playChime` 은 한 음이 올라가고 끝난다. 그건 "잘했다" 는 신호로는 맞지만
+   * "다 했다" 는 느낌은 안 난다. 화음이 쌓이면서 끝나야 마무리로 들린다.
+   */
+  private playFanfare(volume: number): void {
+    const ctx = this.ensureAudio();
+    if (!ctx || ctx.state === 'closed') return;
+    const t0 = ctx.currentTime;
+    // C5 · E5 · G5 · C6
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((freq, i) => {
+      const start = t0 + i * 0.11;
+      // 뒤 음일수록 길게 남겨 마지막에 화음으로 겹치게 한다.
+      const dur = 0.5 + i * 0.18;
+      const osc = ctx.createOscillator();
+      const env = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+      env.gain.setValueAtTime(0.0001, start);
+      env.gain.exponentialRampToValueAtTime(Math.min(volume * 0.3, 0.28), start + 0.02);
+      env.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      osc.connect(env);
+      env.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + dur + 0.05);
+    });
   }
 
   /** 무작위 언어로 짧게 칭찬한다 (원본 Writer's Homeground 의 다국어 응원 계승) */

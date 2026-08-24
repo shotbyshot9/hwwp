@@ -63,6 +63,14 @@ export function shouldFollowCaret(
 /** 문서 전체를 다시 세기까지 기다리는 시간(ms). 타이핑 중 전수 집계를 피한다. */
 const COUNT_DEBOUNCE_MS = 400;
 
+/**
+ * 목표 달성 알림이 화면에 머무는 시간(ms).
+ *
+ * 폭죽이 1.4초에 걸쳐 터지므로 그보다는 오래 남아야 같은 사건으로 읽힌다. 그렇다고
+ * 길게 두면 쓰던 사람의 시야를 가린다. CSS 애니메이션 길이와 맞춰 둔다.
+ */
+const GOAL_BANNER_MS = 3600;
+
 /** 배명훈 모드가 바깥에서 받아야 하는 것들 */
 export interface FocusModeDeps {
   eventBus: EventBus;
@@ -278,8 +286,91 @@ export class FocusMode {
     const goal = userSettings.getFocusSettings().goalChars;
     if (goal <= 0 || this.goalReached || this.sessionChars < goal) return;
     this.goalReached = true;
-    this.cheer.celebrate();
+    this.cheer.celebrateGoal();
     this.overlay?.classList.add('fm-goal-reached');
+    /*
+     * 순서를 둔다. 한꺼번에 터뜨리면 서로 묻힌다.
+     *
+     *   0ms   폭죽이 화면을 비우고 잠깐 조용해진다
+     *   260ms 금빛 축포 + 화면 전체가 한 번 밝아진다
+     *   560ms 글자가 올라온다
+     *
+     * 폭죽 쪽 정적(SILENT_BEAT_MS)에 맞춰 둔 값이다.
+     */
+    window.setTimeout(() => this.flashScreen(), 260);
+    window.setTimeout(() => this.showGoalBanner(goal), 560);
+  }
+
+  /**
+   * 목표를 채웠다고 화면 가운데에 알린다.
+   *
+   * 예전에는 진행 막대 색만 바뀌었다. 그래서 무엇을 달성했는지도, 달성했다는 사실
+   * 자체도 눈에 잘 안 들어왔다. 목표 하나를 채우는 것은 하루에 많아야 한 번 있는
+   * 일이고, 소설 한 편을 붙들고 있는 사람에게는 그날의 가장 큰 일이다.
+   *
+   * **쓰던 것을 멈추게 하지 않는다.** 확인 버튼도 없고, 포커스도 가져가지 않고,
+   * `pointer-events: none` 이라 클릭도 통과한다. 저절로 나타났다 저절로 사라진다 —
+   * 계속 쓰고 싶은 사람은 그냥 계속 쓰면 된다.
+   */
+  /**
+   * 화면 전체가 한 번 밝아졌다 잦아든다.
+   *
+   * 배속이 높은 사람에게는 폭죽을 아무리 더 뿌려도 배경과 섞여 묻힌다. 그런데 평소
+   * 응원은 **바탕을 절대 건드리지 않는다.** 그래서 화면 전체가 물드는 것은 그 자체로
+   * "지금까지와 다른 일" 이라는 신호가 된다.
+   *
+   * 글을 가리면 안 되므로 아주 옅게, 한 번만, 짧게 지나간다.
+   *
+   * 움직임을 줄여 달라는 설정은 CSS 에서 막는다(`display: none`). 여기서 막으면
+   * 같은 판단이 두 군데로 갈린다.
+   */
+  private flashScreen(): void {
+    if (!this.overlay) return;
+    const flash = document.createElement('div');
+    flash.className = 'fm-goal-flash';
+    flash.setAttribute('aria-hidden', 'true');
+    this.overlay.appendChild(flash);
+    const remove = () => flash.remove();
+    flash.addEventListener('animationend', remove);
+    window.setTimeout(remove, 1600);
+  }
+
+  private showGoalBanner(goal: number): void {
+    if (!this.overlay) return;
+    const banner = document.createElement('div');
+    banner.className = 'fm-goal-banner';
+    // 읽어 주기는 하되 지금 하던 일을 끊지 않는 정도로만 알린다.
+    banner.setAttribute('role', 'status');
+
+    const count = document.createElement('div');
+    count.className = 'fm-goal-banner-count';
+    count.textContent = `${goal.toLocaleString('ko-KR')}자`;
+
+    const label = document.createElement('div');
+    label.className = 'fm-goal-banner-label';
+    label.textContent = '오늘 목표를 채우셨습니다';
+
+    const detail = document.createElement('div');
+    detail.className = 'fm-goal-banner-detail';
+    detail.textContent = `${this.elapsedText()} 동안 썼습니다`;
+
+    banner.append(count, label, detail);
+    this.overlay.appendChild(banner);
+
+    // 애니메이션이 끝나면 스스로 사라진다. 애니메이션을 끈 환경에서는 이 사건이
+    // 오지 않을 수 있으므로 시간으로도 한 번 더 막아 둔다.
+    const remove = () => banner.remove();
+    banner.addEventListener('animationend', remove);
+    window.setTimeout(remove, GOAL_BANNER_MS + 500);
+  }
+
+  /** 세션 경과 시간을 사람이 읽는 말로 */
+  private elapsedText(): string {
+    const totalMin = Math.max(1, Math.round((Date.now() - this.startedAt) / 60000));
+    if (totalMin < 60) return `${totalMin}분`;
+    const hours = Math.floor(totalMin / 60);
+    const min = totalMin % 60;
+    return min === 0 ? `${hours}시간` : `${hours}시간 ${min}분`;
   }
 
   private onKeyDown(e: KeyboardEvent): void {

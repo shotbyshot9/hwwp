@@ -48,6 +48,11 @@ document.getElementById('lab-celebrate')!.addEventListener('click', () => {
   cheer.celebrate();
 });
 
+document.getElementById('lab-goal')!.addEventListener('click', () => {
+  cheer.unlock();
+  cheer.celebrateGoal();
+});
+
 document.querySelectorAll<HTMLInputElement>('[data-setting]').forEach((input) => {
   const key = input.dataset.setting as 'confetti' | 'sound' | 'praise';
   input.checked = userSettings.getFocusSettings()[key];
