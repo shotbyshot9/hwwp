@@ -181,3 +181,23 @@ test('배포본이 부르는 외부 스크립트가 방침에 다 있다', () =>
     );
   }
 });
+
+/**
+ * 방침이 "코드로 확인하실 수 있습니다" 라고 말한다면, **hwwp 의 코드**를 가리켜야 한다.
+ *
+ * 한동안 그 문장은 rhwp 만 가리키고 있었다. rhwp 는 문서를 읽고 그리는 엔진이라
+ * 토큰을 어디 두는지, 어떤 권한을 쓰는지, 무엇을 저장하는지는 거기 없다 — 그건 전부
+ * hwwp 쪽 코드다. 확인하라고 해 놓고 확인할 수 없는 곳을 가리킨 셈이었다.
+ */
+test('코드로 확인하라면서 hwwp 저장소를 가리킨다', () => {
+  assert.match(privacy, /github\.com\/shotbyshot9\/hwwp/, 'hwwp 저장소를 가리키지 않는다');
+  assert.match(privacy, /직접 확인하실 수 있습니다/);
+  // 그 링크가 실제로 hwwp 저장소를 가리켜야 한다 — 문장만 있고 링크가 rhwp 면 그대로다.
+  assert.match(
+    privacy,
+    /href="https:\/\/github\.com\/shotbyshot9\/hwwp"[^>]*>hwwp 의 코드<\/a>/,
+    '"코드" 링크가 hwwp 저장소로 걸려 있지 않다',
+  );
+  // 엔진 출처도 함께 밝힌다 — MIT 고지이자 사실 관계다.
+  assert.match(privacy, /github\.com\/edwardkim\/rhwp/);
+});
