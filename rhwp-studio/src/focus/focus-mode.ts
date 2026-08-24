@@ -71,6 +71,14 @@ const COUNT_DEBOUNCE_MS = 400;
  */
 const GOAL_BANNER_MS = 3600;
 
+/**
+ * 첫 방문에만 걸리는 연습 목표(글자수).
+ *
+ * 한글로 두어 문장이면 넘는다. 첫 문서의 연습을 따라가다 보면 저절로 닿는 길이라,
+ * 숙제처럼 느껴지지 않으면서도 축하가 무엇인지 겪게 된다.
+ */
+const TUTORIAL_GOAL_CHARS = 50;
+
 /** 배명훈 모드가 바깥에서 받아야 하는 것들 */
 export interface FocusModeDeps {
   eventBus: EventBus;
@@ -287,10 +295,28 @@ export class FocusMode {
     this.checkGoal();
   }
 
+  /**
+   * 지금 걸려 있는 목표.
+   *
+   * 기본 설정은 목표 '없음' 이다. 그래서 아무것도 안 하면 처음 온 사람은 목표를 채웠을
+   * 때의 축하를 **영영 못 본다** — 이 제품에서 가장 공들인 순간인데도 그렇다.
+   *
+   * 그래서 첫 방문에만 짧은 연습 목표를 하나 걸어 둔다. 한 번 겪고 나면 끈다. 계속
+   * 걸려 있으면 50자마다 축포가 터져 그 순간이 값싸진다.
+   */
+  private activeGoal(): { chars: number; tutorial: boolean } {
+    const s = userSettings.getFocusSettings();
+    if (s.goalChars > 0) return { chars: s.goalChars, tutorial: false };
+    if (!s.tutorialGoalDone) return { chars: TUTORIAL_GOAL_CHARS, tutorial: true };
+    return { chars: 0, tutorial: false };
+  }
+
   private checkGoal(): void {
-    const goal = userSettings.getFocusSettings().goalChars;
+    const { chars: goal, tutorial } = this.activeGoal();
     if (goal <= 0 || this.goalReached || this.sessionChars < goal) return;
     this.goalReached = true;
+    // 연습 목표는 한 번만이다. 여기서 꺼 두지 않으면 다음 세션에도 또 걸린다.
+    if (tutorial) userSettings.updateFocusSettings({ tutorialGoalDone: true });
     this.cheer.celebrateGoal();
     this.overlay?.classList.add('fm-goal-reached');
     /*
@@ -303,7 +329,7 @@ export class FocusMode {
      * 폭죽 쪽 정적(SILENT_BEAT_MS)에 맞춰 둔 값이다.
      */
     window.setTimeout(() => this.flashScreen(), 260);
-    window.setTimeout(() => this.showGoalBanner(goal), 560);
+    window.setTimeout(() => this.showGoalBanner(goal, tutorial), 560);
   }
 
   /**
@@ -340,7 +366,7 @@ export class FocusMode {
     window.setTimeout(remove, 1600);
   }
 
-  private showGoalBanner(goal: number): void {
+  private showGoalBanner(goal: number, tutorial = false): void {
     if (!this.overlay) return;
     const banner = document.createElement('div');
     banner.className = 'fm-goal-banner';
@@ -353,11 +379,15 @@ export class FocusMode {
 
     const label = document.createElement('div');
     label.className = 'fm-goal-banner-label';
-    label.textContent = '오늘 목표를 채우셨습니다';
+    // 연습 목표에 "오늘 목표를 채우셨습니다" 라고 하면 우스워진다. 50자는 하루치가
+    // 아니다. 축하가 아니라 **이런 일이 일어난다는 것을 알려 주는 자리**다.
+    label.textContent = tutorial ? '목표를 채우면 이렇게 축하합니다' : '오늘 목표를 채우셨습니다';
 
     const detail = document.createElement('div');
     detail.className = 'fm-goal-banner-detail';
-    detail.textContent = `${this.elapsedText()} 동안 썼습니다`;
+    detail.textContent = tutorial
+      ? '진짜 목표는 보기 → 배명훈 모드 설정 에서 정합니다'
+      : `${this.elapsedText()} 동안 썼습니다`;
 
     banner.append(count, label, detail);
     this.overlay.appendChild(banner);
@@ -627,7 +657,9 @@ export class FocusMode {
       this.elapsedEl.textContent = `${mm}:${ss}`;
     }
 
-    const goal = userSettings.getFocusSettings().goalChars;
+    // 연습 목표도 진행바를 보여야 한다. 바가 차오르는 것을 봐야 무슨 일이 일어날지
+    // 기대하게 되고, 그게 이 연습의 전부다.
+    const { chars: goal } = this.activeGoal();
     if (this.goalWrapEl) this.goalWrapEl.style.display = goal > 0 ? '' : 'none';
     if (goal > 0) {
       const ratio = Math.min(1, this.sessionChars / goal);

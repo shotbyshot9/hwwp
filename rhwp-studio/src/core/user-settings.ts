@@ -118,6 +118,14 @@ export interface FocusSettings {
    * 그래서 처음 온 사람에게만 이름표를 보인다. 한 번 나가 보면 안 것이므로 끈다.
    */
   exitHintSeen: boolean;
+  /**
+   * 첫 연습 목표(50자)를 이미 채워 봤는가.
+   *
+   * 기본 목표는 '없음' 이라, 처음 온 사람은 목표를 채웠을 때의 축하를 영영 못 본다.
+   * 그래서 첫 방문에만 짧은 목표를 하나 걸어 두고, 한 번 겪고 나면 끈다 — 계속 걸려
+   * 있으면 50자마다 축포가 터져 그 순간이 값싸진다.
+   */
+  tutorialGoalDone: boolean;
 }
 
 /** 복구용 자동저장 설정 */
@@ -229,6 +237,7 @@ function defaultSettings(): AppSettings {
        */
       cheerRate: 'max',
       exitHintSeen: false,
+      tutorialGoalDone: false,
       confetti: true,
       sound: true,
       praise: true,
@@ -339,6 +348,7 @@ class UserSettingsService {
           goalChars: normalizeNumber(focus.goalChars, defaults.focus.goalChars, 0, 100000),
           startInFocusMode: normalizeBoolean(focus.startInFocusMode, defaults.focus.startInFocusMode),
           exitHintSeen: normalizeBoolean(focus.exitHintSeen, defaults.focus.exitHintSeen),
+          tutorialGoalDone: normalizeBoolean(focus.tutorialGoalDone, defaults.focus.tutorialGoalDone),
         },
         autosave: {
           ...defaults.autosave,

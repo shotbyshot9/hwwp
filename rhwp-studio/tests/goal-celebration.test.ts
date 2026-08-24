@@ -88,7 +88,7 @@ test('배속이 높아도 묻히지 않게 하는 장치가 다 있다', () => {
 test('효과가 겹치지 않게 순서를 둔다', () => {
   const check = mode.match(/private checkGoal\(\): void \{[\s\S]*?\n  \}/)?.[0] ?? '';
   const flashAt = check.match(/setTimeout\(\(\) => this\.flashScreen\(\), (\d+)\)/)?.[1];
-  const bannerAt = check.match(/setTimeout\(\(\) => this\.showGoalBanner\(goal\), (\d+)\)/)?.[1];
+  const bannerAt = check.match(/setTimeout\(\(\) => this\.showGoalBanner\(goal, tutorial\), (\d+)\)/)?.[1];
   assert.ok(flashAt && bannerAt, '순서가 잡혀 있지 않다');
   const silent = Number(confetti.match(/const SILENT_BEAT_MS = (\d+);/)?.[1]);
   // 빛은 정적이 끝나는 순간, 글자는 그보다 뒤에.
@@ -118,7 +118,7 @@ test('소리도 갈라져 있다', () => {
  * 예전에는 막대 색만 바뀌어서, 달성했다는 사실 자체를 놓치기 쉬웠다.
  */
 test('무엇을 달성했는지 화면에 알린다', () => {
-  assert.match(mode, /private showGoalBanner\(goal: number\): void/);
+  assert.match(mode, /private showGoalBanner\(goal: number, tutorial = false\): void/);
   assert.match(mode, /오늘 목표를 채우셨습니다/);
   // 목표 글자수와 걸린 시간을 함께 보인다.
   assert.match(mode, /goal\.toLocaleString\('ko-KR'\)/);
@@ -164,4 +164,82 @@ test('개발용 확인 페이지에서 눌러 볼 수 있다', () => {
   const labTs = read('../src/focus/focus-lab.ts');
   assert.match(lab, /id="lab-goal"/);
   assert.match(labTs, /cheer\.celebrateGoal\(\)/);
+});
+
+/**
+ * 기본 설정은 목표 '없음' 이다. 그래서 아무것도 안 하면 처음 온 사람은 목표를 채웠을
+ * 때의 축하를 **영영 못 본다** — 이 제품에서 가장 공들인 순간인데도 그렇다.
+ *
+ * 첫 방문에만 짧은 연습 목표를 걸어 그것을 한 번 겪게 한다.
+ */
+test('처음 온 사람에게는 연습 목표가 걸린다', () => {
+  const settings = read('../src/core/user-settings.ts');
+
+  // 기본 목표는 여전히 '없음' 이다 — 연습 목표는 그 위에 얹는 별개의 장치다.
+  assert.match(settings, /goalChars: 0,/);
+  assert.match(settings, /tutorialGoalDone: boolean;/);
+  assert.match(settings, /tutorialGoalDone: false,/);
+
+  assert.match(mode, /const TUTORIAL_GOAL_CHARS = \d+;/);
+  assert.match(mode, /private activeGoal\(\): \{ chars: number; tutorial: boolean \}/);
+
+  const fn = mode.match(/private activeGoal\([\s\S]*?\n  \}/)?.[0] ?? '';
+  // 자기 목표를 정해 둔 사람에게는 연습 목표가 끼어들면 안 된다.
+  assert.match(fn, /if \(s\.goalChars > 0\) return \{ chars: s\.goalChars, tutorial: false \}/);
+  // 한 번 겪었으면 더는 안 건다.
+  assert.match(fn, /if \(!s\.tutorialGoalDone\) return \{ chars: TUTORIAL_GOAL_CHARS, tutorial: true \}/);
+  assert.match(fn, /return \{ chars: 0, tutorial: false \}/);
+});
+
+/**
+ * 계속 걸려 있으면 50자마다 축포가 터져 그 순간이 값싸진다. 한 번으로 끝나야 한다.
+ */
+test('연습 목표는 한 번만 걸린다', () => {
+  const check = mode.match(/private checkGoal\(\): void \{[\s\S]*?\n  \}/)?.[0] ?? '';
+  assert.match(check, /if \(tutorial\) userSettings\.updateFocusSettings\(\{ tutorialGoalDone: true \}\)/);
+});
+
+test('연습 목표에도 진행바가 보인다', () => {
+  // 바가 차오르는 것을 봐야 무슨 일이 일어날지 기대하게 된다. 그게 이 연습의 전부다.
+  const render = mode.match(/const \{ chars: goal \} = this\.activeGoal\(\);[\s\S]{0,300}/)?.[0] ?? '';
+  assert.ok(render, '진행바가 아직 설정값을 직접 읽고 있다');
+  assert.match(render, /goalWrapEl\.style\.display = goal > 0/);
+  assert.doesNotMatch(
+    mode,
+    /goalWrapEl\.style\.display = userSettings/,
+    '진행바가 연습 목표를 모른다',
+  );
+});
+
+/**
+ * 50자는 하루치가 아니다. 연습 목표에 "오늘 목표를 채우셨습니다" 라고 하면 우스워지고,
+ * 진짜 목표를 어디서 정하는지도 알려 주지 못한다.
+ */
+test('연습 목표는 축하가 아니라 안내로 말한다', () => {
+  assert.match(mode, /목표를 채우면 이렇게 축하합니다/);
+  assert.match(mode, /진짜 목표는 보기 → 배명훈 모드 설정 에서 정합니다/);
+
+  // 안내한 경로가 실제로 있어야 한다 — 없는 메뉴를 가리키면 거짓 안내가 된다.
+  const html = read('../index.html');
+  assert.match(html, /data-cmd="focus:settings"/, '배명훈 모드 설정 메뉴가 없다');
+  const dialog = read('../src/ui/focus-settings-dialog.ts');
+  assert.match(dialog, /const session = this\.section\('세션'\)/);
+  assert.match(dialog, /'목표',/, '설정 대화상자에 목표 항목이 없다');
+});
+
+/**
+ * 첫 문서가 진행바를 가리킨다. 위치를 틀리게 적으면 찾다가 못 찾는다 —
+ * 바닥글은 `space-between` 이라 통계가 왼쪽, 진행바가 오른쪽이다.
+ */
+test('첫 문서가 진행바를 제대로 가리킨다', () => {
+  const welcome = read('../src/core/welcome-document.ts');
+  assert.match(welcome, /오른쪽 아래에 진행바가 차오르고 있습니다/);
+  assert.match(welcome, /50자를 채우면/);
+
+  const footer = css.match(/\.fm-footer \{[\s\S]*?\n\}/)?.[0] ?? '';
+  assert.match(footer, /justify-content: space-between/, '바닥글 배치가 바뀌면 안내가 거짓이 된다');
+
+  // 안내한 글자수가 실제 연습 목표와 같아야 한다.
+  const chars = mode.match(/const TUTORIAL_GOAL_CHARS = (\d+);/)?.[1];
+  assert.equal(chars, '50', '첫 문서가 말하는 50자와 실제 연습 목표가 어긋난다');
 });
