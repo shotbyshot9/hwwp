@@ -16,7 +16,27 @@ const subsecondWasmDir = resolve(
 const useSubsecondWasm = process.env.RHWP_SUBSECOND === '1';
 
 export default defineConfig({
+  /*
+   * 배포본에서는 `console.log` 를 빼고 나간다.
+   *
+   * 개발용 진행 기록(`[initDoc] 1. 폰트 로딩 시작` 같은 것)이 사용자 콘솔에 그대로
+   * 찍히고 있었다. 쓰는 사람에게는 아무 뜻도 없는 잡음이고, 만들다 만 것처럼 보인다.
+   *
+   * `warn` 과 `error` 는 남긴다. hwwp 는 오류 수집기를 일부러 넣지 않았으므로
+   * (개인정보처리방침에 그렇게 적혀 있다), 무언가 잘못됐을 때 사용자가 스스로 확인할
+   * 수 있는 통로가 콘솔뿐이다. 그마저 지우면 "문서가 이상해요" 를 진단할 방법이 없다.
+   *
+   * 방법으로 `esbuild.pure` 를 먼저 썼는데 듣지 않았다. `pure` 는 인자에 부작용이
+   * 없을 때만 지우는데, 이 로그들은 인자가 전부 템플릿 문자열 안의 함수 호출
+   * (`Array.from(...)`, `this.pages.length`)이라 esbuild 가 지우지 못한다.
+   *
+   * `esbuild.drop: ['console']` 은 듣지만 `warn` 과 `error` 까지 함께 지운다.
+   * 그래서 `console.log` 라는 이름 자체를 빈 함수로 바꾼다 — 부르긴 부르되
+   * 아무것도 찍지 않는다. 개발 서버(`vite dev`)에는 적용되지 않아 로그가 그대로 보인다.
+   */
   define: {
+    // 배포 빌드에서만 치환된다. 개발 서버는 이 define 을 타지 않는다.
+    ...(process.env.NODE_ENV === 'production' ? { 'console.log': '(()=>{})' } : {}),
     __APP_VERSION__: JSON.stringify(pkg.version),
     // 셀프 호스팅 빌드에서 외부(CDN) 웹폰트 로드를 빌드 시점에 끈다.
     // 확장 storage 설정(disableExternalWebFonts)이 있으면 그 값이 우선한다.

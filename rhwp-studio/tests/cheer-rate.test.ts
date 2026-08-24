@@ -90,14 +90,25 @@ test('축포는 한 문장에 한 번만 터진다', () => {
 });
 
 /**
- * 처음 오는 사람은 MAX 로 시작한다.
+ * 처음 오는 사람은 x1 로 시작한다.
  *
- * x1 은 문장부호를 찍을 때 — 대략 60타에 한 번이다. 배명훈 모드를 처음 켠 사람에게는
- * 한참 쳐도 아무 일이 없는 것처럼 느껴진다. 이 모드가 이 제품의 핵심이므로, 무엇인지
- * 한 번은 제대로 겪어 본 뒤에 남길지 말지 고르게 한다. 부담스러우면 배속 단추 한 번으로
- * 내리고 그 값은 저장된다.
+ * 한때 MAX 였다. 처음 켠 사람이 "한참 쳐도 아무 일이 없다" 고 느끼지 않게 하려던 것이고,
+ * 그때는 첫 문서에 안내가 없었으니 맞는 판단이었다. 지금은 첫 문서가 "마침표까지 찍어
+ * 보세요" 라고 직접 시키므로, 무딘 방법 대신 정확한 방법이 생겼다.
+ *
+ * 그리고 MAX 는 값을 치른다.
+ *
+ *   · 글자 하나마다 터지므로 **문장을 끝냈다는 사건이 묻힌다.** 원작의 감동은 문장을
+ *     완성하면 박수가 나온다는 것인데, 모든 것에 박수가 나오면 아무것도 박수받지 못한다.
+ *     문장 끝 응원에 볼륨 보정도 없다 — 중간 응원과 크기가 같다.
+ *   · 자주 터지는 만큼 소리를 줄이므로(`cheerRateGain`) 한 번의 응원이 x1 의 45% 다.
+ *   · 올라갈 자리가 없어 첫 문서의 "단추를 눌러 보세요" 가 성립하지 않는다.
+ *   · 화면이 한순간도 비지 않아 목표 달성 축포마저 묻힌다.
+ *
+ * x1 은 30자마다, 그리고 문장부호를 찍을 때마다다. 첫 마침표에서 바로 겪고, 문장부호
+ * 없이 이어 써도 50자에서 축포가 따로 터지므로 빈틈도 없다.
  */
-test('배명훈 모드 기본 배속은 MAX 다', () => {
+test('배명훈 모드 기본 배속은 x1 이다', () => {
   const settings = readFileSync(
     new URL('../src/core/user-settings.ts', import.meta.url),
     'utf8',
@@ -107,7 +118,35 @@ test('배명훈 모드 기본 배속은 MAX 다', () => {
     settings.indexOf('    autosave: {'),
   );
   assert.ok(focus.length > 0, '기본 설정의 focus 를 찾지 못했다');
-  assert.match(focus, /cheerRate: 'max',/);
+  assert.match(focus, /cheerRate: 1,/);
+});
+
+/**
+ * 첫 문서가 배속 단추를 이름으로 가리킨다. 기본값이 바뀌면 그 이름도 바뀌므로,
+ * 둘이 어긋나면 "없는 단추를 누르라" 는 거짓 안내가 된다. 실제로 한 번 그랬다 —
+ * 기본값이 MAX 인데 문서는 「x1」 을 누르라고 하고 있었고, MAX 에서 누르면 오히려
+ * 가장 드물어지는 x1 로 한 바퀴 돌았다.
+ */
+test('첫 문서가 가리키는 배속 단추 이름이 기본값과 맞다', () => {
+  const settings = readFileSync(
+    new URL('../src/core/user-settings.ts', import.meta.url),
+    'utf8',
+  ).replace(/\r\n/g, '\n');
+  const welcome = readFileSync(
+    new URL('../src/core/welcome-document.ts', import.meta.url),
+    'utf8',
+  ).replace(/\r\n/g, '\n');
+
+  const raw = settings.match(/cheerRate: ('max'|\d+),/)?.[1] ?? '';
+  const rate = raw === "'max'" ? 'max' : Number(raw);
+  const label = cheerRateLabel(rate as Parameters<typeof cheerRateLabel>[0]);
+
+  assert.ok(
+    welcome.includes(`「${label}」`),
+    `첫 문서가 「${label}」 를 가리키지 않는다 — 기본값과 어긋났다`,
+  );
+  // 기본값에서 단추를 누르면 실제로 잦아져야 한다. 한 바퀴 돌면 안 된다.
+  assert.notEqual(rate, 'max', 'MAX 가 기본값이면 단추를 눌러도 잦아지지 않는다');
 });
 
 test('저장된 배속이 있으면 기본값이 덮지 않는다', () => {

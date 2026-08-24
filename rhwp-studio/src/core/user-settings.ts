@@ -235,7 +235,7 @@ function defaultSettings(): AppSettings {
        * 부담스러우면 배속 단추 한 번으로 내린다(그 값은 저장된다). 이미 쓰던 사람의
        * 설정은 그대로다 — 여기 값은 저장된 설정이 없을 때만 쓰인다.
        */
-      cheerRate: 'max',
+      cheerRate: 1,
       exitHintSeen: false,
       tutorialGoalDone: false,
       confetti: true,
