@@ -412,7 +412,7 @@ setDriveFileProvider(async () => {
 
 registry.register({
   id: 'tool:welcome-doc',
-  label: '사용법 문서 열기',
+  label: '처음 화면 다시 열기',
   async execute() {
     /*
      * 쓰던 문서를 밀어내지 않는다.
@@ -430,7 +430,7 @@ registry.register({
       const opened = window.open(url, '_blank', 'noopener');
       if (opened) return;
       showToast({
-        message: '새 탭이 브라우저에 막혔습니다. 이 탭에서 사용법을 엽니다.',
+        message: '새 탭이 브라우저에 막혔습니다. 이 탭에서 처음 화면을 엽니다.',
         durationMs: 4000,
       });
     }
@@ -1691,7 +1691,7 @@ async function prepareStartupDocument(): Promise<void> {
  * 사용법 문서를 연다.
  *
  * 첫 실행에 자동으로 열리지만, 나중에 다시 보고 싶을 수 있으므로
- * `도구 → 사용법 문서 열기` 로도 부른다. 한 번 쓰고 마는 표식에 갇혀 다시 못 보면
+ * `도구 → 처음 화면 다시 열기` 로도 부른다. 한 번 쓰고 마는 표식에 갇혀 다시 못 보면
  * 안 된다.
  */
 async function openWelcomeDocument(): Promise<void> {

@@ -204,6 +204,11 @@ export class FocusMode {
     if (!this.active) return;
     this.active = false;
 
+    // 한 번 나가 봤으면 나가는 길을 안 것이다. 이름표는 그것으로 할 일을 끝냈다.
+    if (!userSettings.getFocusSettings().exitHintSeen) {
+      userSettings.updateFocusSettings({ exitHintSeen: true });
+    }
+
     document.body.classList.remove('fm-active');
     document.removeEventListener('keydown', this.keydownBound, true);
     this.unsubscribe?.();
@@ -474,6 +479,27 @@ export class FocusMode {
     exit.innerHTML = ICONS.close;
     exit.title = '배명훈 모드 나가기 (Esc)';
     exit.setAttribute('aria-label', '배명훈 모드 나가기');
+
+    /*
+     * 처음 온 사람에게만 나가기 옆에 `Esc` 를 글자로 보인다.
+     *
+     * 배명훈 모드는 메뉴도 도구 모음도 없는 화면이다. 나가는 길을 모르면 갇힌 것처럼
+     * 느끼고, 그때 사람이 하는 일은 탭을 닫는 것이다. 이 제품에서 사용자를 잃는 경로
+     * 가운데 가장 확실한 것이 이것이다.
+     *
+     * 툴팁(`title`)은 마우스를 올려야 보이므로 이 상황에서는 없는 것과 같다.
+     *
+     * 한 번 나가 보면 안 것이므로 그다음부터는 띄우지 않는다. 튜토리얼이 아니라
+     * 이름표다 — 누를 것도, 닫을 것도 없다.
+     */
+    if (!userSettings.getFocusSettings().exitHintSeen) {
+      const hint = document.createElement('span');
+      hint.className = 'fm-exit-hint';
+      hint.textContent = 'Esc';
+      // 나가기 단추가 이미 같은 뜻을 읽어 주므로 두 번 읽히지 않게 한다.
+      hint.setAttribute('aria-hidden', 'true');
+      actions.insertBefore(hint, exit);
+    }
 
     header.append(brand, actions);
     return header;

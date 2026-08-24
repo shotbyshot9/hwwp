@@ -185,6 +185,24 @@ html[data-theme-effective='dark'] body.fm-active #scroll-content canvas {
 }
 
 /*
+ * 나가기 옆의 `Esc` 이름표. 처음 온 사람에게만 한 번 보인다.
+ *
+ * 단추가 아니다 — 누를 것도 닫을 것도 없다. 그래서 테두리도 배경도 주지 않고,
+ * 글자만 옅게 둔다. 머리글은 글쓰기 화면의 가장자리이므로 여기서 눈에 띄려고
+ * 애쓰면 그 자체가 방해가 된다.
+ */
+.fm-exit-hint {
+  align-self: center;
+  margin-left: 8px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--fm-muted);
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+}
+
+/*
  * 응원 배속 버튼.
  *
  * 옆의 세 개는 켜고 끄는 토글이라 아이콘이지만, 이것은 x1 → x2 → x3 → x5 → x10 →

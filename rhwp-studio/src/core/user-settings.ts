@@ -111,6 +111,13 @@ export interface FocusSettings {
    * 싶으면 끄면 되고, 켜져 있어도 Esc 한 번이면 빠져나온다.
    */
   startInFocusMode: boolean;
+  /**
+   * 나가기 단추 옆에 `Esc` 를 글자로 보였고, 사용자가 한 번 나가 봤는가.
+   *
+   * 배명훈 모드에는 메뉴도 도구 모음도 없어서 나가는 길을 모르면 갇힌 것처럼 느낀다.
+   * 그래서 처음 온 사람에게만 이름표를 보인다. 한 번 나가 보면 안 것이므로 끈다.
+   */
+  exitHintSeen: boolean;
 }
 
 /** 복구용 자동저장 설정 */
@@ -221,6 +228,7 @@ function defaultSettings(): AppSettings {
        * 설정은 그대로다 — 여기 값은 저장된 설정이 없을 때만 쓰인다.
        */
       cheerRate: 'max',
+      exitHintSeen: false,
       confetti: true,
       sound: true,
       praise: true,
@@ -330,6 +338,7 @@ class UserSettingsService {
           typewriter: normalizeBoolean(focus.typewriter, defaults.focus.typewriter),
           goalChars: normalizeNumber(focus.goalChars, defaults.focus.goalChars, 0, 100000),
           startInFocusMode: normalizeBoolean(focus.startInFocusMode, defaults.focus.startInFocusMode),
+          exitHintSeen: normalizeBoolean(focus.exitHintSeen, defaults.focus.exitHintSeen),
         },
         autosave: {
           ...defaults.autosave,
