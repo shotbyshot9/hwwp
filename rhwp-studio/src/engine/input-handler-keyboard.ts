@@ -390,6 +390,17 @@ const chordMapM: Record<string, string> = {
   ㅡ: 'insert:equation', // 한글 IME
 };
 
+/**
+ * 코드 단축키 → 커맨드 ID 매핑 (Ctrl+Q,? 형태 — 문서 정보)
+ *
+ * 한글의 Ctrl+Q,I 를 그대로 쓴다. Ctrl+Q 는 이 제품에서 쓰는 데가 없고, 브라우저도
+ * 막지 않는다(Chrome 의 Ctrl+Q 종료는 macOS 의 Cmd+Q 이고 웹 페이지에 오지 않는다).
+ */
+const chordMapQ: Record<string, string> = {
+  i: 'file:doc-stats',
+  ㅑ: 'file:doc-stats', // 한글 IME 상태
+};
+
 /** 코드 단축키 → 커맨드 ID 매핑 (Alt+V,? 형태 — 보기 메뉴) */
 const chordMapV: Record<string, string> = {
   t: 'view:border-transparent',
@@ -470,6 +481,16 @@ export function onKeyDown(this: any, e: KeyboardEvent): void {
     this._pendingChordG = false;
     const key = e.key.toLowerCase();
     const cmdId = chordMapG[key];
+    if (cmdId && this.dispatcher) {
+      e.preventDefault();
+      this.dispatcher.dispatch(cmdId);
+      return;
+    }
+  }
+  if (this._pendingChordQ) {
+    this._pendingChordQ = false;
+    const key = e.key.toLowerCase();
+    const cmdId = chordMapQ[key];
     if (cmdId && this.dispatcher) {
       e.preventDefault();
       this.dispatcher.dispatch(cmdId);
@@ -1467,6 +1488,12 @@ export function handleCtrlKey(this: any, e: KeyboardEvent): void {
   if ((e.key === 'm' || e.key === 'M' || e.key === 'ㅡ') && !e.shiftKey && !e.altKey) {
     e.preventDefault();
     this._pendingChordM = true;
+    return;
+  }
+  // 문서 통계 — 한글의 Ctrl+Q,I 첫 벌.
+  if ((e.key === 'q' || e.key === 'Q' || e.key === 'ㅂ') && !e.shiftKey && !e.altKey) {
+    e.preventDefault();
+    this._pendingChordQ = true;
     return;
   }
   if ((e.key === 'g' || e.key === 'G' || e.key === 'ㅎ') && !e.shiftKey && !e.altKey) {

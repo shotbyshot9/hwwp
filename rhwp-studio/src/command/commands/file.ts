@@ -1,4 +1,5 @@
 import type { CommandDef, CommandServices } from '../types';
+import { DocStatsDialog } from '@/ui/doc-stats-dialog';
 import { PageSetupDialog } from '@/ui/page-setup-dialog';
 import { showSaveAs } from '@/ui/save-as-dialog';
 import { showHwpSavePasswordDialog } from '@/ui/hwp-password-dialog';
@@ -808,6 +809,34 @@ export const fileCommands: CommandDef[] = [
     canExecute: (ctx) => ctx.hasDocument,
     async execute(services) {
       await runPdfPrint(services);
+    },
+  },
+  {
+    /*
+     * 문서 통계 — 한글의 「파일 → 문서 정보 → 문서 통계」에 해당한다.
+     *
+     * **파일 메뉴에 둔다.** 한글이 그렇기도 하지만, 무엇보다 이것은 *이 문서에 대한 값*
+     * 이기 때문이다. 도구 메뉴에 있는 것들(환경 설정·사용법·제품 정보)은 hwwp 자체에
+     * 대한 것이라 성격이 다르다. 파일 메뉴에는 이미 편집 용지가 있어 문서 속성이 앉는
+     * 자리이기도 하다.
+     *
+     * 단축키도 한글과 같은 Ctrl+Q,I 다. 두 벌 누르기는
+     * `input-handler-keyboard.ts` 의 `chordMapQ` 가 받는다 — Ctrl+M,? · Ctrl+G,? 가
+     * 이미 쓰는 방식이다.
+     */
+    id: 'file:doc-stats',
+    label: '문서 통계',
+    shortcutLabel: 'Ctrl+Q,I',
+    canExecute: (ctx) => ctx.hasDocument,
+    execute(services) {
+      const wasm = services.wasm;
+      // 선택이 있으면 그 글도 함께 센다. 선택이 없으면 null 이라 빈 칸이 된다.
+      const selectedText = services.getInputHandler()?.getSelectedText() ?? null;
+      new DocStatsDialog({
+        source: wasm,
+        pages: wasm.pageCount,
+        selectedText,
+      }).show();
     },
   },
   {

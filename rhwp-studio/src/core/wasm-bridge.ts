@@ -2455,6 +2455,18 @@ export class WasmBridge {
     return this.doc.getClipboardText();
   }
 
+  /**
+   * 본문의 개체 목록을 JSON 으로 준다 — `[{ctrlId, userDesc, list, para, ...}]`.
+   *
+   * 문서 통계에서 표·그림·글상자를 세는 데 쓴다. `ctrlId` 만으로는 그리기 개체의
+   * 갈래를 못 가르므로(`gso` 하나에 그림·사각형·글상자가 다 들어온다) `userDesc` 를
+   * 함께 본다 — 엔진이 한글 실측에 맞춰 붙여 둔 이름이다.
+   */
+  getControls(): string {
+    if (!this.doc) return '[]';
+    return this.doc.getControls();
+  }
+
   // [Task #1161] cellPathJson: 셀/글상자 안 picture 복사 시 다단계 경로
   // (`[{controlIndex,cellIndex,cellParaIndex},...]`). 빈 문자열이면 본문.
   copyControl(sec: number, para: number, ci: number, cellPathJson = ''): string {

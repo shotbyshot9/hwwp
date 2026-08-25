@@ -4988,6 +4988,31 @@ export class InputHandler {
     return true;
   }
 
+  /**
+   * 지금 선택한 글. 선택이 없으면 null.
+   *
+   * 문서 통계가 "현재 선택 영역" 칸을 채우는 데 쓴다. 커서는 이 클래스 안에만 두므로
+   * (밖에서 만지면 화면과 어긋난다) 글만 꺼내 준다.
+   *
+   * 본문 선택만 센다. 표 칸이나 각주 안은 좌표 체계가 달라 지금은 null 을 준다 —
+   * 틀린 숫자를 보이느니 빈 칸이 낫다.
+   */
+  getSelectedText(): string | null {
+    if (!this.cursor.hasSelection()) return null;
+    const sel = this.cursor.getSelectionOrdered();
+    if (!sel || sel.start.parentParaIndex !== undefined) return null;
+    try {
+      this.wasm.copySelection(
+        sel.start.sectionIndex,
+        sel.start.paragraphIndex, sel.start.charOffset,
+        sel.end.paragraphIndex, sel.end.charOffset,
+      );
+      return this.wasm.getClipboardText();
+    } catch {
+      return null;
+    }
+  }
+
   /** 서식 토글 (커맨드 시스템용) */
   toggleFormat(prop: 'bold' | 'italic' | 'underline' | 'strikethrough' | 'emboss' | 'engrave' | 'outline' | 'superscript' | 'subscript'): void {
     this.applyToggleFormat(prop);

@@ -1,0 +1,64 @@
+/* ================================================================
+   문서 통계 대화상자 (도구 → 문서 통계)
+
+   숫자를 읽는 화면이라 표가 전부다. 숫자는 오른쪽으로 맞추고 자릿수를 고정해
+   위아래 자릿수가 나란히 서게 한다 — 어긋나면 크기를 눈으로 비교할 수 없다.
+   ================================================================ */
+
+.docstats-body {
+  padding: 4px 20px 16px;
+}
+
+.docstats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-md);
+}
+
+.docstats-table th {
+  padding: 6px 0 8px;
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--ui-border-strong);
+  white-space: nowrap;
+}
+
+.docstats-table th:not(:first-child),
+.docstats-value {
+  text-align: right;
+}
+
+.docstats-table td {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--ui-border-subtle);
+}
+
+/* 숫자 칸은 자릿수 폭을 고정한다 — 1,000 과 999 의 자릿수가 어긋나면 못 읽는다. */
+.docstats-value {
+  font-variant-numeric: tabular-nums;
+  padding-left: 20px;
+  white-space: nowrap;
+}
+
+.docstats-empty {
+  color: var(--color-text-muted);
+}
+
+/*
+ * 원고지 매수.
+ *
+ * 작가가 이 화면에서 먼저 찾는 줄이다 — 청탁도 계약도 매수로 하기 때문에 글자수보다
+ * 이 숫자를 본다. 표 안에서 눈이 먼저 닿게 둔다.
+ */
+.docstats-emphasis td {
+  font-weight: var(--font-weight-medium);
+  color: var(--accent-strong);
+}
+
+.docstats-note {
+  margin: 14px 0 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
