@@ -260,6 +260,18 @@ const autosave = new AutosaveController({
 // 다시 불리지 않아 저장이 영영 재시도되지 않는다.
 eventBus.on('document-mutated', () => autosave.markChanged());
 
+/*
+ * 제목 줄에서 이름을 바꾸면 저장소에도 올려야 한다.
+ *
+ * 예전에는 이 이벤트를 아무도 듣지 않아 이름이 **화면에서만** 바뀌었다. 드라이브에
+ * 올라간 문서는 옛 이름 그대로 남아, 나중에 드라이브에서 찾으면 어느 것이 무엇인지
+ * 알 수 없었다.
+ *
+ * 이름 맞추기는 저장 안에서 한다(`reconcileName`). 여기서는 저장을 앞당길 뿐이다 —
+ * 이름만 바꾸고 아무것도 안 쓰면 저장이 안 돌아 한참 뒤에야 반영되기 때문이다.
+ */
+eventBus.on('document-renamed', () => autosave.markChanged());
+
 /**
  * 드라이브 문서를 연다.
  *

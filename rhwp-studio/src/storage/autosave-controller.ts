@@ -157,6 +157,32 @@ export class AutosaveController {
     this.timer = null;
   }
 
+  /**
+   * 제목 줄에서 바꾼 이름을 저장소에도 반영한다.
+   *
+   * 저장은 지금까지 **내용만** 올렸다(`update`). 그래서 드라이브에 한 번 올라간 문서는
+   * 앱에서 이름을 아무리 바꿔도 드라이브 쪽 이름이 그대로였다 — 나중에 드라이브에서
+   * 찾으면 옛 이름으로 있어서 어느 것이 무엇인지 알 수 없다.
+   *
+   * 저장할 때마다 "지금 이름" 과 "저장소에 있는 이름" 을 견줘 다르면 맞춘다. 이름을
+   * 바꾼 순간을 따로 붙잡지 않고 저장 때 맞추는 이유는, 그 사이 오프라인이었거나
+   * 저장이 실패했거나 여러 번 고쳐 썼어도 결국 마지막 이름 하나로 수렴하기 때문이다.
+   *
+   * 내용보다 이름을 먼저 보낸다. 이름 변경이 실패하면 `save` 의 catch 로 넘어가 내용도
+   * 다시 시도되므로, 이름만 바뀌고 내용은 옛것인 상태로 남지 않는다.
+   */
+  private async reconcileName(backend: StorageBackend): Promise<void> {
+    const ref = this.ref;
+    if (!ref) return;
+    const wanted = this.deps.getFileName();
+    if (!wanted || wanted === ref.name) return;
+
+    const outcome = await backend.rename(ref, wanted);
+    this.ref = outcome.ref;
+    // 같은 이름이 이미 있어 번호가 붙었으면 제목 줄도 그 이름으로 맞춘다.
+    if (outcome.renamedTo) this.deps.onRenamed(outcome.renamedTo);
+  }
+
   private async save(): Promise<void> {
     if (this.stopped) return;
     if (this.saving) {
@@ -191,6 +217,7 @@ export class AutosaveController {
     try {
       const blob = this.deps.serialize();
       const creating = this.ref === null;
+      if (!creating) await this.reconcileName(backend);
       const outcome = creating
         ? await backend.create(this.deps.getFileName(), blob)
         : await backend.update(this.ref!, blob);
