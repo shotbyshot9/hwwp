@@ -59,6 +59,7 @@ export class DocStatsDialog extends ModalDialog {
       { label: '글자 (공백 제외)', whole: whole.charsNoSpace, selected: sel?.charsNoSpace ?? null },
       { label: '글자에 포함된 한자', whole: whole.hanja, selected: sel?.hanja ?? null },
       { label: '낱말', whole: whole.words, selected: sel?.words ?? null },
+      { label: '줄', whole: whole.lines, selected: null },
       { label: '문단', whole: whole.paragraphs, selected: null },
       { label: '쪽', whole: whole.pages, selected: null },
       {
@@ -76,19 +77,19 @@ export class DocStatsDialog extends ModalDialog {
     body.appendChild(this.buildTable(rows, sel !== null));
 
     /*
-     * 없는 것과 빠지는 것을 밝힌다.
+     * 어디까지 세는지 밝힌다.
      *
-     * 한글에는 「줄」도 있는데 여기에는 없다. 그리고 글자를 세는 것은 본문 문단뿐이라,
-     * 표 칸·머리말·꼬리말·각주 안의 글자는 빠진다 — 엔진에 그 글을 꺼내는 통로가 아직
-     * 없기 때문이다(표 **개수**는 센다).
+     * 항목마다 범위가 다르다. 글자·낱말·문단은 표 칸과 글상자 안까지 세지만, 줄 수는
+     * 본문만 센다(표 칸의 리스트 번호를 밖에서 알아낼 길이 아직 없다). 머리말·꼬리말·
+     * 각주는 어느 쪽에도 안 들어간다.
      *
-     * 아무 말 없이 빠져 있으면 사용자는 숫자를 믿고 쓴다. 원고 분량은 청탁과 계약이
-     * 걸린 숫자다. 모르는 채로 적게 세는 것보다, 무엇이 빠졌는지 알고 쓰는 편이 낫다.
+     * 아무 말 없으면 사용자는 숫자를 그대로 믿는다. 원고 분량은 청탁과 계약이 걸린
+     * 숫자다. 모르는 채로 어긋나는 것보다 범위를 알고 쓰는 편이 낫다.
      */
     const note = document.createElement('p');
     note.className = 'docstats-note';
     note.textContent =
-      '줄 수는 아직 셀 수 없습니다. 글자는 본문만 세며 표 칸·머리말·꼬리말·각주 안의 글자는 빠집니다.';
+      '본문과 표·글상자 안의 글을 셉니다. 머리말·꼬리말·각주는 원고 분량이 아니므로 세지 않습니다.';
     body.appendChild(note);
 
     return body;
@@ -168,6 +169,7 @@ function suffixFor(label: string): string {
   if (label.startsWith('글자')) return ' 자';
   if (label === '낱말') return ' 개';
   if (label === '문단') return ' 개';
+  if (label === '줄') return ' 줄';
   if (label === '쪽') return ' 쪽';
   return ' 개';
 }

@@ -91,22 +91,6 @@ test('구역이 여럿이면 문단을 모두 더한다', () => {
   assert.equal(stats.pages, 3);
 });
 
-/**
- * 한글에는 「줄」이 있는데 여기에는 없다. 엔진이 조판할 때 줄을 나눠 두지만
- * (`line_segs`) 그 개수를 밖으로 꺼내는 통로가 아직 없다.
- *
- * 없는 것을 아무 말 없이 빼면 "왜 없지" 를 겪는다. 없다고 적어 둔다.
- */
-test('셀 수 없는 것을 셀 수 있는 척하지 않는다', () => {
-  const dialog = readFileSync(new URL('../src/ui/doc-stats-dialog.ts', import.meta.url), 'utf8')
-    .replace(/\r\n/g, '\n');
-  assert.match(dialog, /줄 수는 아직 셀 수 없습니다/);
-  // 본문만 센다는 것도 밝힌다 — 각주를 넣은 사람이 숫자를 믿을 수 있어야 한다.
-  assert.match(dialog, /표 칸·머리말·꼬리말·각주 안의 글자는 빠집니다/);
-
-  const stats = documentStatistics(fakeDoc([['가나다']]), 1);
-  assert.ok(!('lines' in stats), '줄 수를 슬쩍 넣었다');
-});
 
 /**
  * 「마지막 저장한 사람」은 이름을 파일에 적는 일이다. hwwp 는 이름을 물어본 적이 없고,
@@ -238,24 +222,164 @@ test('한글과 같은 Ctrl+Q,I 로 열린다', () => {
   assert.match(html, /data-cmd="file:doc-stats"[\s\S]{0,120}?Ctrl\+Q,I/);
 });
 
-/**
- * 표 안의 글자는 아직 못 센다. 엔진에 그 글을 꺼내는 통로가 없다 —
- * `getCellParagraphCount`·`getCellParagraphLength` 는 있어도 글자를 주는 것은 없다.
- *
- * 그런데 **표 개수는 센다.** 표가 4개라고 알려 주면서 그 안의 글자는 빼고 세면,
- * 사용자는 그 숫자가 전부인 줄 안다. 원고 분량은 청탁과 계약이 걸린 숫자라
- * 모르는 채로 적게 세는 것이 가장 나쁘다. 그래서 빠진다는 것을 화면에 적어 둔다.
- */
-test('표 안의 글자가 빠진다는 것을 밝힌다', () => {
-  const dialog = readFileSync(new URL('../src/ui/doc-stats-dialog.ts', import.meta.url), 'utf8')
-    .replace(/\r\n/g, '\n');
-  assert.match(dialog, /표 칸[^]{0,40}빠집니다/, '표가 빠진다는 말이 없다');
 
-  // 표 개수는 세면서 안의 글자는 안 센다 — 그 어긋남이 이 문구가 필요한 이유다.
+/**
+ * 표 칸과 글상자 안의 글자도 센다.
+ *
+ * 처음에는 본문 문단만 셌다. 그래서 출품신청서처럼 내용이 대부분 표 안에 있는 문서는
+ * 분량이 한참 적게 나왔다 — 실제로 열어 보고 알았다.
+ *
+ * 엔진에 이미 있던 `getTextFileUnicode`(한컴 `GetTextFile`)가 표·글상자 안까지 훑는다.
+ * Rust 를 고치거나 WASM 을 다시 빌드할 필요가 없었다.
+ */
+function fakeFullDoc(bodyParas: string[], full: string, controls: unknown[] = []) {
+  return {
+    ...fakeDoc([bodyParas], controls),
+    getTextFileUnicode: () => full,
+    getLineStarts: () => [0],
+  };
+}
+
+test('표 칸 안의 글자를 함께 센다', () => {
+  // 본문은 "본문 글" 뿐이고, 표 칸에 "표 안 글" 이 더 있는 문서.
   const stats = documentStatistics(
-    fakeDoc([['본문']], [{ ctrlId: 'tbl', userDesc: '표' }]),
+    fakeFullDoc(['본문 글'], '본문 글\r\n표 안 글\r\n', [{ ctrlId: 'tbl', userDesc: '표' }]),
     1,
   );
-  assert.equal(stats.tables, 1, '표 개수는 세야 한다');
-  assert.equal(stats.chars, 2, '본문 글자만 세야 한다');
+  // 본문만 셌으면 4자였다.
+  assert.equal(stats.chars, 9, `${stats.chars}자로 셌다 — 표 안 글자가 빠졌다`);
+  // 본문 2낱말(본문·글) + 표 안 3낱말(표·안·글)
+  assert.equal(stats.words, 5);
+  assert.equal(stats.paragraphs, 2);
+});
+
+test('문단마다 붙는 줄바꿈은 글자로 세지 않는다', () => {
+  // GetTextFile 은 문단마다 \r\n 을 붙여 준다. 그것까지 세면 문단 수만큼 부풀어난다.
+  const stats = documentStatistics(fakeFullDoc(['가나'], '가나\r\n다라\r\n'), 1);
+  assert.equal(stats.chars, 4, '줄바꿈이 글자로 세어졌다');
+});
+
+test('전체 글을 못 받으면 본문만 세는 길로 물러난다', () => {
+  // 옛 문서나 시험용 가짜처럼 그 함수가 없는 표면도 있다. 그때 통계가 비면 안 된다.
+  const stats = documentStatistics(fakeDoc([['본문 글']]), 1);
+  assert.equal(stats.chars, 4);
+  assert.equal(stats.lines, 0, '줄 수는 알 수 없으니 0 이다');
+});
+
+/**
+ * 줄 수는 조판 결과다. `getLineStarts` 가 주는 줄 시작 자리의 개수가 곧 줄 수다.
+ * 이것도 엔진에 이미 있었다.
+ */
+test('줄 수는 문단마다 세어 더한다', () => {
+  const perPara = [[0, 20, 40], [0], [0, 15]];   // 3줄, 1줄, 2줄
+  let n = 0;
+  const stats = documentStatistics({
+    ...fakeDoc([['가', '나', '다']]),
+    getTextFileUnicode: () => '가\r\n나\r\n다\r\n',
+    getLineStarts: () => perPara[n++] ?? [],
+  }, 1);
+  assert.equal(stats.lines, 6);
+});
+
+test('줄 정보가 없는 문단도 한 줄로 센다', () => {
+  // 조판 전이거나 빈 문단이면 목록이 비어 온다. 0 줄짜리 문단은 없다.
+  const stats = documentStatistics({
+    ...fakeDoc([['가', '나']]),
+    getTextFileUnicode: () => '가\r\n나\r\n',
+    getLineStarts: () => [],
+  }, 1);
+  assert.equal(stats.lines, 2);
+});
+
+/**
+ * 항목마다 세는 범위가 다르다. 글자·낱말·문단은 표·글상자까지, 줄은 본문만.
+ * 원고 분량은 청탁과 계약이 걸린 숫자라, 범위를 밝히지 않으면 사용자가 그대로 믿는다.
+ */
+test('어디까지 세는지 화면에 밝힌다', () => {
+  const dialog = readFileSync(new URL('../src/ui/doc-stats-dialog.ts', import.meta.url), 'utf8')
+    .replace(/\r\n/g, '\n');
+  assert.match(dialog, /본문과 표·글상자 안의 글을 셉니다/);
+  // 뺀 이유를 함께 적는다 — 못 세는 것이 아니라 원고 분량이 아니라서다.
+  assert.match(dialog, /머리말·꼬리말·각주는 원고 분량이 아니므로 세지 않습니다/);
+  // 줄 항목이 표에 실제로 있어야 한다.
+  assert.match(dialog, /label: '줄', whole: whole\.lines/);
+});
+
+test('브리지가 두 함수를 넘겨준다', () => {
+  const bridge = readFileSync(new URL('../src/core/wasm-bridge.ts', import.meta.url), 'utf8')
+    .replace(/\r\n/g, '\n');
+  assert.match(bridge, /getTextFileUnicode\(\): string \{/);
+  assert.match(bridge, /getLineStarts\(listId: number, paraInList: number\): number\[\] \{/);
+  // 엔진이 JSON 문자열로 감싸 주므로 벗겨야 한다.
+  assert.match(bridge, /JSON\.parse\(raw\.startsWith\('"'\)/);
+});
+
+/**
+ * 표 칸의 줄도 센다 — 리스트 번호가 아니라 **색인**으로 찾아서.
+ *
+ * 처음에는 `getLineStarts(listId, …)` 로 표 칸을 훑었다. 그런데 그 함수는 본문이 아닌
+ * 리스트 번호를 주면 부를 때마다 문서를 통째로 훑는다(`collect_fields_and_lists`).
+ * 표가 324개인 393쪽 편람에서 화면이 굳었다.
+ *
+ * `getLineInfoInCell` 은 구역·문단·컨트롤·칸을 그대로 짚어 들어가므로 문서 크기와
+ * 무관하다. 같은 문서에서 321ms 로 끝난다.
+ */
+test('표 칸의 줄은 색인으로 찾는다 — 문서를 다시 훑지 않는다', () => {
+  const stats = readFileSync(new URL('../src/core/document-stats.ts', import.meta.url), 'utf8')
+    .replace(/\r\n/g, '\n');
+  const fn = stats.match(/function countAllLines\([\s\S]*?\n\}/)?.[0] ?? '';
+  assert.ok(fn, 'countAllLines 를 찾지 못했다');
+
+  assert.match(fn, /getLineInfoInCell\.call\(/, '색인으로 찾지 않는다');
+  // 본문이 아닌 리스트 번호로 부르면 매번 문서를 통째로 훑는다. 다시 그러면 안 된다.
+  assert.doesNotMatch(
+    fn,
+    /getLineStarts\.call\(source, (?!ROOT_LIST_ID)/,
+    '본문이 아닌 리스트 번호로 줄을 묻고 있다 — 큰 문서에서 화면이 굳는다',
+  );
+});
+
+/**
+ * 없는 칸을 물으면 엔진이 **예외를 던진다.** 글상자는 0 번 칸 하나뿐이라 1 번을 묻는
+ * 순간 그렇게 된다. 실제로 그 때문에 통계 창이 아예 안 떴다.
+ */
+test('없는 칸을 물어도 통계는 나온다', () => {
+  let asked = 0;
+  const stats = documentStatistics({
+    ...fakeDoc([['본문']], [{ ctrlId: 'gso', userDesc: '글상자', list: 0, para: 0, controlIndex: 0 }]),
+    getTextFileUnicode: () => '본문\r\n',
+    getLineStarts: () => [0],
+    getCellParagraphCount: (_s, _p, _c, cell) => {
+      asked += 1;
+      if (cell === 0) return 1;
+      throw new Error('셀 문단 참조 실패');   // 엔진이 실제로 이렇게 던진다
+    },
+    getLineInfoInCell: () => ({ lineCount: 3 }),
+  }, 1);
+
+  assert.equal(stats.lines, 1 + 3, '본문 1줄 + 글상자 3줄이어야 한다');
+  assert.ok(asked > 1, '없는 칸도 물어 봤어야 한다');
+});
+
+test('표 칸의 줄을 본문 줄에 더한다', () => {
+  const stats = documentStatistics({
+    ...fakeDoc([['본문']], [{ ctrlId: 'tbl', userDesc: '표', list: 0, para: 0, controlIndex: 0 }]),
+    getTextFileUnicode: () => '본문\r\n칸 하나\r\n칸 둘\r\n',
+    getLineStarts: () => [0, 10],                  // 본문 2줄
+    getCellParagraphCount: (_s, _p, _c, cell) => (cell < 2 ? 1 : 0),
+    getLineInfoInCell: () => ({ lineCount: 2 }),   // 칸마다 2줄
+  }, 1);
+  assert.equal(stats.lines, 2 + 2 + 2);
+});
+
+test('본문에 없는 표(표 안의 표)는 건너뛴다', () => {
+  // 리스트가 본문이 아니면 색인으로 짚을 수 없다. 세다가 틀리느니 건너뛴다.
+  const stats = documentStatistics({
+    ...fakeDoc([['본문']], [{ ctrlId: 'tbl', userDesc: '표', list: 7, para: 0, controlIndex: 0 }]),
+    getTextFileUnicode: () => '본문\r\n',
+    getLineStarts: () => [0],
+    getCellParagraphCount: () => { throw new Error('불려서는 안 된다'); },
+    getLineInfoInCell: () => ({ lineCount: 99 }),
+  }, 1);
+  assert.equal(stats.lines, 1);
 });

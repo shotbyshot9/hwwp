@@ -2467,6 +2467,44 @@ export class WasmBridge {
     return this.doc.getControls();
   }
 
+  /**
+   * 문서 글 전체 — 한컴 `GetTextFile("UNICODE")`.
+   *
+   * 본문 문단만 훑는 `getTextRange` 와 달리 **표 칸과 글상자 안까지** 들어간다.
+   * 문서 통계가 이것을 쓴다 — 서식 문서는 내용이 대부분 표 안에 있어서, 본문만 세면
+   * 분량이 실제보다 한참 적게 나온다.
+   *
+   * 머리말·꼬리말·각주는 들어가지 않는다(엔진의 리스트 걷기가 표·도형만 따라간다).
+   *
+   * 문단과 리스트 항목마다 `\r\n` 이 붙는다. 글자수를 셀 때는 그것을 빼야 한다.
+   */
+  getTextFileUnicode(): string {
+    if (!this.doc) return '';
+    const raw = this.doc.getTextFileUnicode();
+    // JSON 문자열로 감싸 오므로 벗긴다. 실패하면 원문 그대로 쓴다.
+    try {
+      return JSON.parse(raw.startsWith('"') ? raw : `"${raw}"`) as string;
+    } catch {
+      return raw;
+    }
+  }
+
+  /**
+   * 문단 하나의 줄 시작 자리들 — `[0, 27, 54, ...]`.
+   *
+   * 개수가 곧 그 문단의 줄 수다. 조판이 끝나야 값이 채워지므로, 문서를 연 직후가
+   * 아니라 화면이 그려진 뒤에 물어야 한다.
+   */
+  getLineStarts(listId: number, paraInList: number): number[] {
+    if (!this.doc) return [];
+    try {
+      return JSON.parse(this.doc.getLineStarts(listId, paraInList)) as number[];
+    } catch {
+      return [];
+    }
+  }
+
+
   // [Task #1161] cellPathJson: 셀/글상자 안 picture 복사 시 다단계 경로
   // (`[{controlIndex,cellIndex,cellParaIndex},...]`). 빈 문자열이면 본문.
   copyControl(sec: number, para: number, ci: number, cellPathJson = ''): string {
