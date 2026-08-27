@@ -189,6 +189,61 @@
   height: 15px;
 }
 
+/* ─── 툴바 접기 ───────────────────────────────────────────
+ *
+ * 드라이브 연결 단추 바로 옆이다. 처음에는 `margin-left: auto` 로 제목 줄 오른쪽
+ * 끝(비어 있던 457px)에 두었는데, 다른 단추들과 400px 넘게 떨어져 무엇에 딸린
+ * 단추인지 읽히지 않았다. 혼자 떨어진 물건은 자리가 넉넉해도 무리에서 빠진 것으로
+ * 보인다 — 같은 줄의 단추 무리에 붙여 둔다.
+ *
+ * 조용한 회색이다. 이 줄에서 눈길은 배명훈 모드가 가져가야 한다. 접는 단추는
+ * 찾으면 보이는 정도면 된다.
+ */
+.tbar-toolbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: 8px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--ui-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.tbar-toolbar-toggle:hover {
+  background: var(--ui-hover);
+  color: var(--ui-text);
+}
+
+.tbar-toolbar-toggle-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/*
+ * 화살표만 위아래로 바꾼다.
+ *
+ * 그림 전체를 180° 돌리면 툴바 줄이 창 아래로 내려가 다른 물건이 된다. 그래서 화살표
+ * 두 개를 넣어 두고 하나만 보인다. 펼쳐져 있으면 위(접는다), 접혀 있으면 아래(편다).
+ */
+.tbar-toolbar-toggle-down {
+  display: none;
+}
+
+.tbar-toolbar-toggle.is-collapsed .tbar-toolbar-toggle-up {
+  display: none;
+}
+
+.tbar-toolbar-toggle.is-collapsed .tbar-toolbar-toggle-down {
+  display: inline;
+}
+
 .tbar-drive-label {
   overflow: hidden;
   text-overflow: ellipsis;

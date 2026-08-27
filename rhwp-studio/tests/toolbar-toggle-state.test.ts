@@ -4,6 +4,9 @@ import { readFileSync } from 'node:fs';
 
 const toolbarCss = readFileSync(new URL('../src/styles/toolbar.css', import.meta.url), 'utf8');
 const viewCmd = readFileSync(new URL('../src/command/commands/view.ts', import.meta.url), 'utf8');
+// markToggleState 는 view.ts 밖으로 나왔다 — 도구 상자 접기가 이것을 쓰는데 view.ts 에
+// 두면 서로 부르는 고리가 생긴다. view.ts 는 다시 내보내기만 한다.
+const toggleState = readFileSync(new URL('../src/command/toggle-state.ts', import.meta.url), 'utf8');
 
 /**
  * 조판부호·문단부호·격자 등 열넷이 `.active` 를 받고 있었는데 toolbar.css 에 그 규칙이
@@ -24,16 +27,18 @@ test('켜진 상태에서 가리켜도 켜진 것으로 보인다', () => {
 /** 색·모양만으로 알리면 그것을 못 보는 사람에게는 알 길이 없다. */
 test('켜짐을 화면 낭독기에도 알린다', () => {
   // 도구 모음은 button 이라 aria-pressed, 메뉴 항목은 div 라 menuitemcheckbox 다.
-  assert.match(viewCmd, /el\.setAttribute\('aria-pressed', String\(on\)\)/);
-  assert.match(viewCmd, /setAttribute\('role', 'menuitemcheckbox'\)/);
-  assert.match(viewCmd, /el\.setAttribute\('aria-checked', String\(on\)\)/);
+  assert.match(toggleState, /el\.setAttribute\('aria-pressed', String\(on\)\)/);
+  assert.match(toggleState, /setAttribute\('role', 'menuitemcheckbox'\)/);
+  assert.match(toggleState, /el\.setAttribute\('aria-checked', String\(on\)\)/);
   // 테마 고르기처럼 이미 역할이 적힌 항목을 덮어쓰면 라디오가 체크박스로 바뀐다.
-  assert.match(viewCmd, /if \(!el\.hasAttribute\('role'\)\)/);
+  assert.match(toggleState, /if \(!el\.hasAttribute\('role'\)\)/);
 });
 
 test('메뉴 항목과 도구 모음 버튼을 같은 자리에서 맞춘다', () => {
   // 같은 data-cmd 가 양쪽에 있으므로 선택자 하나로 둘 다 잡아야 어긋나지 않는다.
-  assert.match(viewCmd, /export function markToggleState\(cmd: string, on: boolean\)/);
+  assert.match(toggleState, /export function markToggleState\(cmd: string, on: boolean\)/);
+  // 옮겼어도 view.ts 에서 그대로 가져다 쓸 수 있어야 한다.
+  assert.match(viewCmd, /export \{ markToggleState \};/);
   assert.match(viewCmd, /markToggleState\('view:ctrl-mark', showControlCodes\)/);
   assert.match(viewCmd, /markToggleState\('view:para-mark', showParagraphMarks\)/);
   // 예전에는 명령마다 querySelectorAll 루프를 따로 돌려서, 새 토글을 넣을 때마다

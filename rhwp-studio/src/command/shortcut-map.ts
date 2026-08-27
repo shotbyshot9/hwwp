@@ -82,6 +82,10 @@ export const defaultShortcuts: [ShortcutDef, string][] = [
   [{ key: '-', ctrl: true }, 'view:zoom-out'],
   [{ key: '0', ctrl: true }, 'view:zoom-100'],
 
+  // 툴바 접기 — 워드·엑셀이 리본을 접는 키와 같다. 한컴에는 대응하는 키가 없고,
+  // 브라우저도 Ctrl+F1 을 쓰지 않아 가로챌 수 있다.
+  [{ key: 'f1', ctrl: true }, 'view:toggle-toolbars'],
+
   // 검색
   [{ key: 'f', ctrl: true }, 'edit:find'],
   [{ key: 'f2', ctrl: true }, 'edit:find-replace'],

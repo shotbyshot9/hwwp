@@ -59,6 +59,17 @@ export interface ViewSettings {
   /** 짤림보기(잘림 보기) 켜짐 여부. true = 편집용지 경계 밖 오버플로 내용을 보임(잘림 미적용). */
   clipView: boolean;
   /**
+   * 도구 상자(아이콘 툴바)를 보일 것인가.
+   *
+   * 서식 바와 함께 노트북 화면에서 세로 128px 를 차지한다. 1366×768 노트북에서
+   * 브라우저 주소창과 작업 표시줄까지 빼면 글이 보이는 높이가 400px 남짓이라,
+   * 접어 두고 쓰겠다는 사람이 있다. 그때 껐다는 사실이 남지 않으면 새로고침마다
+   * 다시 꺼야 해서 접는 기능 자체가 쓸모없어진다.
+   */
+  showBasicToolbar: boolean;
+  /** 서식 바를 보일 것인가. showBasicToolbar 와 같은 이유로 저장한다. */
+  showFormatToolbar: boolean;
+  /**
    * 화면 보정값 — 1mm 가 화면에서 몇 CSS px 인가.
    *
    * 배율 100% 를 용지 실물 크기와 맞추는 데 쓴다. 브라우저는 화면의 물리적
@@ -217,6 +228,9 @@ function defaultSettings(): AppSettings {
       showParagraphMarks: false,
       showControlCodes: false,
       clipView: true,
+      // 처음 오는 사람에게는 둘 다 보인다 — 무엇을 할 수 있는지가 먼저다.
+      showBasicToolbar: true,
+      showFormatToolbar: true,
       pxPerMm: null,
     },
     focus: {
@@ -328,6 +342,14 @@ class UserSettingsService {
           clipView: normalizeBoolean(
             view.clipView,
             defaults.view.clipView,
+          ),
+          showBasicToolbar: normalizeBoolean(
+            view.showBasicToolbar,
+            defaults.view.showBasicToolbar,
+          ),
+          showFormatToolbar: normalizeBoolean(
+            view.showFormatToolbar,
+            defaults.view.showFormatToolbar,
           ),
           // 보정 전에는 null 이다 — 0 이나 이상한 값이 들어오면 보정 없음으로 되돌린다.
           pxPerMm: typeof view.pxPerMm === 'number' && Number.isFinite(view.pxPerMm) && view.pxPerMm > 0
@@ -458,6 +480,13 @@ class UserSettingsService {
   /** 짤림보기(잘림 보기) 켜짐 설정. true = 오버플로 내용 표시(잘림 미적용). */
   setClipView(value: boolean): void {
     this.data.view.clipView = value;
+    this.save();
+  }
+
+  /** 도구 상자·서식 바를 보일 것인가 */
+  setToolbarVisibility(basic: boolean, format: boolean): void {
+    this.data.view.showBasicToolbar = basic;
+    this.data.view.showFormatToolbar = format;
     this.save();
   }
 

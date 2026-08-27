@@ -74,6 +74,7 @@ import { calculateFitPageZoom, calculateFitWidthZoom } from '@/view/zoom-fit';
 import { installEmbedRuntime } from '@/embed/runtime';
 import type { EmbedRendererRuntimeRequestV1 } from '@/embed/rpc-router';
 import { installToolbarOverflow } from '@/view/toolbar-overflow';
+import { applyToolbarVisibility } from '@/ui/toolbar-visibility';
 
 const wasm = new WasmBridge();
 const eventBus = new EventBus();
@@ -765,9 +766,15 @@ async function initialize(): Promise<void> {
     });
     syncFocusMenu();
 
+    // 저장해 둔 툴바 접힘 상태를 화면에 되살린다. 단추를 잇기 전에 해야 화살표
+    // 방향이 처음부터 맞는다.
+    applyToolbarVisibility();
+
     // 툴바 내 data-cmd 버튼 클릭 → 커맨드 디스패치
-    // 도구 상자 버튼과 제목 줄의 배명훈 모드 버튼을 같은 경로로 보낸다.
-    document.querySelectorAll('.tb-btn[data-cmd], #tbar-focus[data-cmd]').forEach(btn => {
+    // 도구 상자 버튼과 제목 줄의 배명훈 모드·툴바 접기 버튼을 같은 경로로 보낸다.
+    document.querySelectorAll(
+      '.tb-btn[data-cmd], #tbar-focus[data-cmd], #tbar-toolbar-toggle[data-cmd]',
+    ).forEach(btn => {
       btn.addEventListener('mousedown', (e) => {
         e.preventDefault();
         const cmd = (btn as HTMLElement).dataset.cmd;
